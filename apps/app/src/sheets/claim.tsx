@@ -21,6 +21,7 @@ import type { ReactNode } from "react";
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { privateKeyToAddress } from "viem/accounts";
 import { ConfirmSheet } from "@/components/confirm-sheet";
+import { EurcRate } from "@/components/eurc-rate";
 import { LocalEquivalent } from "@/components/local-equivalent";
 import { RouteSheet, useCloseSheet } from "@/components/shell/sheet-host";
 import { SuccessSheet } from "@/components/success-sheet";
@@ -150,7 +151,7 @@ function ClaimReady({ parsed, onDone }: { parsed: ClaimFragment; onDone: () => v
             style={{ ["--lift" as string]: "-8px", ["--turn" as string]: "8deg", ["--r" as string]: "-8deg" }}
           />
         </GradientCard>
-        {euros ? null : <LocalEquivalent amount={amount} className="-mt-1 text-center text-[14px]" />}
+        {euros ? <EurcRate euros={amount} className="-mt-1 text-center text-[13px]" /> : <LocalEquivalent amount={amount} className="-mt-1 text-center text-[14px]" />}
 
         <ListGroup>
           <ListRow icon={<ScanFace />} title="Face ID is your account" description={EMAIL_LOGIN ? "No password, no forms. Or use your email." : "No password, no forms."} />

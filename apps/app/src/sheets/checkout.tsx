@@ -24,6 +24,7 @@ import { BringHistorySheet } from "@/components/bring-history";
 import { ConfirmSheet } from "@/components/confirm-sheet";
 import { GuardPausedNotice } from "@/components/credit-guard-note";
 import { LocalEquivalent } from "@/components/local-equivalent";
+import { PayFromAnyChain } from "@/components/pay-from-any-chain";
 import { RouteSheet, useCloseSheet } from "@/components/shell/sheet-host";
 import { SuccessSheet } from "@/components/success-sheet";
 import { CheckoutDesktop, CheckoutMissing } from "@/desktop/checkout";
@@ -247,8 +248,21 @@ export function CheckoutSheet({ link }: { link: PaymentLink }) {
 
         {short(mode) ? (
           <p role="status" className="text-center text-[14px] text-ui-down">
-            Not enough dollars in your account for this.{later && mode !== "later" ? " Try Pay in 4." : ""}
+            Not enough dollars in your account for this.{mode === "now" ? (later ? " Try Pay in 4, or pay from another chain below." : " Pay from another chain below.") : later && mode !== "later" ? " Try Pay in 4." : ""}
           </p>
+        ) : null}
+
+        {mode === "now" ? (
+          <PayFromAnyChain
+            link={link}
+            available={state.status !== "none" ? available : undefined}
+            recipient={owner}
+            short={short("now")}
+            onFunded={() => {
+              setMode("now");
+              setConfirming("now");
+            }}
+          />
         ) : null}
       </Sheet.Body>
       <Sheet.Footer>

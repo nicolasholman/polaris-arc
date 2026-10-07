@@ -22,6 +22,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { type ReactNode, useMemo, useState } from "react";
 import { useAccounts } from "@/components/accounts";
+import { EurcRate } from "@/components/eurc-rate";
 import { SignAgainNotice } from "@/components/sign-again";
 import { useOwner } from "@/lib/account/hooks";
 import { getActivity, getPlans, getProfile } from "@/lib/data";
@@ -135,6 +136,7 @@ function BalanceChart({ className }: { className?: string }) {
       {account === "dollar" && balance?.euros != null ? (
         <p className="mt-2 text-[14px] text-ui-muted">
           And <span className="ui-figure text-ui-text">{eur(balance.euros)}</span> in euros (EURC)
+          <EurcRate euros={balance.euros} className="ml-2 text-[13px] before:mr-2 before:content-['·']" />
         </p>
       ) : null}
 

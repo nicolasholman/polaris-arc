@@ -21,6 +21,7 @@ import { useState } from "react";
 import { useAccounts } from "@/components/accounts";
 import { rowAmount } from "@/components/activity-amount";
 import { ActivityAvatar, photoFor } from "@/components/avatars";
+import { EurcRate } from "@/components/eurc-rate";
 import { TabScreen } from "@/components/screen";
 import { SignAgainNotice } from "@/components/sign-again";
 import { useNotices } from "@/components/use-notices";
@@ -93,10 +94,13 @@ function HomePhone() {
         <Skeleton shape="card" height={278} className="mt-1.5" />
       )}
       {selected?.id === "dollar" && balance?.euros != null ? (
-        <p className="mt-2 flex items-baseline justify-between px-2 text-[14px] text-ui-muted">
-          <span>Euros (EURC)</span>
-          <span className="ui-figure text-ui-text">{eur(balance.euros)}</span>
-        </p>
+        <div className="mt-2 px-2 text-[14px] text-ui-muted">
+          <p className="flex items-baseline justify-between">
+            <span>Euros (EURC)</span>
+            <span className="ui-figure text-ui-text">{eur(balance.euros)}</span>
+          </p>
+          <EurcRate euros={balance.euros} className="mt-0.5 block text-right text-[12px]" />
+        </div>
       ) : null}
 
       <Card padding="none" className="mt-3 px-5 pt-5 pb-3">

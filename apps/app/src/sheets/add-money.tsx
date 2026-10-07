@@ -1,11 +1,12 @@
 "use client";
 
 import { DetailsList, ListGroup, ListRow, Sheet, TileButton, toast, useIsDesktop } from "@polaris/ui";
-import { ArrowDownLeft, ArrowRightLeft, Droplets, ExternalLink, ScanLine, Send } from "lucide-react";
+import { ArrowDownLeft, ArrowRightLeft, Droplets, ExternalLink, Layers, ScanLine, Send } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useAccounts } from "@/components/accounts";
 import { CrossChainDeposit, IncomingTransfer, useIncomingTransfers } from "@/components/cross-chain-deposit";
+import { GatewaySheet } from "@/components/gateway-sheet";
 import { useAccountState } from "@/lib/account/hooks";
 import { useOrigin } from "@/lib/browser";
 import { notifyDataChanged } from "@/lib/data/changes";
@@ -29,8 +30,9 @@ const CIRCLE_FAUCET = "https://faucet.circle.com";
 /**
  * Add money: the ways dollars come in today, on ref C's Send / Receive /
  * Top Up tiles. Ask someone (a link to pay you), show your code, or claim a
- * link someone sent you; move USDC from another chain with Circle's CCTP
- * (where Polaris relays the mint); and, on a test network, a faucet.
+ * link someone sent you; bring USDC from another chain with Circle Gateway
+ * (a unified balance, about a second) or CCTP (where Polaris relays the
+ * mint, minutes); and, on a test network, a faucet.
  */
 export function AddMoneySheet() {
   const router = useRouter();
@@ -43,6 +45,8 @@ export function AddMoneySheet() {
   const [minting, setMinting] = useState(false);
   const network = useData(async () => (await getNetwork()) ?? null, []);
   const cctp = network.value?.cctp ?? null;
+  const gateway = network.value?.gateway ?? null;
+  const [gatewayOpen, setGatewayOpen] = useState(false);
   const incoming = useIncomingTransfers();
   const [bridging, setBridging] = useState(false);
 
@@ -117,15 +121,26 @@ export function AddMoneySheet() {
       {incoming.burns.map((burn) => (
         <IncomingTransfer key={burn.txHash} burn={burn} onDismiss={() => incoming.dismiss(burn.txHash)} />
       ))}
-      {cctp ? (
+      {cctp || gateway ? (
         <ListGroup label="From another chain">
-          <ListRow
-            icon={<ArrowRightLeft />}
-            tone="tint-teal"
-            title="Move USDC to Polaris"
-            description={`From ${cctp.sources.map((s) => s.name).join(", ")}, with Circle's CCTP`}
-            onClick={() => (address ? setBridging(true) : router.push("/onboard?next=/"))}
-          />
+          {gateway ? (
+            <ListRow
+              icon={<Layers />}
+              tone="tint-lime"
+              title="Circle Gateway balance"
+              description="USDC you hold in Gateway on Base, Ethereum and more. On Arc in about a second, one signature, no gas"
+              onClick={() => (address ? setGatewayOpen(true) : router.push("/onboard?next=/"))}
+            />
+          ) : null}
+          {cctp ? (
+            <ListRow
+              icon={<ArrowRightLeft />}
+              tone="tint-teal"
+              title="Move USDC to Polaris"
+              description={`From ${cctp.sources.map((s) => s.name).join(", ")}, with Circle's CCTP. A few minutes`}
+              onClick={() => (address ? setBridging(true) : router.push("/onboard?next=/"))}
+            />
+          ) : null}
         </ListGroup>
       ) : null}
       {env.chainId === ARC_TESTNET ? (
@@ -163,6 +178,7 @@ export function AddMoneySheet() {
       {cctp && address && network.value ? (
         <CrossChainDeposit open={bridging} onOpenChange={setBridging} network={network.value} recipient={address} onSent={incoming.add} />
       ) : null}
+      {gateway && address && network.value ? <GatewaySheet open={gatewayOpen} onOpenChange={setGatewayOpen} network={network.value} recipient={address} /> : null}
     </Sheet.Body>
   );
 }

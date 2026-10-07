@@ -138,6 +138,7 @@ export function CrossChainDeposit({
   network,
   recipient,
   onSent,
+  initialAmount,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -145,11 +146,14 @@ export function CrossChainDeposit({
   /** The buyer's Polaris account on Arc: where the USDC is minted. */
   recipient: Address;
   onSent: (burn: PendingBurn) => void;
+  /** Prefills the amount (a checkout's shortfall). */
+  initialAmount?: Micros;
 }) {
   const cctp = network.cctp!;
+  const initialValue = initialAmount && initialAmount > 0n ? (Math.ceil(Number(initialAmount) / 1e4) / 100).toFixed(2) : "";
   const [sourceId, setSourceId] = useState(String(cctp.sources[0]?.chainId ?? ""));
   const source: CctpSource | undefined = cctp.sources.find((s) => String(s.chainId) === sourceId);
-  const [value, setValue] = useState("");
+  const [value, setValue] = useState(initialValue);
   const [wallet, setWallet] = useState<{ address: Address; chainId: number } | null>(null);
   const [heldFor, setHeldFor] = useState<{ key: string; usdc: Micros } | null>(null);
   const [step, setStep] = useState<Step>({ kind: "form" });
@@ -250,7 +254,7 @@ export function CrossChainDeposit({
     onOpenChange(false);
     setStep({ kind: "form" });
     setError(null);
-    setValue("");
+    setValue(initialValue);
   };
 
   const tooMuch = held !== null && amount !== null && amount > held;

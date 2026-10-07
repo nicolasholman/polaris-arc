@@ -1,6 +1,7 @@
 import { type Address, getAddress, zeroAddress } from "viem";
 import { api, apiConfigured } from "./api";
 import { type ContractName, env } from "./env";
+import { type ArcRates, type CcipInfo, type GatewayInfo, parseCcip, parseGateway, parseRates } from "./cross-chain.ts";
 import type { Eip712Domain } from "./sign";
 
 /**
@@ -42,6 +43,12 @@ export type Network = {
   euro: { eurc: Address; sendEurc: Address | null } | null;
   /** Add money from another chain (CCTP V2). Null where Polaris doesn't relay CCTP mints (a local chain). */
   cctp: { arcDomain: number; sources: CctpSource[]; fastTransfer: boolean } | null;
+  /** Circle Gateway: a unified USDC balance on other chains, spent on Arc in about a second. Null where the API has none. */
+  gateway: GatewayInfo | null;
+  /** Chainlink CCIP: pay an order on Arc in one transaction on a source chain. `sources` is empty until a PolarisCCIPSender is deployed. */
+  ccip: CcipInfo | null;
+  /** Chainlink Data Feeds on Arc (EURC / USD, EUR / USD, USDC / USD): display only. */
+  rates: ArcRates | null;
 };
 
 type Remote = {
@@ -71,6 +78,10 @@ type Remote = {
   };
   circle?: { cctpDomain: number } | null;
   cctp?: { sources: CctpSource[]; fastTransfer?: boolean } | null;
+  /** Newer APIs only; read defensively (lib/cross-chain.ts). */
+  gateway?: unknown;
+  ccip?: unknown;
+  rates?: unknown;
 };
 
 const REMOTE_NAME: Record<ContractName, Exclude<keyof Remote["contracts"], "vault">> = {
@@ -130,7 +141,18 @@ export function toNetwork(remote: Remote): Network {
   const euro = contracts.eurc !== zeroAddress ? { eurc: contracts.eurc, sendEurc: contracts.sendEurc !== zeroAddress ? contracts.sendEurc : null } : null;
   const sources = (remote.cctp?.sources ?? []).map(cctpSource).filter((s): s is CctpSource => s !== null);
   const cctp = remote.cctp && sources.length ? { arcDomain: remote.circle?.cctpDomain ?? ARC_CCTP_DOMAIN, sources, fastTransfer: Boolean(remote.cctp.fastTransfer) } : null;
-  return { chainId: remote.chainId, explorerUrl: remote.explorerUrl, contracts, domains, vault, euro, cctp };
+  return {
+    chainId: remote.chainId,
+    explorerUrl: remote.explorerUrl,
+    contracts,
+    domains,
+    vault,
+    euro,
+    cctp,
+    gateway: parseGateway(remote.gateway),
+    ccip: parseCcip(remote.ccip),
+    rates: parseRates(remote.rates),
+  };
 }
 
 async function load(): Promise<Network> {

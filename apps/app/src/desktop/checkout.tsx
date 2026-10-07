@@ -23,6 +23,7 @@ import { BringHistorySheet } from "@/components/bring-history";
 import { ConfirmSheet } from "@/components/confirm-sheet";
 import { GuardPausedNotice } from "@/components/credit-guard-note";
 import { LocalEquivalent } from "@/components/local-equivalent";
+import { PayFromAnyChain } from "@/components/pay-from-any-chain";
 import { useCloseSheet } from "@/components/shell/sheet-host";
 import { type PayMode, payLink } from "@/lib/actions";
 import { useAccountState, useOwner } from "@/lib/account/hooks";
@@ -261,8 +262,21 @@ export function CheckoutDesktop({ link }: { link: PaymentLink }) {
             ) : null}
             {short ? (
               <p role="status" className="text-[14px] text-ui-down">
-                Not enough dollars in your account for this.{later && mode !== "later" ? " Try Pay in 4." : ""}
+                Not enough dollars in your account for this.
+                {mode === "now" ? (later ? " Try Pay in 4, or pay from another chain below." : " Pay from another chain below.") : later && mode !== "later" ? " Try Pay in 4." : ""}
               </p>
+            ) : null}
+            {mode === "now" ? (
+              <PayFromAnyChain
+                link={link}
+                available={signedIn ? available : undefined}
+                recipient={owner}
+                short={short}
+                onFunded={() => {
+                  setMode("now");
+                  setConfirming(true);
+                }}
+              />
             ) : null}
           </div>
 
