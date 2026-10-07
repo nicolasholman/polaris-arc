@@ -1,7 +1,7 @@
 "use client";
 
 import { AdaptiveSheet, Badge, Button, ListGroup, ListRow, Notice, Sheet } from "@polaris/ui";
-import { ArrowRightLeft, Globe, Layers, Link2, ScanFace } from "lucide-react";
+import { ArrowRightLeft, Globe, Layers, Link2, Receipt, ScanFace } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import type { Address } from "viem";
@@ -11,10 +11,16 @@ import { topUpAmount } from "@/lib/gateway";
 import { type Micros, usd } from "@/lib/money";
 import { getNetwork, type Network } from "@/lib/network";
 import { CcipSheet } from "./ccip-sheet";
+import { CctpOrderSheet } from "./cctp-order-sheet";
 import { CrossChainDeposit, IncomingTransfer, useIncomingTransfers } from "./cross-chain-deposit";
 import { GatewaySheet } from "./gateway-sheet";
 
-type Open = "menu" | "gateway" | "cctp" | "ccip" | null;
+type Open = "menu" | "gateway" | "cctp" | "cctp-order" | "ccip" | null;
+
+/** Whether this order can be paid by a hooked CCTP burn: the network has the receiver, and the order names who, what and how much. */
+export function hookPayable(network: Network, link: PaymentLink): boolean {
+  return Boolean(network.cctp?.hookReceiver && link.merchant.address && link.orderId && link.amount > 0n);
+}
 
 const names = (list: { name: string }[]) => {
   const all = list.map((s) => s.name.replace(/ (Sepolia|Fuji|Amoy|Testnet)$/, ""));
@@ -56,6 +62,7 @@ export function PayFromAnyChain({
   const net = network.value ?? null;
   const incoming = useIncomingTransfers();
   const [open, setOpen] = useState<Open>(null);
+  const router = useRouter();
   if (!offersAnyChain(net) || !net) return null;
   const need = topUpAmount(link.amount, available);
 
@@ -100,6 +107,18 @@ export function PayFromAnyChain({
           recipient={recipient}
           initialAmount={need}
           onSent={incoming.add}
+        />
+      ) : null}
+      {recipient && hookPayable(net, link) ? (
+        <CctpOrderSheet
+          open={open === "cctp-order"}
+          onOpenChange={(o) => setOpen(o ? "cctp-order" : null)}
+          network={net}
+          link={link}
+          refundTo={recipient}
+          onSent={incoming.add}
+          // The order is paid on Arc: read the link again, which now shows it paid.
+          onPaid={() => router.refresh()}
         />
       ) : null}
       {net.ccip?.sources.length ? (
@@ -180,6 +199,22 @@ function AnyChainMenu({
           />
         </ListGroup>
         <ListGroup label="One transaction">
+          <ListRow
+            icon={<Receipt />}
+            tone="tint-teal"
+            title="Pay this order with CCTP"
+            description={
+              hookPayable(network, link)
+                ? "One transaction on another chain, minutes. Pays the order on Arc, no second step"
+                : network.cctp
+                  ? "Coming to this network: one transaction, minutes"
+                  : "Not on this network"
+            }
+            trailing={!hookPayable(network, link) && network.cctp ? <Badge tone="neutral">Soon</Badge> : undefined}
+            chevron={hookPayable(network, link)}
+            disabled={!hookPayable(network, link) || !recipient}
+            onClick={hookPayable(network, link) && recipient ? () => onPick("cctp-order") : undefined}
+          />
           <ListRow
             icon={<Link2 />}
             tone="tint-purple"

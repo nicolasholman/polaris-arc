@@ -82,7 +82,7 @@ export function IncomingTransfer({ burn, onDismiss }: { burn: PendingBurn; onDis
     return (
       <Notice
         tone="lime"
-        title={`Arrived on Arc: ${usd(watch.amount ?? BigInt(burn.amount))}`}
+        title={burn.order ? `Paid ${burn.order.merchant}: ${usd(BigInt(burn.amount))}` : `Arrived on Arc: ${usd(watch.amount ?? BigInt(burn.amount))}`}
         action={
           <Button variant="ghost" size="sm" onClick={onDismiss}>
             Done
@@ -109,7 +109,11 @@ export function IncomingTransfer({ burn, onDismiss }: { burn: PendingBurn; onDis
     );
   }
   return (
-    <Notice tone="info" icon={<ArrowRightLeft />} title={`${usd(BigInt(burn.amount))} on its way from ${burn.sourceName}`}>
+    <Notice
+      tone="info"
+      icon={<ArrowRightLeft />}
+      title={burn.order ? `Paying ${burn.order.merchant} ${usd(BigInt(burn.amount))} from ${burn.sourceName}` : `${usd(BigInt(burn.amount))} on its way from ${burn.sourceName}`}
+    >
       Circle is attesting the transfer. A standard transfer waits for {burn.sourceName} to finalise, which takes a few minutes on testnet (up to
       about 20). Once it&apos;s attested, it lands on Arc and is final in under a second. You can close this; it keeps going.{" "}
       <TxLink hash={burn.txHash} href={`${burn.explorerUrl}/tx/${burn.txHash}`} />

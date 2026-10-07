@@ -42,7 +42,13 @@ export type Network = {
   /** Euros: EURC and the PolarisSend that escrows it. Null where the deployment has neither (a local chain). */
   euro: { eurc: Address; sendEurc: Address | null } | null;
   /** Add money from another chain (CCTP V2). Null where Polaris doesn't relay CCTP mints (a local chain). */
-  cctp: { arcDomain: number; sources: CctpSource[]; fastTransfer: boolean } | null;
+  cctp: {
+    arcDomain: number;
+    sources: CctpSource[];
+    fastTransfer: boolean;
+    /** PolarisCctpHookReceiver on Arc: pays an order from a hooked burn (depositForBurnWithHook). Null where not deployed. */
+    hookReceiver: Address | null;
+  } | null;
   /** Circle Gateway: a unified USDC balance on other chains, spent on Arc in about a second. Null where the API has none. */
   gateway: GatewayInfo | null;
   /** Chainlink CCIP: pay an order on Arc in one transaction on a source chain. `sources` is empty until a PolarisCCIPSender is deployed. */
@@ -77,7 +83,7 @@ type Remote = {
     loanEngine: Eip712Domain;
   };
   circle?: { cctpDomain: number } | null;
-  cctp?: { sources: CctpSource[]; fastTransfer?: boolean } | null;
+  cctp?: { sources: CctpSource[]; fastTransfer?: boolean; hookReceiver?: string | null } | null;
   /** Newer APIs only; read defensively (lib/cross-chain.ts). */
   gateway?: unknown;
   ccip?: unknown;
@@ -118,6 +124,15 @@ function cctpSource(s: CctpSource): CctpSource | null {
   }
 }
 
+function hookReceiver(raw: unknown): Address | null {
+  if (typeof raw !== "string" || raw === zeroAddress) return null;
+  try {
+    return getAddress(raw);
+  } catch {
+    return null;
+  }
+}
+
 /** The API's network as the app keeps it. Exported for tests. */
 export function toNetwork(remote: Remote): Network {
   const contracts = {} as Record<ContractName, Address>;
@@ -140,7 +155,15 @@ export function toNetwork(remote: Remote): Network {
   const vault = remote.contracts.vault && remote.contracts.vault !== zeroAddress ? getAddress(remote.contracts.vault) : null;
   const euro = contracts.eurc !== zeroAddress ? { eurc: contracts.eurc, sendEurc: contracts.sendEurc !== zeroAddress ? contracts.sendEurc : null } : null;
   const sources = (remote.cctp?.sources ?? []).map(cctpSource).filter((s): s is CctpSource => s !== null);
-  const cctp = remote.cctp && sources.length ? { arcDomain: remote.circle?.cctpDomain ?? ARC_CCTP_DOMAIN, sources, fastTransfer: Boolean(remote.cctp.fastTransfer) } : null;
+  const cctp =
+    remote.cctp && sources.length
+      ? {
+          arcDomain: remote.circle?.cctpDomain ?? ARC_CCTP_DOMAIN,
+          sources,
+          fastTransfer: Boolean(remote.cctp.fastTransfer),
+          hookReceiver: hookReceiver(remote.cctp.hookReceiver),
+        }
+      : null;
   return {
     chainId: remote.chainId,
     explorerUrl: remote.explorerUrl,

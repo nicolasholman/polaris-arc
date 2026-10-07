@@ -1,4 +1,5 @@
 import {
+  type Account,
   type Address,
   type Chain,
   createPublicClient,
@@ -10,9 +11,11 @@ import {
   type Hex,
   numberToHex,
   parseAbi,
+  type Transport,
+  type WalletClient,
 } from "viem";
 import { api } from "./api";
-import { depositForBurnCall } from "./cctp-burn.ts";
+import { depositForBurnCall, depositForBurnWithHookCall } from "./cctp-burn.ts";
 import type { Micros } from "./money";
 import type { CctpSource } from "./network";
 
@@ -57,6 +60,8 @@ export type PendingBurn = {
   recipient: Address;
   explorerUrl: string;
   at: number;
+  /** A hooked burn that pays an order on Arc (PolarisCctpHookReceiver), rather than adding money. */
+  order?: { merchant: string; orderId: string };
 };
 
 export class BridgeError extends Error {
@@ -165,7 +170,47 @@ export async function burnForArc(input: {
   amount: Micros;
   onStep?: (step: "approve" | "approving" | "burn" | "burning") => void;
 }): Promise<Hex> {
-  const { source, from, recipient, amount, arcDomain, onStep } = input;
+  const { source, recipient, amount, arcDomain } = input;
+  return burn(input, (wallet) => wallet.writeContract(depositForBurnCall({ tokenMessengerV2: source.tokenMessengerV2, usdc: source.usdc, arcDomain, recipient, amount })));
+}
+
+/**
+ * Pays a Polaris order on Arc in one source-chain transaction: approve
+ * TokenMessengerV2 (when short), then depositForBurnWithHook to
+ * PolarisCctpHookReceiver, which pays the order once Polaris relays the
+ * attested message (`POST /api/public/cctp/mint` reports "minted" when it
+ * is paid). Any excess, or everything if the order can't be paid, goes to
+ * `refundTo` on Arc.
+ */
+export async function burnToPayOrder(input: {
+  source: CctpSource;
+  arcDomain: number;
+  hookReceiver: Address;
+  from: Address;
+  merchant: Address;
+  orderId: string;
+  orderAmount: Micros;
+  refundTo: Address;
+  onStep?: (step: "approve" | "approving" | "burn" | "burning") => void;
+}): Promise<Hex> {
+  const { source, arcDomain, hookReceiver, merchant, orderId, orderAmount, refundTo } = input;
+  return burn(
+    { ...input, amount: orderAmount },
+    (wallet) =>
+      wallet.writeContract(
+        depositForBurnWithHookCall({ tokenMessengerV2: source.tokenMessengerV2, usdc: source.usdc, arcDomain, hookReceiver, amount: orderAmount, merchant, orderId, orderAmount, refundTo }),
+      ),
+  );
+}
+
+type SourceWallet = WalletClient<Transport, Chain, Account>;
+
+/** Checks the wallet, approves TokenMessengerV2 when the allowance is short, sends the burn, and waits for it to be mined. */
+async function burn(
+  input: { source: CctpSource; from: Address; amount: Micros; onStep?: (step: "approve" | "approving" | "burn" | "burning") => void },
+  send: (wallet: SourceWallet) => Promise<Hex>,
+): Promise<Hex> {
+  const { source, from, amount, onStep } = input;
   const provider = requireProvider();
   if ((await walletChainId()) !== source.chainId) throw new BridgeError("wrong-chain", `Switch your wallet to ${source.name} first.`);
   const chain = sourceChain(source);
@@ -186,11 +231,11 @@ export async function burnForArc(input: {
       if (receipt.status !== "success") throw new BridgeError("failed", "The approval failed on the source chain. Nothing was moved.");
     }
     onStep?.("burn");
-    const burn = await wallet.writeContract(depositForBurnCall({ tokenMessengerV2: source.tokenMessengerV2, usdc: source.usdc, arcDomain, recipient, amount }));
+    const hash = await send(wallet);
     onStep?.("burning");
-    const receipt = await client.waitForTransactionReceipt({ hash: burn });
+    const receipt = await client.waitForTransactionReceipt({ hash });
     if (receipt.status !== "success") throw new BridgeError("failed", "The transfer failed on the source chain. Your USDC didn't move.");
-    return burn;
+    return hash;
   } catch (error) {
     if (error instanceof BridgeError) throw error;
     if (rejected(error)) throw new BridgeError("rejected", "You declined in the wallet. Nothing was moved.");
