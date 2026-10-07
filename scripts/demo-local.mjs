@@ -235,7 +235,11 @@ async function main() {
   run(process.execPath, [join(BUSINESS, "scripts", "ensure-deps.mjs")], { cwd: BUSINESS });
 
   log(`starting a Hardhat node on ${RPC}…`);
-  background("hardhat", process.execPath, [hardhat, "node", "--hostname", "127.0.0.1", "--port", String(PORTS.node)], { cwd: CONTRACTS });
+  background("hardhat", process.execPath, [hardhat, "node", "--hostname", "127.0.0.1", "--port", String(PORTS.node)], {
+    cwd: CONTRACTS,
+    // A block a second, so the chain's clock moves as Arc's does and instalments fall due.
+    env: { ...process.env, POLARIS_INTERVAL_MINING_MS: process.env.POLARIS_INTERVAL_MINING_MS || "1000" },
+  });
   await until("the Hardhat node", async () => (await rpc("eth_chainId")) === "0x7a69", 120_000);
   log("compiling and deploying the contracts (packages/contracts scripts/deploy.js, NETWORK=local)…");
   run(process.execPath, [hardhat, "compile", "--quiet"], { cwd: CONTRACTS, stdio: "ignore" });

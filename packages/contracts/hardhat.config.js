@@ -25,6 +25,9 @@ module.exports = {
   networks: {
     hardhat: {
       chainId: 31337,
+      // `pnpm demo:local` mines a block every second (POLARIS_INTERVAL_MINING_MS),
+      // as Arc does every ~0.5 s, so the chain's clock moves and instalments fall due.
+      ...(process.env.POLARIS_INTERVAL_MINING_MS ? { mining: { auto: true, interval: Number(process.env.POLARIS_INTERVAL_MINING_MS) } } : {}),
     },
     // A `hardhat node` for the local stack (`pnpm node:local`, port 8600).
     // Its accounts are the node's own unlocked test accounts.

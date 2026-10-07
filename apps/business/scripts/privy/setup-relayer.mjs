@@ -5,7 +5,7 @@
 //   pnpm --filter @polaris/business privy:setup-relayer            # dry run: prints the plan and the policy, calls nothing
 //   pnpm --filter @polaris/business privy:setup-relayer -- --apply # creates it in your Privy app
 //
-// Options: --deployment <name> (default monad-testnet), --registry-admin (also
+// Options: --deployment <name> (default arc-testnet), --registry-admin (also
 // create the registry admin wallet that activates merchants).
 //
 // What --apply creates, in this order:
@@ -133,7 +133,7 @@ if (adminKeyFile) {
 console.log("Next:");
 console.log(`  1. Send the relayer testnet USDC (gas) for gas: ${relayer.wallet.address} (about 1 USDC (gas) covers ~300 relayed payments).`);
 console.log(`  2. Give it its contract roles (PolarisPayments and MerchantRegistry operator, BatchSettlement settler):`);
-console.log(`       RELAYER_ADDRESS=${relayer.wallet.address} pnpm --filter @polarispay/contracts grant-relayer:monad`);
+console.log(`       RELAYER_ADDRESS=${relayer.wallet.address} (pass it as POLARIS_RELAYER_ADDRESS to deploy:testnet or deploy:mainnet)`);
 if (withRegistry) {
   console.log(`  3. Make the registry admin own MerchantRegistry (run once, with the deployer key):`);
   console.log(`       NEW_OWNER=${values.PRIVY_REGISTRY_ADDRESS} node apps/business/scripts/transfer-registry-owner.mjs`);

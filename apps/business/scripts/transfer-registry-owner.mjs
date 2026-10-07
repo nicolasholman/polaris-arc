@@ -6,9 +6,9 @@
 //   NEW_OWNER=0x… node apps/business/scripts/transfer-registry-owner.mjs          # shows what it would do
 //   NEW_OWNER=0x… node apps/business/scripts/transfer-registry-owner.mjs --apply  # sends transferOwnership
 //
-// Run it once, with DEPLOYER_PRIVATE_KEY (the current owner) in the repo-root
-// .env, AFTER grant-relayer:monad (setting the relayer as a registry operator
-// needs the owner). Gas: estimate + 15%, as every Polaris sender.
+// Run it once, with DEPLOYER_PRIVATE_KEY (the current owner) in the environment,
+// AFTER the deploy granted the relayer its registry operator role (that needs
+// the owner). Gas: estimate + 15%, as every Polaris sender.
 
 import { readFileSync, writeFileSync } from "node:fs";
 
@@ -20,11 +20,11 @@ import { REPO_DIR, flag, loadDeployment, loadEnv, parseEnvFile } from "./privy/l
 
 const env = { ...parseEnvFile(`${REPO_DIR}/.env`), ...loadEnv() };
 const deployment = loadDeployment(env);
-const rpc = env.POLARIS_RPC_URL ?? (deployment.chainId === 10143 ? "https://rpc.testnet.arc.io" : "http://127.0.0.1:8545");
+const rpc = env.POLARIS_RPC_URL ?? ({ 5042002: "https://rpc.testnet.arc.io", 5042: "https://rpc.mainnet.arc.io" }[deployment.chainId] ?? "http://127.0.0.1:8545");
 if (!env.NEW_OWNER) throw new Error("Set NEW_OWNER to the registry admin's address.");
 const newOwner = getAddress(env.NEW_OWNER);
 
-const chain = defineChain({ id: deployment.chainId, name: `chain ${deployment.chainId}`, nativeCurrency: { name: "USDC (gas)", symbol: "USDC (gas)", decimals: 18 }, rpcUrls: { default: { http: [rpc] } } });
+const chain = defineChain({ id: deployment.chainId, name: `chain ${deployment.chainId}`, nativeCurrency: { name: "USDC", symbol: "USDC", decimals: 18 }, rpcUrls: { default: { http: [rpc] } } });
 const client = createPublicClient({ chain, transport: http(rpc) });
 const current = await client.readContract({ address: deployment.addresses.registry, abi: merchantRegistryAbi, functionName: "owner" });
 console.log(`MerchantRegistry ${deployment.addresses.registry}\n  owner now   ${current}\n  new owner   ${newOwner}`);

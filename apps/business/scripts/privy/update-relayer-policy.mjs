@@ -7,7 +7,7 @@
 //   pnpm --filter @polaris/business privy:update-relayer-policy            # dry run: prints the rules, calls nothing
 //   pnpm --filter @polaris/business privy:update-relayer-policy -- --apply # updates the policy in Privy
 //
-// Options: --deployment <name> (default monad-testnet).
+// Options: --deployment <name> (default arc-testnet).
 //
 // --apply needs, besides PRIVY_APP_ID and PRIVY_APP_SECRET, the policy's id
 // (PRIVY_RELAYER_POLICY_ID, which setup-relayer wrote to .env.privy) and the

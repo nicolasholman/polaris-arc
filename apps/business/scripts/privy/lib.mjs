@@ -59,8 +59,7 @@ export function loadDeployment(env) {
   return {
     file,
     chainId: d.chainId,
-    // Whether the record's vault takes withdrawWithSig: written by deploy:testnet and redeploy-vault:monad
-    // from the vault itself. Arc testnet's vault of 28 Sep 2026 predates it.
+    // Whether the record's vault takes withdrawWithSig (every Arc deployment's does).
     vaultWithdraw: Boolean(d.eip712?.CollateralVault),
     addresses: {
       checkout: at("PolarisCheckout"),
@@ -70,9 +69,13 @@ export function loadDeployment(env) {
       split: d.contracts?.PolarisSplit?.address ?? null,
       loanEngine: at("PolarisLoanEngine"),
       registry: at("MerchantRegistry"),
-      stablecoin: at("Stablecoin"),
+      stablecoin: at("USDC"),
       // Optional: a deployment without the vault has no gasless collateral rule.
       vault: d.contracts?.CollateralVault?.address ?? null,
+      // Arc: euro send links, CCTP arrivals, and order memos around checkout.
+      sendEurc: d.contracts?.PolarisSendEURC?.address ?? null,
+      messageTransmitter: d.circle?.messageTransmitterV2 ?? null,
+      memo: d.circle?.memo ?? null,
     },
   };
 }
