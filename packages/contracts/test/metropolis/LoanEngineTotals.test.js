@@ -17,7 +17,7 @@ const { time, loadFixture } = require("@nomicfoundation/hardhat-network-helpers"
 
 const { TYPES } = require("../../lib/eip712");
 
-const AUSD = (n) => ethers.parseUnits(String(n), 6);
+const USDC = (n) => ethers.parseUnits(String(n), 6);
 const HOUR = 3600;
 const DAY = 24 * HOUR;
 const GRACE = DAY;
@@ -26,24 +26,24 @@ async function deployEngine() {
   const signers = await ethers.getSigners();
   const [owner, merchant, treasury, keeper] = signers;
   const borrowers = signers.slice(4, 10);
-  const ausd = await (await ethers.getContractFactory("MockAUSD")).deploy();
+  const usdc = await (await ethers.getContractFactory("MockUSDC")).deploy("USDC");
   const scores = await (await ethers.getContractFactory("ScoreManager")).deploy(owner.address);
-  const engine = await (await ethers.getContractFactory("PolarisLoanEngine")).deploy(owner.address, ausd, scores, treasury.address, GRACE, 60);
+  const engine = await (await ethers.getContractFactory("PolarisLoanEngine")).deploy(owner.address, usdc, scores, treasury.address, GRACE, 60);
   await scores.setWriter(engine, true);
   await engine.setOriginator(owner.address, true);
-  await ausd.mint(owner.address, AUSD(1_000_000));
-  await ausd.approve(engine, AUSD(1_000_000));
-  await engine.fund(AUSD(100_000));
+  await usdc.mint(owner.address, USDC(1_000_000));
+  await usdc.approve(engine, USDC(1_000_000));
+  await engine.fund(USDC(100_000));
   for (const b of borrowers) {
-    await ausd.mint(b.address, AUSD(2_000));
-    await ausd.connect(b).approve(engine, ethers.MaxUint256);
+    await usdc.mint(b.address, USDC(2_000));
+    await usdc.connect(b).approve(engine, ethers.MaxUint256);
   }
-  return { ausd, scores, engine, owner, merchant, keeper, borrowers };
+  return { usdc, scores, engine, owner, merchant, keeper, borrowers };
 }
 
 /** Recompute every total from the loans themselves and compare. */
 async function expectTotals(s, shortfalls, label = "") {
-  const { engine, ausd, borrowers } = s;
+  const { engine, usdc, borrowers } = s;
   const count = Number(await engine.loanCount());
   let owedActive = 0n;
   let originated = 0n;
@@ -60,7 +60,7 @@ async function expectTotals(s, shortfalls, label = "") {
   expect(await engine.totalOriginated(), `${label} totalOriginated`).to.equal(originated);
   expect(await engine.badDebt(), `${label} badDebt`).to.equal(shortfalls.total);
   const fees = await engine.protocolFeesAccrued();
-  const balance = await ausd.balanceOf(await engine.getAddress());
+  const balance = await usdc.balanceOf(await engine.getAddress());
   const state = await engine.poolState();
   expect(state.freeCash, `${label} freeCash`).to.equal(balance > fees ? balance - fees : 0n);
   expect(state.totalOwed).to.equal(total);
@@ -107,7 +107,7 @@ describe("PolarisLoanEngine pool totals (the guardian's inputs)", () => {
     bad = shortfallTracker(s.engine);
   });
 
-  const open = async (b, principal = AUSD(100), n = 4, interval = 7 * DAY) => {
+  const open = async (b, principal = USDC(100), n = 4, interval = 7 * DAY) => {
     await s.engine.createLoan(b.address, s.merchant.address, principal, n, interval);
     return s.engine.loanCount();
   };
@@ -122,15 +122,15 @@ describe("PolarisLoanEngine pool totals (the guardian's inputs)", () => {
     const [a, b, c, d] = s.borrowers;
     const table = [
       ["open a plan", async () => open(a)],
-      ["open a second borrower's plan", async () => open(b, AUSD(60), 3, 2 * DAY)],
-      ["open a one-instalment plan", async () => open(c, AUSD(40), 1, DAY)],
+      ["open a second borrower's plan", async () => open(b, USDC(60), 3, 2 * DAY)],
+      ["open a one-instalment plan", async () => open(c, USDC(40), 1, DAY)],
       ["collect a due instalment", async () => {
         await time.increase(7 * DAY);
         await s.engine.connect(s.keeper).collectInstallment(1);
       }],
-      ["repay part of an instalment", async () => s.engine.connect(a).repay(1, AUSD(7))],
-      ["repay by signature", async () => s.engine.connect(s.keeper).repayWithSig(...(await signRepay(s.engine, b, 2n, AUSD(10))))],
-      ["overpay (capped at what is owed) closes the plan", async () => s.engine.connect(a).repay(1, AUSD(10_000))],
+      ["repay part of an instalment", async () => s.engine.connect(a).repay(1, USDC(7))],
+      ["repay by signature", async () => s.engine.connect(s.keeper).repayWithSig(...(await signRepay(s.engine, b, 2n, USDC(10))))],
+      ["overpay (capped at what is owed) closes the plan", async () => s.engine.connect(a).repay(1, USDC(10_000))],
       ["liquidate with full recovery from the allowance", async () => {
         await time.increase(3 * DAY);
         const r = await (await s.engine.connect(s.keeper).liquidate(3)).wait();
@@ -138,20 +138,20 @@ describe("PolarisLoanEngine pool totals (the guardian's inputs)", () => {
         expect(await s.engine.badDebt()).to.equal(0n);
       }],
       ["liquidate with no recovery books the whole outstanding as bad debt", async () => {
-        await s.ausd.connect(b).approve(s.engine, 0);
+        await s.usdc.connect(b).approve(s.engine, 0);
         await time.increase(30 * DAY);
         const outstanding = await s.engine.outstandingOf(2);
         bad.add(await (await s.engine.connect(s.keeper).liquidate(2)).wait());
         expect(await s.engine.badDebt()).to.equal(outstanding);
       }],
       ["liquidate with a partial recovery books the rest", async () => {
-        const id = await open(d, AUSD(100), 2, DAY);
-        await s.ausd.connect(d).approve(s.engine, AUSD(30));
+        const id = await open(d, USDC(100), 2, DAY);
+        await s.usdc.connect(d).approve(s.engine, USDC(30));
         await time.increase(10 * DAY);
         const before = await s.engine.badDebt();
         const outstanding = await s.engine.outstandingOf(id);
         bad.add(await (await s.engine.connect(s.keeper).liquidate(id)).wait());
-        expect((await s.engine.badDebt()) - before).to.equal(outstanding - AUSD(30));
+        expect((await s.engine.badDebt()) - before).to.equal(outstanding - USDC(30));
       }],
     ];
     for (const [label, step] of table) {
@@ -167,7 +167,7 @@ describe("PolarisLoanEngine pool totals (the guardian's inputs)", () => {
     await open(a);
     await expect(s.engine.connect(s.keeper).collectInstallment(1)).to.be.revertedWithCustomError(s.engine, "NotDue");
     await expect(s.engine.connect(s.keeper).liquidate(1)).to.be.revertedWithCustomError(s.engine, "NotLiquidatable");
-    await expect(s.engine.createLoan(a.address, s.merchant.address, AUSD(10_000), 4, DAY)).to.be.revertedWithCustomError(s.engine, "ExceedsCreditLimit");
+    await expect(s.engine.createLoan(a.address, s.merchant.address, USDC(10_000), 4, DAY)).to.be.revertedWithCustomError(s.engine, "ExceedsCreditLimit");
     await expectTotals(s, bad, "after refusals");
   });
 
@@ -198,26 +198,26 @@ describe("PolarisLoanEngine pool totals (the guardian's inputs)", () => {
         let receipt = null;
         try {
           if (action === "open") {
-            receipt = await (await s.engine.createLoan(b.address, s.merchant.address, AUSD(int(5, 90)), int(1, 6), int(60, 10 * DAY))).wait();
+            receipt = await (await s.engine.createLoan(b.address, s.merchant.address, USDC(int(5, 90)), int(1, 6), int(60, 10 * DAY))).wait();
           } else if (action === "collect" && id) {
             receipt = await (await s.engine.connect(s.keeper).collectInstallment(id)).wait();
           } else if (action === "repay" && id) {
             const owner = (await s.engine.getLoan(id)).borrower;
-            receipt = await (await s.engine.connect(await ethers.getSigner(owner)).repay(id, AUSD(int(1, 60)))).wait();
+            receipt = await (await s.engine.connect(await ethers.getSigner(owner)).repay(id, USDC(int(1, 60)))).wait();
           } else if (action === "repaySig" && id) {
             const owner = await ethers.getSigner((await s.engine.getLoan(id)).borrower);
-            receipt = await (await s.engine.connect(s.keeper).repayWithSig(...(await signRepay(s.engine, owner, BigInt(id), AUSD(int(1, 40)))))).wait();
+            receipt = await (await s.engine.connect(s.keeper).repayWithSig(...(await signRepay(s.engine, owner, BigInt(id), USDC(int(1, 40)))))).wait();
           } else if (action === "liquidate" && id) {
             receipt = await (await s.engine.connect(s.keeper).liquidate(id)).wait();
           } else if (action === "time") {
             await time.increase(int(60, 12 * DAY));
           } else if (action === "revoke") {
-            await s.ausd.connect(b).approve(s.engine, AUSD(int(0, 20)));
+            await s.usdc.connect(b).approve(s.engine, USDC(int(0, 20)));
           } else if (action === "restore") {
-            await s.ausd.connect(b).approve(s.engine, ethers.MaxUint256);
-            await s.ausd.mint(b.address, AUSD(200));
+            await s.usdc.connect(b).approve(s.engine, ethers.MaxUint256);
+            await s.usdc.mint(b.address, USDC(200));
           } else if (action === "drain") {
-            await s.ausd.connect(b).transfer(s.merchant.address, (await s.ausd.balanceOf(b.address)) / 2n);
+            await s.usdc.connect(b).transfer(s.merchant.address, (await s.usdc.balanceOf(b.address)) / 2n);
           }
           counts[action] = (counts[action] ?? 0) + 1;
         } catch {

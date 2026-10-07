@@ -59,6 +59,11 @@ contract PolarisSend is EIP712, ReentrancyGuard {
     /// Longest a link may stay open. Past this, unclaimed money sits in escrow
     /// for no one's benefit, and a forgotten link stays a live bearer claim.
     uint64 public constant MAX_EXPIRY = 30 days;
+
+    /// Most one link may hold: $10,000. The escrow pools money in transit, so
+    /// on mainnet a single link is capped the way a cash-by-link product
+    /// would cap it; larger sums go straight to an address.
+    uint256 public constant MAX_AMOUNT = 10_000e6;
     /// Shortest a link may live. Anything shorter could expire while the
     /// recipient's claim is still on its way to the chain.
     uint64 public constant MIN_LIFETIME = 5 minutes;
@@ -227,7 +232,7 @@ contract PolarisSend is EIP712, ReentrancyGuard {
      *      ahead of the recipient's claim. A cancel is accepted after expiry
      *      too: the money goes to the same place a refund would send it.
      *
-     *      The signature is checked the way AUSD checks the sender's
+     *      The signature is checked the way USDC checks the sender's
      *      authorization, so any sender that could fund a link can also
      *      cancel it, a smart account included. See `_signedBySender`.
      */
@@ -312,7 +317,7 @@ contract PolarisSend is EIP712, ReentrancyGuard {
     ) private view {
         if (linkKey == address(0) || sender == address(0)) revert ZeroAddress();
         if (keyUsed[linkKey]) revert LinkKeyUsed();
-        if (amount == 0 || amount > type(uint128).max) revert InvalidAmount();
+        if (amount == 0 || amount > MAX_AMOUNT) revert InvalidAmount();
         if (expiresAt < block.timestamp + MIN_LIFETIME || expiresAt > block.timestamp + MAX_EXPIRY) {
             revert InvalidExpiry();
         }
@@ -363,7 +368,7 @@ contract PolarisSend is EIP712, ReentrancyGuard {
     /// True if `sender` signed `digest`: an ECDSA signature from the sender's
     /// own key or, for an account with code, one its ERC-1271
     /// `isValidSignature` accepts for the same r, s, v packed into 65 bytes.
-    /// That is how AUSD verifies the sender's `ReceiveWithAuthorization`, so a
+    /// That is how USDC verifies the sender's `ReceiveWithAuthorization`, so a
     /// smart account (a Safe, say) that funded a link can cancel it rather
     /// than wait up to 30 days for a refund. ECDSA is tried first so that an
     /// EOA which has since delegated its code (EIP-7702) still cancels with

@@ -7,19 +7,21 @@ import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import {SignatureChecker} from "@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol";
 import {IERC1271} from "@openzeppelin/contracts/interfaces/IERC1271.sol";
 
-import {MockAUSD} from "../MockAUSD.sol";
+import {MockUSDC} from "../MockUSDC.sol";
 
 // Test doubles for PolarisSend's suite. Never deployed anywhere but the
 // Hardhat network: each one reproduces a token or account behaviour that
-// MockAUSD cannot, so a guard in PolarisSend has something to refuse.
+// MockUSDC cannot, so a guard in PolarisSend has something to refuse.
 
 /**
- * @title FeeOnTransferAUSD
- * @notice MockAUSD that burns 1% of every transfer between two holders, so the
+ * @title FeeOnTransferUSDC
+ * @notice MockUSDC that burns 1% of every transfer between two holders, so the
  *         payee receives less than the authorization names. PolarisSend must
  *         refuse to open a link that the escrow cannot fully back.
  */
-contract FeeOnTransferAUSD is MockAUSD {
+contract FeeOnTransferUSDC is MockUSDC {
+    constructor() MockUSDC("USDC") {}
+
     function _update(address from, address to, uint256 value) internal override {
         if (from == address(0) || to == address(0)) return super._update(from, to, value);
         uint256 fee = value / 100;
@@ -29,14 +31,14 @@ contract FeeOnTransferAUSD is MockAUSD {
 }
 
 /**
- * @title ERC1271AUSD
- * @notice An ERC-3009 token that verifies authorizations the way real AUSD
+ * @title ERC1271USDC
+ * @notice An ERC-3009 token that verifies authorizations the way real USDC
  *         does: through a signature checker that accepts ERC-1271 contract
  *         accounts, with the v, r, s overload packing them as r, s, v. Only
  *         `receiveWithAuthorization` is implemented, because that is all
  *         PolarisSend calls.
  */
-contract ERC1271AUSD is ERC20, EIP712 {
+contract ERC1271USDC is ERC20, EIP712 {
     bytes32 public constant RECEIVE_WITH_AUTHORIZATION_TYPEHASH = keccak256(
         "ReceiveWithAuthorization(address from,address to,uint256 value,uint256 validAfter,uint256 validBefore,bytes32 nonce)"
     );
@@ -49,7 +51,7 @@ contract ERC1271AUSD is ERC20, EIP712 {
     error InvalidAuthorizationSignature();
     error CallerMustBePayee();
 
-    constructor() ERC20("ERC-1271 AUSD", "AUSD") EIP712("ERC-1271 AUSD", "1") {}
+    constructor() ERC20("ERC-1271 USDC", "USDC") EIP712("ERC-1271 USDC", "1") {}
 
     function decimals() public pure override returns (uint8) {
         return 6;

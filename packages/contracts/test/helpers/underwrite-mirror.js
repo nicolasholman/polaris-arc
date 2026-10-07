@@ -30,7 +30,7 @@ const EXCHANGE_FUNDED_POINTS = 10n;
 const MIN_HISTORY_DAYS = 90n;
 const MIN_HISTORY_TXS = 10n;
 
-const USD = 1_000_000n; // AUSD has 6 decimals
+const USD = 1_000_000n; // USDC has 6 decimals
 
 const min = (a, b) => (a < b ? a : b);
 

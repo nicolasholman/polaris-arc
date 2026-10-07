@@ -1,6 +1,6 @@
 /**
  * PolarisCheckout: Pay now, Pay in 4 and Subscribe, each from the buyer's
- * signatures alone. Every buyer here is a fresh wallet that never holds MON,
+ * signatures alone. Every buyer here is a fresh wallet that never holds USDC (gas),
  * and every transaction is sent by a relayer, so a passing test proves the
  * flow needs nothing from the buyer but a signature. Tests are named for the
  * attack they refuse.
@@ -12,21 +12,22 @@ const { time, loadFixture } = require("@nomicfoundation/hardhat-network-helpers"
 const { MAX_UINT, signTyped, signPermit, signReceive, paymentId } = require("../helpers/sign");
 const { TYPES } = require("../../lib/eip712");
 
-const AUSD = (n) => ethers.parseUnits(String(n), 6);
+const USDC = (n) => ethers.parseUnits(String(n), 6);
 const DAY = 24 * 60 * 60;
 const WEEK = 7 * DAY;
 const MONTH = 30 * DAY;
 const ZERO_PERMIT = { value: 0n, deadline: 0n, v: 0, r: ethers.ZeroHash, s: ethers.ZeroHash };
 
-async function deployStack(tokenName = "MockAUSD") {
+async function deployStack(tokenName = "MockUSDC") {
   const [owner, relayer, merchant, rival, treasury, stranger] = await ethers.getSigners();
-  const ausd = await (await ethers.getContractFactory(tokenName)).deploy();
+  const F = await ethers.getContractFactory(tokenName);
+  const usdc = await (F.interface.deploy.inputs.length ? F.deploy("USDC") : F.deploy());
   const scores = await (await ethers.getContractFactory("ScoreManager")).deploy(owner.address);
   const engine = await (await ethers.getContractFactory("PolarisLoanEngine")).deploy(
-    owner.address, ausd, scores, treasury.address, 0, 60
+    owner.address, usdc, scores, treasury.address, 0, 60
   );
   const payments = await (await ethers.getContractFactory("PolarisPayments")).deploy(
-    owner.address, ausd, treasury.address, 60
+    owner.address, usdc, treasury.address, 60
   );
   const registry = await (await ethers.getContractFactory("MerchantRegistry")).deploy(owner.address);
   const checkout = await (await ethers.getContractFactory("PolarisCheckout")).deploy(
@@ -40,16 +41,16 @@ async function deployStack(tokenName = "MockAUSD") {
 
   await registry.connect(merchant).register("Studio", merchant.address, "");
   await registry.setActive(merchant.address, true);
-  await registry.setMaxOrderValue(merchant.address, AUSD(5_000));
+  await registry.setMaxOrderValue(merchant.address, USDC(5_000));
 
-  await ausd.mint(owner.address, AUSD(100_000));
-  await ausd.approve(engine, AUSD(100_000));
-  await engine.fund(AUSD(50_000));
+  await usdc.mint(owner.address, USDC(100_000));
+  await usdc.approve(engine, USDC(100_000));
+  await engine.fund(USDC(50_000));
 
   const buyer = ethers.Wallet.createRandom().connect(ethers.provider);
-  await ausd.mint(buyer.address, AUSD(2_000));
+  await usdc.mint(buyer.address, USDC(2_000));
 
-  return { ausd, scores, engine, payments, registry, checkout, owner, relayer, merchant, rival, treasury, stranger, buyer };
+  return { usdc, scores, engine, payments, registry, checkout, owner, relayer, merchant, rival, treasury, stranger, buyer };
 }
 
 describe("PolarisCheckout", () => {
@@ -66,7 +67,7 @@ describe("PolarisCheckout", () => {
     return {
       buyer,
       merchant: s.merchant.address,
-      principal: AUSD(200),
+      principal: USDC(200),
       installments: 4,
       interval: BigInt(WEEK),
       orderId: `order-${Math.random().toString(36).slice(2)}`,
@@ -82,7 +83,7 @@ describe("PolarisCheckout", () => {
 
   /** The buyer's permit to `spender`, shaped as openPlan/subscribe take it. */
   async function permitTo(signer, spender, value) {
-    const p = await signPermit(s.ausd, signer, typeof spender === "string" ? spender : await spender.getAddress(), value);
+    const p = await signPermit(s.usdc, signer, typeof spender === "string" ? spender : await spender.getAddress(), value);
     return { value: p.value, deadline: p.deadline, v: p.v, r: p.r, s: p.s };
   }
 
@@ -100,7 +101,7 @@ describe("PolarisCheckout", () => {
   describe("construction", () => {
     it("refuses a payments contract on another token, a mismatched ScoreManager, or a missing part", async () => {
       const F = await ethers.getContractFactory("PolarisCheckout");
-      const other = await (await ethers.getContractFactory("MockAUSD")).deploy();
+      const other = await (await ethers.getContractFactory("MockUSDC")).deploy("USDC");
       const otherPayments = await (await ethers.getContractFactory("PolarisPayments")).deploy(
         s.owner.address, other, s.treasury.address, 60
       );
@@ -111,7 +112,7 @@ describe("PolarisCheckout", () => {
     });
 
     it("exposes its wiring and the EIP-712 domain clients sign under", async () => {
-      expect(await s.checkout.stablecoin()).to.equal(await s.ausd.getAddress());
+      expect(await s.checkout.stablecoin()).to.equal(await s.usdc.getAddress());
       expect(await s.checkout.loanEngine()).to.equal(await s.engine.getAddress());
       expect(await s.checkout.payments()).to.equal(await s.payments.getAddress());
       expect(await s.checkout.scoreManager()).to.equal(await s.scores.getAddress());
@@ -126,8 +127,8 @@ describe("PolarisCheckout", () => {
   // ---------------------------------------------------------------------
   describe("Pay in 4", () => {
     it("a buyer opens a plan with two signatures and nothing else, and the merchant is paid the whole principal at once", async () => {
-      const merchantBefore = await s.ausd.balanceOf(s.merchant.address);
-      const poolBefore = await s.ausd.balanceOf(s.engine);
+      const merchantBefore = await s.usdc.balanceOf(s.merchant.address);
+      const poolBefore = await s.usdc.balanceOf(s.engine);
       const { intent, quote, tx } = await openPlan();
       const key = paymentId(s.merchant.address, intent.orderId);
       const opened = await (await tx).wait();
@@ -135,14 +136,14 @@ describe("PolarisCheckout", () => {
 
       await expect(tx)
         .to.emit(s.checkout, "PlanOpened")
-        .withArgs(key, s.merchant.address, s.buyer.address, 1n, intent.orderId, AUSD(200), quote.totalOwed, 4, WEEK, startedAt + BigInt(WEEK))
+        .withArgs(key, s.merchant.address, s.buyer.address, 1n, intent.orderId, USDC(200), quote.totalOwed, 4, WEEK, startedAt + BigInt(WEEK))
         .and.to.emit(s.engine, "LoanCreated")
-        .withArgs(1n, s.buyer.address, s.merchant.address, AUSD(200), quote.totalOwed, 4);
+        .withArgs(1n, s.buyer.address, s.merchant.address, USDC(200), quote.totalOwed, 4);
 
-      expect(await s.ausd.balanceOf(s.merchant.address)).to.equal(merchantBefore + AUSD(200), "paid in full, now");
-      expect(await s.ausd.balanceOf(s.engine)).to.equal(poolBefore - AUSD(200), "from the credit pool");
-      expect(await s.ausd.balanceOf(s.buyer.address)).to.equal(AUSD(2_000), "the buyer pays nothing at checkout");
-      expect(await s.ausd.allowance(s.buyer.address, s.engine)).to.equal(quote.permitValue);
+      expect(await s.usdc.balanceOf(s.merchant.address)).to.equal(merchantBefore + USDC(200), "paid in full, now");
+      expect(await s.usdc.balanceOf(s.engine)).to.equal(poolBefore - USDC(200), "from the credit pool");
+      expect(await s.usdc.balanceOf(s.buyer.address)).to.equal(USDC(2_000), "the buyer pays nothing at checkout");
+      expect(await s.usdc.allowance(s.buyer.address, s.engine)).to.equal(quote.permitValue);
       expect(await ethers.provider.getBalance(s.buyer.address)).to.equal(0n, "the buyer never held gas");
 
       const loan = await s.engine.getLoan(1);
@@ -151,20 +152,20 @@ describe("PolarisCheckout", () => {
       const order = await s.checkout.orderOf(s.merchant.address, intent.orderId);
       expect(order.kind).to.equal(2n); // PayIn4
       expect(order.buyer).to.equal(s.buyer.address);
-      expect(order.amount).to.equal(AUSD(200));
+      expect(order.amount).to.equal(USDC(200));
       expect(order.ref).to.equal(1n);
       expect(order.settledAt).to.equal(startedAt);
       expect(await s.checkout.nonces(s.buyer.address)).to.equal(1n);
     });
 
     it("prices a plan exactly as the engine does: $200 in 4 weekly is 4 x $50.38, $1.53 interest", async () => {
-      const q = await s.checkout.quotePlan(s.buyer.address, AUSD(200), 4, WEEK);
+      const q = await s.checkout.quotePlan(s.buyer.address, USDC(200), 4, WEEK);
       expect(q.interest).to.equal(1_534_246n);
-      expect(q.totalOwed).to.equal(AUSD(200) + 1_534_246n);
+      expect(q.totalOwed).to.equal(USDC(200) + 1_534_246n);
       expect(q.installmentAmount).to.equal(50_383_562n); // $50.38
-      expect(q.creditLimit).to.equal(AUSD(500)); // STARTING_SCORE tier
+      expect(q.creditLimit).to.equal(USDC(500)); // STARTING_SCORE tier
       expect(q.activeDebt).to.equal(0n);
-      expect(q.available).to.equal(AUSD(500));
+      expect(q.available).to.equal(USDC(500));
       expect(q.withinLimit).to.equal(true);
       expect(q.permitValue).to.equal(q.totalOwed);
 
@@ -174,11 +175,11 @@ describe("PolarisCheckout", () => {
       expect(await s.engine.installmentAmount(1)).to.equal(q.installmentAmount);
 
       // A second plan's permit must cover the first as well: permits replace allowances.
-      const q2 = await s.checkout.quotePlan(s.buyer.address, AUSD(100), 4, WEEK);
+      const q2 = await s.checkout.quotePlan(s.buyer.address, USDC(100), 4, WEEK);
       expect(q2.activeDebt).to.equal(q.totalOwed);
       expect(q2.permitValue).to.equal(q.totalOwed + q2.totalOwed);
-      expect(q2.available).to.equal(AUSD(500) - q.totalOwed);
-      const q3 = await s.checkout.quotePlan(s.buyer.address, AUSD(400), 4, WEEK);
+      expect(q2.available).to.equal(USDC(500) - q.totalOwed);
+      const q3 = await s.checkout.quotePlan(s.buyer.address, USDC(400), 4, WEEK);
       expect(q3.withinLimit).to.equal(false);
     });
 
@@ -187,11 +188,11 @@ describe("PolarisCheckout", () => {
       // no "paid today" row: instalment i falls due at start + (i + 1) * interval,
       // and the amounts follow the engine's ceiling ladder, not floor plus a
       // remainder on the last.
-      const before = await s.ausd.balanceOf(s.buyer.address);
+      const before = await s.usdc.balanceOf(s.buyer.address);
       const { tx } = await openPlan();
       const receipt = await (await tx).wait();
       const startedAt = BigInt((await ethers.provider.getBlock(receipt.blockNumber)).timestamp);
-      expect(await s.ausd.balanceOf(s.buyer.address)).to.equal(before, "nothing collected at checkout");
+      expect(await s.usdc.balanceOf(s.buyer.address)).to.equal(before, "nothing collected at checkout");
 
       const opened = receipt.logs.map((l) => { try { return s.checkout.interface.parseLog(l); } catch { return null; } }).find((e) => e?.name === "PlanOpened");
       expect(opened.args.firstDueAt).to.equal(startedAt + BigInt(WEEK));
@@ -207,9 +208,9 @@ describe("PolarisCheckout", () => {
     it("a second plan opens with a permit sized for both, and the first keeps its allowance", async () => {
       const first = await openPlan();
       await first.tx;
-      const second = await openPlan(s.buyer, { principal: AUSD(100) });
+      const second = await openPlan(s.buyer, { principal: USDC(100) });
       await expect(second.tx).to.emit(s.checkout, "PlanOpened");
-      expect(await s.ausd.allowance(s.buyer.address, s.engine)).to.equal(first.quote.totalOwed + second.quote.totalOwed);
+      expect(await s.usdc.allowance(s.buyer.address, s.engine)).to.equal(first.quote.totalOwed + second.quote.totalOwed);
       expect(await s.engine.activeDebtOf(s.buyer.address)).to.equal(first.quote.totalOwed + second.quote.totalOwed);
     });
 
@@ -228,7 +229,7 @@ describe("PolarisCheckout", () => {
       const sig = await signPlan(s.buyer, intent);
       for (const change of [
         { merchant: s.rival.address },
-        { principal: AUSD(300) },
+        { principal: USDC(300) },
         { installments: 2 },
         { interval: BigInt(DAY) },
         { orderId: "someone-elses-order" },
@@ -268,7 +269,7 @@ describe("PolarisCheckout", () => {
     it("a replayed permit cannot open a second plan: the allowance it set backs the first plan only", async () => {
       const first = await openPlan();
       await first.tx;
-      const intent = await planIntent({ principal: AUSD(100) });
+      const intent = await planIntent({ principal: USDC(100) });
       await expect(
         s.checkout.connect(s.relayer).openPlan(intent, await signPlan(s.buyer, intent), first.permit)
       ).to.be.revertedWithCustomError(s.engine, "InsufficientAllowance");
@@ -279,7 +280,7 @@ describe("PolarisCheckout", () => {
       const intent = await planIntent();
       const q = await s.checkout.quotePlan(s.buyer.address, intent.principal, 4, WEEK);
       const permit = await permitTo(s.buyer, s.engine, q.permitValue);
-      await s.ausd
+      await s.usdc
         .connect(s.stranger)
         .permit(s.buyer.address, s.engine, permit.value, permit.deadline, permit.v, permit.r, permit.s);
 
@@ -305,7 +306,7 @@ describe("PolarisCheckout", () => {
     it("a buyer who changes their mind retires a signed intent with invalidateNonce", async () => {
       // A buyer who happens to hold gas.
       const buyer = s.stranger;
-      await s.ausd.mint(buyer.address, AUSD(1_000));
+      await s.usdc.mint(buyer.address, USDC(1_000));
       const intent = await planIntent({ buyer: buyer.address });
       const sig = await signPlan(buyer, intent);
       const q = await s.checkout.quotePlan(buyer.address, intent.principal, 4, WEEK);
@@ -320,19 +321,19 @@ describe("PolarisCheckout", () => {
     });
 
     it("the credit line decides: a plan beyond what the buyer may draw is refused", async () => {
-      const { tx } = await openPlan(s.buyer, { principal: AUSD(499) }); // + $3.83 interest > $500
+      const { tx } = await openPlan(s.buyer, { principal: USDC(499) }); // + $3.83 interest > $500
       await expect(tx).to.be.revertedWithCustomError(s.engine, "ExceedsCreditLimit");
       // Once underwriting is required, a buyer with no DON report gets nothing unsecured.
       await s.scores.setRequireUnderwriting(true);
-      const { tx: tx2 } = await openPlan(s.buyer, { principal: AUSD(20) });
+      const { tx: tx2 } = await openPlan(s.buyer, { principal: USDC(20) });
       await expect(tx2).to.be.revertedWithCustomError(s.engine, "ExceedsCreditLimit");
     });
 
     it("pays in 4 only merchants the registry has activated, up to their cap", async () => {
       const { tx } = await openPlan(s.buyer, { merchant: s.rival.address });
       await expect(tx).to.be.revertedWithCustomError(s.engine, "MerchantNotEligible");
-      await s.registry.setMaxOrderValue(s.merchant.address, AUSD(100));
-      const { tx: tx2 } = await openPlan(s.buyer, { principal: AUSD(150) });
+      await s.registry.setMaxOrderValue(s.merchant.address, USDC(100));
+      const { tx: tx2 } = await openPlan(s.buyer, { principal: USDC(150) });
       await expect(tx2).to.be.revertedWithCustomError(s.engine, "MerchantNotEligible");
     });
 
@@ -351,21 +352,21 @@ describe("PolarisCheckout", () => {
     });
 
     it("a quoted order can only be paid in 4 at its quoted price", async () => {
-      const intent = await planIntent({ principal: AUSD(150) });
+      const intent = await planIntent({ principal: USDC(150) });
       const key = paymentId(s.merchant.address, intent.orderId);
-      await s.payments.connect(s.merchant).quoteOrder(s.merchant.address, key, AUSD(200));
+      await s.payments.connect(s.merchant).quoteOrder(s.merchant.address, key, USDC(200));
       await expect(
         s.checkout.connect(s.relayer).openPlan(intent, await signPlan(s.buyer, intent), ZERO_PERMIT)
       )
         .to.be.revertedWithCustomError(s.checkout, "WrongAmount")
-        .withArgs(AUSD(200), AUSD(150));
-      await expect((await openPlan(s.buyer, { orderId: intent.orderId, principal: AUSD(200) })).tx).to.emit(s.checkout, "PlanOpened");
+        .withArgs(USDC(200), USDC(150));
+      await expect((await openPlan(s.buyer, { orderId: intent.orderId, principal: USDC(200) })).tx).to.emit(s.checkout, "PlanOpened");
     });
 
     it("only the checkout originates plans: the relayer, the owner and strangers are refused by the engine", async () => {
       for (const who of [s.relayer, s.owner, s.stranger]) {
         await expect(
-          s.engine.connect(who).createLoan(s.buyer.address, s.merchant.address, AUSD(10), 4, WEEK)
+          s.engine.connect(who).createLoan(s.buyer.address, s.merchant.address, USDC(10), 4, WEEK)
         ).to.be.revertedWithCustomError(s.engine, "NotOriginator");
       }
     });
@@ -374,10 +375,10 @@ describe("PolarisCheckout", () => {
       const key = ethers.Wallet.createRandom().connect(ethers.provider);
       const account = await (await ethers.getContractFactory("SmartAccount")).deploy(key.address);
       const addr = await account.getAddress();
-      await s.ausd.mint(addr, AUSD(1_000));
+      await s.usdc.mint(addr, USDC(1_000));
       await s.owner.sendTransaction({ to: key.address, value: ethers.parseEther("1") }); // the account's owner sends one approve
-      const q = await s.checkout.quotePlan(addr, AUSD(200), 4, WEEK);
-      await account.connect(key).execute(await s.ausd.getAddress(), s.ausd.interface.encodeFunctionData("approve", [await s.engine.getAddress(), q.permitValue]));
+      const q = await s.checkout.quotePlan(addr, USDC(200), 4, WEEK);
+      await account.connect(key).execute(await s.usdc.getAddress(), s.usdc.interface.encodeFunctionData("approve", [await s.engine.getAddress(), q.permitValue]));
 
       const intent = await planIntent({ buyer: addr });
       await expect(
@@ -385,7 +386,7 @@ describe("PolarisCheckout", () => {
       ).to.be.revertedWithCustomError(s.checkout, "InvalidSignature");
       await expect(s.checkout.connect(s.relayer).openPlan(intent, await signPlan(key, intent), ZERO_PERMIT))
         .to.emit(s.checkout, "PlanOpened")
-        .withArgs(paymentId(s.merchant.address, intent.orderId), s.merchant.address, addr, 1n, intent.orderId, AUSD(200), q.totalOwed, 4, WEEK, (x) => x > 0n);
+        .withArgs(paymentId(s.merchant.address, intent.orderId), s.merchant.address, addr, 1n, intent.orderId, USDC(200), q.totalOwed, 4, WEEK, (x) => x > 0n);
     });
 
     it("the digest view is exactly what the buyer signs", async () => {
@@ -403,7 +404,7 @@ describe("PolarisCheckout", () => {
   // ---------------------------------------------------------------------
   describe("Pay now", () => {
     async function authorize(signer, merchant, orderId, amount, opts) {
-      return signReceive(s.ausd, signer, await s.payments.getAddress(), amount, paymentId(merchant, orderId), opts);
+      return signReceive(s.usdc, signer, await s.payments.getAddress(), amount, paymentId(merchant, orderId), opts);
     }
 
     function relayPay(buyer, merchant, orderId, a, amount = a.value) {
@@ -413,65 +414,65 @@ describe("PolarisCheckout", () => {
     }
 
     it("a buyer pays an order with one signature; CheckoutPaid and PaymentMade agree", async () => {
-      const a = await authorize(s.buyer, s.merchant.address, "INV-1", AUSD(200));
+      const a = await authorize(s.buyer, s.merchant.address, "INV-1", USDC(200));
       const key = paymentId(s.merchant.address, "INV-1");
-      const before = await s.ausd.balanceOf(s.merchant.address);
+      const before = await s.usdc.balanceOf(s.merchant.address);
 
       const tx = relayPay(s.buyer.address, s.merchant.address, "INV-1", a);
       await expect(tx)
         .to.emit(s.checkout, "CheckoutPaid")
-        .withArgs(key, s.merchant.address, s.buyer.address, "INV-1", AUSD(200), AUSD(1))
+        .withArgs(key, s.merchant.address, s.buyer.address, "INV-1", USDC(200), USDC(1))
         .and.to.emit(s.payments, "PaymentMade")
-        .withArgs(key, s.buyer.address, s.merchant.address, AUSD(200), AUSD(1), "INV-1");
+        .withArgs(key, s.buyer.address, s.merchant.address, USDC(200), USDC(1), "INV-1");
 
-      expect(await s.ausd.balanceOf(s.merchant.address)).to.equal(before + AUSD(199));
-      expect(await s.ausd.balanceOf(s.treasury.address)).to.equal(AUSD(1));
-      expect(await s.ausd.balanceOf(await s.checkout.getAddress())).to.equal(0n);
+      expect(await s.usdc.balanceOf(s.merchant.address)).to.equal(before + USDC(199));
+      expect(await s.usdc.balanceOf(s.treasury.address)).to.equal(USDC(1));
+      expect(await s.usdc.balanceOf(await s.checkout.getAddress())).to.equal(0n);
       const order = await s.checkout.orderOf(s.merchant.address, "INV-1");
       expect(order.kind).to.equal(1n); // PayNow
       expect(order.buyer).to.equal(s.buyer.address);
-      expect(order.amount).to.equal(AUSD(200));
+      expect(order.amount).to.equal(USDC(200));
       expect(await ethers.provider.getBalance(s.buyer.address)).to.equal(0n);
     });
 
     it("a relayer cannot redirect a payment to another merchant, another order or another amount", async () => {
-      const a = await authorize(s.buyer, s.merchant.address, "INV-1", AUSD(200));
-      await expect(relayPay(s.buyer.address, s.rival.address, "INV-1", a)).to.be.revertedWithCustomError(s.ausd, "InvalidAuthorizationSignature");
-      await expect(relayPay(s.buyer.address, s.merchant.address, "INV-2", a)).to.be.revertedWithCustomError(s.ausd, "InvalidAuthorizationSignature");
-      await expect(relayPay(s.buyer.address, s.merchant.address, "INV-1", a, AUSD(300))).to.be.revertedWithCustomError(s.ausd, "InvalidAuthorizationSignature");
+      const a = await authorize(s.buyer, s.merchant.address, "INV-1", USDC(200));
+      await expect(relayPay(s.buyer.address, s.rival.address, "INV-1", a)).to.be.revertedWithCustomError(s.usdc, "InvalidAuthorizationSignature");
+      await expect(relayPay(s.buyer.address, s.merchant.address, "INV-2", a)).to.be.revertedWithCustomError(s.usdc, "InvalidAuthorizationSignature");
+      await expect(relayPay(s.buyer.address, s.merchant.address, "INV-1", a, USDC(300))).to.be.revertedWithCustomError(s.usdc, "InvalidAuthorizationSignature");
       expect((await s.checkout.orderOf(s.rival.address, "INV-1")).kind).to.equal(0n, "a failed payment settles nothing");
       await expect(relayPay(s.buyer.address, s.merchant.address, "INV-1", a)).to.emit(s.checkout, "CheckoutPaid");
     });
 
     it("a replayed authorization cannot pay an order twice", async () => {
-      const a = await authorize(s.buyer, s.merchant.address, "INV-1", AUSD(50));
+      const a = await authorize(s.buyer, s.merchant.address, "INV-1", USDC(50));
       await relayPay(s.buyer.address, s.merchant.address, "INV-1", a);
       await expect(relayPay(s.buyer.address, s.merchant.address, "INV-1", a)).to.be.revertedWithCustomError(s.checkout, "OrderAlreadySettled");
     });
 
     it("an order is settled once, in one mode: paid now it cannot become a plan, and a plan cannot be paid now", async () => {
       // Paid now through the checkout.
-      const a = await authorize(s.buyer, s.merchant.address, "INV-1", AUSD(200));
+      const a = await authorize(s.buyer, s.merchant.address, "INV-1", USDC(200));
       await relayPay(s.buyer.address, s.merchant.address, "INV-1", a);
       await expect((await openPlan(s.buyer, { orderId: "INV-1" })).tx).to.be.revertedWithCustomError(s.checkout, "OrderAlreadySettled");
 
       // Paid directly on PolarisPayments with the same kind of authorization: the checkout still sees it.
-      const b = await authorize(s.buyer, s.merchant.address, "INV-2", AUSD(200));
+      const b = await authorize(s.buyer, s.merchant.address, "INV-2", USDC(200));
       await s.payments
         .connect(s.relayer)
-        .payWithAuthorization(s.buyer.address, s.merchant.address, AUSD(200), "INV-2", b.validAfter, b.validBefore, b.v, b.r, b.s);
+        .payWithAuthorization(s.buyer.address, s.merchant.address, USDC(200), "INV-2", b.validAfter, b.validBefore, b.v, b.r, b.s);
       await expect((await openPlan(s.buyer, { orderId: "INV-2" })).tx).to.be.revertedWithCustomError(s.checkout, "OrderAlreadySettled");
 
       // Opened as a plan: it cannot then be paid now as well.
       await (await openPlan(s.buyer, { orderId: "INV-3" })).tx;
-      const c = await authorize(s.buyer, s.merchant.address, "INV-3", AUSD(200));
+      const c = await authorize(s.buyer, s.merchant.address, "INV-3", USDC(200));
       await expect(relayPay(s.buyer.address, s.merchant.address, "INV-3", c)).to.be.revertedWithCustomError(s.checkout, "OrderAlreadySettled");
     });
 
     it("a Pay now authorization left over from a timed-out relay cannot charge a buyer whose order became a plan", async () => {
       // The buyer signs Pay now for INV-42; the relay times out and the
       // authorization is never submitted. The buyer then chooses Pay in 4.
-      const a = await authorize(s.buyer, s.merchant.address, "INV-42", AUSD(200));
+      const a = await authorize(s.buyer, s.merchant.address, "INV-42", USDC(200));
       await (await openPlan(s.buyer, { orderId: "INV-42" })).tx;
       const key = paymentId(s.merchant.address, "INV-42");
       expect((await s.checkout.orderOf(s.merchant.address, "INV-42")).kind).to.equal(2n); // PayIn4
@@ -481,58 +482,58 @@ describe("PolarisCheckout", () => {
       await expect(
         s.payments
           .connect(s.stranger)
-          .payWithAuthorization(s.buyer.address, s.merchant.address, AUSD(200), "INV-42", a.validAfter, a.validBefore, a.v, a.r, a.s)
+          .payWithAuthorization(s.buyer.address, s.merchant.address, USDC(200), "INV-42", a.validAfter, a.validBefore, a.v, a.r, a.s)
       )
         .to.be.revertedWithCustomError(s.payments, "OrderAlreadySettled")
         .withArgs(key);
       // Nor can anyone record a payment on it with `pay`, or re-price it.
-      await s.ausd.mint(s.stranger.address, AUSD(200));
-      await s.ausd.connect(s.stranger).approve(s.payments, AUSD(200));
-      await expect(s.payments.connect(s.stranger).pay(s.merchant.address, AUSD(200), "INV-42"))
+      await s.usdc.mint(s.stranger.address, USDC(200));
+      await s.usdc.connect(s.stranger).approve(s.payments, USDC(200));
+      await expect(s.payments.connect(s.stranger).pay(s.merchant.address, USDC(200), "INV-42"))
         .to.be.revertedWithCustomError(s.payments, "OrderAlreadySettled")
         .withArgs(key);
-      await expect(s.payments.connect(s.merchant).quoteOrder(s.merchant.address, key, AUSD(1)))
+      await expect(s.payments.connect(s.merchant).quoteOrder(s.merchant.address, key, USDC(1)))
         .to.be.revertedWithCustomError(s.payments, "OrderAlreadySettled")
         .withArgs(key);
 
-      expect(await s.ausd.balanceOf(s.buyer.address)).to.equal(AUSD(2_000), "charged only by the plan's instalments");
+      expect(await s.usdc.balanceOf(s.buyer.address)).to.equal(USDC(2_000), "charged only by the plan's instalments");
       expect((await s.payments.paymentFor(s.merchant.address, "INV-42")).paidAt).to.equal(0n);
     });
 
     it("a leftover Pay now authorization cannot charge a buyer whose order became a subscription", async () => {
-      await s.payments.connect(s.merchant).createPlan(AUSD(10), MONTH, "Pro");
+      await s.payments.connect(s.merchant).createPlan(USDC(10), MONTH, "Pro");
       const planId = await s.payments.planCount();
-      const a = await authorize(s.buyer, s.merchant.address, "SUB-7", AUSD(10));
+      const a = await authorize(s.buyer, s.merchant.address, "SUB-7", USDC(10));
       const intent = {
         buyer: s.buyer.address,
         merchant: s.merchant.address,
         planId,
-        pricePerPeriod: AUSD(10),
+        pricePerPeriod: USDC(10),
         periodSeconds: BigInt(MONTH),
         orderId: "SUB-7",
         nonce: await s.checkout.nonces(s.buyer.address),
         deadline: (await now()) + 600n,
       };
       const sig = (await signTyped(s.buyer, s.checkout, { SubscribeIntent: TYPES.PolarisCheckout.SubscribeIntent }, intent)).signature;
-      await s.checkout.connect(s.relayer).subscribe(intent, sig, await permitTo(s.buyer, s.payments, AUSD(120)));
-      const afterFirstPeriod = await s.ausd.balanceOf(s.buyer.address);
+      await s.checkout.connect(s.relayer).subscribe(intent, sig, await permitTo(s.buyer, s.payments, USDC(120)));
+      const afterFirstPeriod = await s.usdc.balanceOf(s.buyer.address);
 
       await expect(
         s.payments
           .connect(s.stranger)
-          .payWithAuthorization(s.buyer.address, s.merchant.address, AUSD(10), "SUB-7", a.validAfter, a.validBefore, a.v, a.r, a.s)
+          .payWithAuthorization(s.buyer.address, s.merchant.address, USDC(10), "SUB-7", a.validAfter, a.validBefore, a.v, a.r, a.s)
       ).to.be.revertedWithCustomError(s.payments, "OrderAlreadySettled");
-      expect(await s.ausd.balanceOf(s.buyer.address)).to.equal(afterFirstPeriod);
+      expect(await s.usdc.balanceOf(s.buyer.address)).to.equal(afterFirstPeriod);
     });
 
     it("the record of a plan's order lives on PolarisPayments, so it outlasts replacing or switching off the checkout", async () => {
-      const a = await authorize(s.buyer, s.merchant.address, "INV-9", AUSD(200));
+      const a = await authorize(s.buyer, s.merchant.address, "INV-9", USDC(200));
       const { intent } = await openPlan(s.buyer, { orderId: "INV-9" });
       const key = paymentId(s.merchant.address, "INV-9");
       const submit = () =>
         s.payments
           .connect(s.stranger)
-          .payWithAuthorization(s.buyer.address, s.merchant.address, AUSD(200), "INV-9", a.validAfter, a.validBefore, a.v, a.r, a.s);
+          .payWithAuthorization(s.buyer.address, s.merchant.address, USDC(200), "INV-9", a.validAfter, a.validBefore, a.v, a.r, a.s);
 
       // A new checkout sees the order settled, though its own book is empty.
       const next = await (await ethers.getContractFactory("PolarisCheckout")).deploy(s.owner.address, s.engine, s.payments, s.scores);
@@ -548,7 +549,7 @@ describe("PolarisCheckout", () => {
       // Switching relayed checkouts off does not reopen it either.
       await s.payments.setCheckout(ethers.ZeroAddress);
       await expect(submit()).to.be.revertedWithCustomError(s.payments, "OrderAlreadySettled");
-      expect(await s.ausd.balanceOf(s.buyer.address)).to.equal(AUSD(2_000));
+      expect(await s.usdc.balanceOf(s.buyer.address)).to.equal(USDC(2_000));
     });
 
     it("only the appointed checkout can mark an order settled; a replaced one can no longer open plans", async () => {
@@ -557,10 +558,10 @@ describe("PolarisCheckout", () => {
         await expect(s.payments.connect(who).markSettledByCheckout(key)).to.be.revertedWithCustomError(s.payments, "NotCheckout");
       }
       // An order already paid cannot be marked, so a plan can never be opened on it.
-      const a = await authorize(s.buyer, s.merchant.address, "INV-X", AUSD(200));
+      const a = await authorize(s.buyer, s.merchant.address, "INV-X", USDC(200));
       await s.payments
         .connect(s.relayer)
-        .payWithAuthorization(s.buyer.address, s.merchant.address, AUSD(200), "INV-X", a.validAfter, a.validBefore, a.v, a.r, a.s);
+        .payWithAuthorization(s.buyer.address, s.merchant.address, USDC(200), "INV-X", a.validAfter, a.validBefore, a.v, a.r, a.s);
       const checkoutAddr = await s.checkout.getAddress();
       await ethers.provider.send("hardhat_impersonateAccount", [checkoutAddr]);
       await ethers.provider.send("hardhat_setBalance", [checkoutAddr, "0xDE0B6B3A7640000"]);
@@ -577,11 +578,11 @@ describe("PolarisCheckout", () => {
     });
 
     it("a quoted order can only be paid now at its price", async () => {
-      await s.payments.connect(s.merchant).quoteOrder(s.merchant.address, paymentId(s.merchant.address, "INV-Q"), AUSD(80));
-      const a = await authorize(s.buyer, s.merchant.address, "INV-Q", AUSD(1));
+      await s.payments.connect(s.merchant).quoteOrder(s.merchant.address, paymentId(s.merchant.address, "INV-Q"), USDC(80));
+      const a = await authorize(s.buyer, s.merchant.address, "INV-Q", USDC(1));
       await expect(relayPay(s.buyer.address, s.merchant.address, "INV-Q", a))
         .to.be.revertedWithCustomError(s.checkout, "WrongAmount")
-        .withArgs(AUSD(80), AUSD(1));
+        .withArgs(USDC(80), USDC(1));
     });
   });
 
@@ -590,7 +591,7 @@ describe("PolarisCheckout", () => {
     let planId;
 
     beforeEach(async () => {
-      await s.payments.connect(s.merchant).createPlan(AUSD(10), MONTH, "Pro");
+      await s.payments.connect(s.merchant).createPlan(USDC(10), MONTH, "Pro");
       planId = await s.payments.planCount();
     });
 
@@ -600,7 +601,7 @@ describe("PolarisCheckout", () => {
         buyer,
         merchant: s.merchant.address,
         planId,
-        pricePerPeriod: AUSD(10),
+        pricePerPeriod: USDC(10),
         periodSeconds: BigInt(MONTH),
         orderId: `sub-${Math.random().toString(36).slice(2)}`,
         nonce: await s.checkout.nonces(buyer),
@@ -615,35 +616,35 @@ describe("PolarisCheckout", () => {
 
     it("a buyer subscribes with an intent and a year's permit; period one is charged and renewals draw on schedule", async () => {
       const intent = await subIntent();
-      const permit = await permitTo(s.buyer, s.payments, AUSD(120));
-      const merchantBefore = await s.ausd.balanceOf(s.merchant.address);
+      const permit = await permitTo(s.buyer, s.payments, USDC(120));
+      const merchantBefore = await s.usdc.balanceOf(s.merchant.address);
 
       const tx = s.checkout.connect(s.relayer).subscribe(intent, await signSub(s.buyer, intent), permit);
       const receipt = await (await tx).wait();
       const at = BigInt((await ethers.provider.getBlock(receipt.blockNumber)).timestamp);
       await expect(tx)
         .to.emit(s.checkout, "SubscriptionStarted")
-        .withArgs(paymentId(s.merchant.address, intent.orderId), s.merchant.address, s.buyer.address, 1n, planId, intent.orderId, AUSD(10), MONTH, at + BigInt(MONTH))
+        .withArgs(paymentId(s.merchant.address, intent.orderId), s.merchant.address, s.buyer.address, 1n, planId, intent.orderId, USDC(10), MONTH, at + BigInt(MONTH))
         .and.to.emit(s.payments, "Subscribed")
         .withArgs(1n, planId, s.buyer.address);
 
-      expect(await s.ausd.balanceOf(s.merchant.address)).to.equal(merchantBefore + AUSD(9.95));
-      expect(await s.ausd.allowance(s.buyer.address, s.payments)).to.equal(AUSD(110));
+      expect(await s.usdc.balanceOf(s.merchant.address)).to.equal(merchantBefore + USDC(9.95));
+      expect(await s.usdc.allowance(s.buyer.address, s.payments)).to.equal(USDC(110));
       const order = await s.checkout.orderOf(s.merchant.address, intent.orderId);
       expect(order.kind).to.equal(3n); // Subscription
       expect(order.ref).to.equal(1n);
 
       await time.increase(MONTH);
-      await expect(s.payments.connect(s.stranger).chargeDue(1)).to.emit(s.payments, "SubscriptionCharged").withArgs(1n, AUSD(10), AUSD(0.05), 2);
+      await expect(s.payments.connect(s.stranger).chargeDue(1)).to.emit(s.payments, "SubscriptionCharged").withArgs(1n, USDC(10), USDC(0.05), 2);
       expect(await ethers.provider.getBalance(s.buyer.address)).to.equal(0n);
     });
 
     it("a relayer cannot swap in another plan, or subscribe the buyer at terms they did not sign", async () => {
-      await s.payments.connect(s.merchant).createPlan(AUSD(500), MONTH, "Pricier");
+      await s.payments.connect(s.merchant).createPlan(USDC(500), MONTH, "Pricier");
       const pricier = await s.payments.planCount();
       const intent = await subIntent();
       const sig = await signSub(s.buyer, intent);
-      const permit = await permitTo(s.buyer, s.payments, AUSD(1_000));
+      const permit = await permitTo(s.buyer, s.payments, USDC(1_000));
 
       // The plan id is signed.
       await expect(
@@ -673,7 +674,7 @@ describe("PolarisCheckout", () => {
     it("a replayed subscribe intent is refused, and a retired plan cannot be joined", async () => {
       const intent = await subIntent();
       const sig = await signSub(s.buyer, intent);
-      const permit = await permitTo(s.buyer, s.payments, AUSD(120));
+      const permit = await permitTo(s.buyer, s.payments, USDC(120));
       await s.checkout.connect(s.relayer).subscribe(intent, sig, permit);
       await expect(s.checkout.connect(s.relayer).subscribe(intent, sig, permit)).to.be.revertedWithCustomError(s.checkout, "InvalidAccountNonce");
 
@@ -688,7 +689,7 @@ describe("PolarisCheckout", () => {
       const plan = await planIntent(); // nonce 0
       const planSig = await signPlan(s.buyer, plan);
       const sub = await subIntent(); // nonce 0 as well
-      await s.checkout.connect(s.relayer).subscribe(sub, await signSub(s.buyer, sub), await permitTo(s.buyer, s.payments, AUSD(120)));
+      await s.checkout.connect(s.relayer).subscribe(sub, await signSub(s.buyer, sub), await permitTo(s.buyer, s.payments, USDC(120)));
       await expect(s.checkout.connect(s.relayer).openPlan(plan, planSig, ZERO_PERMIT)).to.be.revertedWithCustomError(s.checkout, "InvalidAccountNonce");
     });
 
@@ -713,9 +714,9 @@ describe("PolarisCheckout", () => {
       await s.checkout.pause();
 
       await expect((await openPlan()).tx).to.be.revertedWithCustomError(s.checkout, "EnforcedPause");
-      const a = await signReceive(s.ausd, s.buyer, await s.payments.getAddress(), AUSD(5), paymentId(s.merchant.address, "P"));
+      const a = await signReceive(s.usdc, s.buyer, await s.payments.getAddress(), USDC(5), paymentId(s.merchant.address, "P"));
       await expect(
-        s.checkout.connect(s.relayer).pay(s.buyer.address, s.merchant.address, AUSD(5), "P", a.validAfter, a.validBefore, a.v, a.r, a.s)
+        s.checkout.connect(s.relayer).pay(s.buyer.address, s.merchant.address, USDC(5), "P", a.validAfter, a.validBefore, a.v, a.r, a.s)
       ).to.be.revertedWithCustomError(s.checkout, "EnforcedPause");
 
       await time.increase(WEEK);
@@ -730,38 +731,38 @@ describe("PolarisCheckout", () => {
   // ---------------------------------------------------------------------
   describe("reentrancy", () => {
     it("a merchant handed control mid-payout cannot reenter the checkout", async () => {
-      s = await deployStack("HookAUSD");
+      s = await deployStack("HookUSDC");
       const inner = await planIntent({ orderId: "inner" });
       const innerSig = await signPlan(s.buyer, inner);
       const data = s.checkout.interface.encodeFunctionData("openPlan", [inner, innerSig, ZERO_PERMIT]);
-      await s.ausd.setHook(s.merchant.address, await s.checkout.getAddress(), data);
+      await s.usdc.setHook(s.merchant.address, await s.checkout.getAddress(), data);
 
       const intent = await planIntent({ orderId: "outer", nonce: 0n });
-      const q = await s.checkout.quotePlan(s.buyer.address, AUSD(200), 4, WEEK);
+      const q = await s.checkout.quotePlan(s.buyer.address, USDC(200), 4, WEEK);
       const permit = await permitTo(s.buyer, s.engine, q.permitValue);
       await expect(s.checkout.connect(s.relayer).openPlan(intent, await signPlan(s.buyer, intent), permit)).to.emit(s.checkout, "PlanOpened");
 
-      expect(await s.ausd.hookCalled()).to.equal(true);
-      expect(await s.ausd.hookOk()).to.equal(false);
-      expect(await s.ausd.hookReturn()).to.equal(s.checkout.interface.getError("ReentrancyGuardReentrantCall").selector);
+      expect(await s.usdc.hookCalled()).to.equal(true);
+      expect(await s.usdc.hookOk()).to.equal(false);
+      expect(await s.usdc.hookReturn()).to.equal(s.checkout.interface.getError("ReentrancyGuardReentrantCall").selector);
       expect(await s.engine.loanCount()).to.equal(1n);
     });
 
     it("a merchant handed control while a subscription's first period is paid cannot reenter the checkout", async () => {
-      s = await deployStack("HookAUSD");
-      await s.payments.connect(s.merchant).createPlan(AUSD(10), MONTH, "Pro");
+      s = await deployStack("HookUSDC");
+      await s.payments.connect(s.merchant).createPlan(USDC(10), MONTH, "Pro");
       const planId = await s.payments.planCount();
-      const a = await signReceive(s.ausd, s.buyer, await s.payments.getAddress(), AUSD(5), paymentId(s.merchant.address, "inner"));
+      const a = await signReceive(s.usdc, s.buyer, await s.payments.getAddress(), USDC(5), paymentId(s.merchant.address, "inner"));
       const data = s.checkout.interface.encodeFunctionData("pay", [
-        s.buyer.address, s.merchant.address, AUSD(5), "inner", a.validAfter, a.validBefore, a.v, a.r, a.s,
+        s.buyer.address, s.merchant.address, USDC(5), "inner", a.validAfter, a.validBefore, a.v, a.r, a.s,
       ]);
-      await s.ausd.setHook(s.merchant.address, await s.checkout.getAddress(), data);
+      await s.usdc.setHook(s.merchant.address, await s.checkout.getAddress(), data);
 
       const intent = {
         buyer: s.buyer.address,
         merchant: s.merchant.address,
         planId,
-        pricePerPeriod: AUSD(10),
+        pricePerPeriod: USDC(10),
         periodSeconds: BigInt(MONTH),
         orderId: "outer",
         nonce: 0n,
@@ -769,12 +770,12 @@ describe("PolarisCheckout", () => {
       };
       const sig = (await signTyped(s.buyer, s.checkout, { SubscribeIntent: TYPES.PolarisCheckout.SubscribeIntent }, intent)).signature;
       await expect(
-        s.checkout.connect(s.relayer).subscribe(intent, sig, await permitTo(s.buyer, s.payments, AUSD(120)))
+        s.checkout.connect(s.relayer).subscribe(intent, sig, await permitTo(s.buyer, s.payments, USDC(120)))
       ).to.emit(s.checkout, "SubscriptionStarted");
 
-      expect(await s.ausd.hookCalled()).to.equal(true);
-      expect(await s.ausd.hookOk()).to.equal(false);
-      expect(await s.ausd.hookReturn()).to.equal(s.checkout.interface.getError("ReentrancyGuardReentrantCall").selector);
+      expect(await s.usdc.hookCalled()).to.equal(true);
+      expect(await s.usdc.hookOk()).to.equal(false);
+      expect(await s.usdc.hookReturn()).to.equal(s.checkout.interface.getError("ReentrancyGuardReentrantCall").selector);
       expect((await s.checkout.orderOf(s.merchant.address, "inner")).kind).to.equal(0n);
     });
   });

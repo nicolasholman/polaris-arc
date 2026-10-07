@@ -62,3 +62,4 @@ apps/*/CLAUDE.md
 packages/contracts/deployments/arc-local.json
 services/*/.data/
 .env.local
+packages/contracts/deployments/.keys/

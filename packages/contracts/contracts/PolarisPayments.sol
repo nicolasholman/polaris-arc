@@ -82,7 +82,7 @@ contract PolarisPayments is Ownable, ReentrancyGuard, EIP712 {
 
     /**
      * @notice Accounts that may publish plans and quote orders for merchants.
-     * @dev A merchant onboarded through Polaris for Business holds no MON, so
+     * @dev A merchant onboarded through Polaris for Business holds no USDC (gas), so
      *      the relayer publishes plans and pins order prices in its name.
      *
      *      The role is global, and the operator chooses which merchant it
@@ -124,7 +124,7 @@ contract PolarisPayments is Ownable, ReentrancyGuard, EIP712 {
      *         and payment id. Zero means the order was never quoted.
      * @dev An order id is only a string, so without a quote nothing on chain
      *      ties an order to a price and whoever pays an id first owns it at
-     *      any amount: 1 micro-AUSD marks a 200 AUSD order paid and kills the
+     *      any amount: 1 micro-USDC marks a 200 USDC order paid and kills the
      *      buyer's signed payment with `DuplicatePayment`. A quoted order can
      *      only be paid at exactly its price, by either path. Keyed by
      *      merchant as well as id, so a quote only ever governs orders that
@@ -308,7 +308,7 @@ contract PolarisPayments is Ownable, ReentrancyGuard, EIP712 {
 
     /**
      * @notice Pay a merchant from the buyer's signed ERC-3009 authorization,
-     *         so a buyer who holds AUSD but no gas pays with a signature and
+     *         so a buyer who holds USDC but no gas pays with a signature and
      *         nothing else. Anyone may submit it; in practice the relayer does.
      *
      * @dev The ERC-3009 nonce is not a parameter. This contract derives it as
@@ -339,7 +339,7 @@ contract PolarisPayments is Ownable, ReentrancyGuard, EIP712 {
      *      merchant and order id while it is pending, so anyone -- the relayer
      *      included -- can pay the same order first with `pay` and kill the
      *      buyer's authorization. On an unquoted order that costs them 1
-     *      micro-AUSD and leaves the order recorded as paid at that amount.
+     *      micro-USDC and leaves the order recorded as paid at that amount.
      *      Quote the order with `quoteOrder` when the session is created and
      *      the race can only be won by paying the full price to the
      *      merchant; either way, match `payer` and `amount` before fulfilling
@@ -544,7 +544,7 @@ contract PolarisPayments is Ownable, ReentrancyGuard, EIP712 {
     /// @notice True when this subscription is collectable right now.
     /// @dev An id never subscribed reads as an Active slot due at time zero,
     ///      so the zero subscriber is checked first. Without it this said
-    ///      "due" for every unused id, and a keeper or CRE workflow trusting it
+    ///      "due" for every unused id, and a keeper trusting it
     ///      sent charges that could only fail.
     function isChargeDue(uint256 subId) public view returns (bool) {
         Subscription storage s = subscriptions[subId];
@@ -757,7 +757,7 @@ contract PolarisPayments is Ownable, ReentrancyGuard, EIP712 {
         if (pricePerPeriod == 0) revert ZeroAmount();
         // Checked, not truncated: 2^128 would pass the zero check and be
         // stored as a free plan anyone could join with no balance, and
-        // 2^128 + 20 AUSD would charge 20 AUSD while PlanCreated announced
+        // 2^128 + 20 USDC would charge 20 USDC while PlanCreated announced
         // the untruncated price.
         uint128 price = SafeCast.toUint128(pricePerPeriod);
         // A period under the deployment's minimum is almost certainly a

@@ -45,7 +45,7 @@ interface IMerchantChecks {
  *      is why it is the borrower's alone: open to anyone, it let a stranger
  *      drain the whole standing allowance the moment a plan opened. See its
  *      note. `repayWithSig` is the same payment for a borrower who holds no
- *      gas, which on Monad is every borrower: the signature, not the sender,
+ *      gas, which on Arc is every borrower: the signature, not the sender,
  *      is the borrower's consent.
  *
  *      Paying on time raises the score, but slowly and only for real plans:
@@ -158,7 +158,7 @@ contract PolarisLoanEngine is Ownable, ReentrancyGuard, EIP712, Nonces {
      *      by the whole outstanding balance when a loan is liquidated, whatever
      *      that recovers (the shortfall moves to `badDebt`). Not to be confused
      *      with a Loan's own `totalOwed`, which is the plan's original total
-     *      and never falls. The CRE guardian attests it (GuardianReceiver).
+     *      and never falls. CreditGuard reads it live.
      */
     uint256 public totalOwed;
 
@@ -175,7 +175,7 @@ contract PolarisLoanEngine is Ownable, ReentrancyGuard, EIP712, Nonces {
     /// Optional. When set, origination enforces merchant activation and caps.
     IMerchantChecks public merchantRegistry;
 
-    /// What the CRE guardian reads from the pool in one call (`poolState`).
+    /// What CreditGuard reads from the pool in one call (`poolState`).
     struct PoolState {
         /// The pool's stablecoin balance less accrued protocol fees: what can
         /// pay merchants now, and what `withdrawLiquidity` may take.
@@ -520,7 +520,7 @@ contract PolarisLoanEngine is Ownable, ReentrancyGuard, EIP712, Nonces {
      * @notice `repay`, for a borrower who holds no gas: anyone may submit the
      *         borrower's signed RepayIntent.
      * @dev Making `repay` the borrower's alone closed the allowance drain, but
-     *      on Monad the borrower is a Mera account that never holds MON, so on
+     *      on Arc the borrower is a passkey account that need not hold USDC for gas, so on
      *      its own it also closed the only way such a borrower could prepay, or
      *      cure a missed instalment inside the grace period before anyone
      *      could liquidate. The signature restores both without reopening the
@@ -803,7 +803,7 @@ contract PolarisLoanEngine is Ownable, ReentrancyGuard, EIP712, Nonces {
     }
 
     /// @notice Every loan id `borrower` has had, oldest first, whatever its
-    ///         status. The collections workflow's instant retry reads it (via
+    ///         status. The keeper's instant retry reads it (via
     ///         `CollectionsReceiver.dueTasksFor`) when a borrower re-signs.
     function loanIdsOf(address borrower) external view returns (uint256[] memory) {
         return _loanIdsOf[borrower];
@@ -816,7 +816,7 @@ contract PolarisLoanEngine is Ownable, ReentrancyGuard, EIP712, Nonces {
         return balance > protocolFeesAccrued ? balance - protocolFeesAccrued : 0;
     }
 
-    /// @notice The pool figures the CRE guardian attests, in one read.
+    /// @notice The pool figures CreditGuard judges, in one read.
     function poolState() external view returns (PoolState memory) {
         return PoolState({
             freeCash: freeCash(),

@@ -6510,6 +6510,19 @@ export declare const polarisSendAbi: readonly [
   },
   {
     readonly "inputs": readonly [];
+    readonly "name": "MAX_AMOUNT";
+    readonly "outputs": readonly [
+      {
+        readonly "internalType": "uint256";
+        readonly "name": "";
+        readonly "type": "uint256";
+      }
+    ];
+    readonly "stateMutability": "view";
+    readonly "type": "function";
+  },
+  {
+    readonly "inputs": readonly [];
     readonly "name": "MAX_EXPIRY";
     readonly "outputs": readonly [
       {
@@ -7792,6 +7805,17 @@ export declare const collateralVaultAbi: readonly [
     readonly "type": "error";
   },
   {
+    readonly "inputs": readonly [
+      {
+        readonly "internalType": "uint256";
+        readonly "name": "cap";
+        readonly "type": "uint256";
+      }
+    ];
+    readonly "name": "InvalidLockCap";
+    readonly "type": "error";
+  },
+  {
     readonly "inputs": readonly [];
     readonly "name": "InvalidMultiplier";
     readonly "type": "error";
@@ -7799,6 +7823,22 @@ export declare const collateralVaultAbi: readonly [
   {
     readonly "inputs": readonly [];
     readonly "name": "InvalidSignature";
+    readonly "type": "error";
+  },
+  {
+    readonly "inputs": readonly [
+      {
+        readonly "internalType": "uint256";
+        readonly "name": "lockedAfter";
+        readonly "type": "uint256";
+      },
+      {
+        readonly "internalType": "uint256";
+        readonly "name": "cap";
+        readonly "type": "uint256";
+      }
+    ];
+    readonly "name": "LockCapExceeded";
     readonly "type": "error";
   },
   {
@@ -7959,6 +7999,19 @@ export declare const collateralVaultAbi: readonly [
       {
         readonly "indexed": false;
         readonly "internalType": "uint256";
+        readonly "name": "cap";
+        readonly "type": "uint256";
+      }
+    ];
+    readonly "name": "MaxLockedPerUserSet";
+    readonly "type": "event";
+  },
+  {
+    readonly "anonymous": false;
+    readonly "inputs": readonly [
+      {
+        readonly "indexed": false;
+        readonly "internalType": "uint256";
         readonly "name": "bps";
         readonly "type": "uint256";
       }
@@ -8031,6 +8084,19 @@ export declare const collateralVaultAbi: readonly [
         readonly "internalType": "bytes32";
         readonly "name": "";
         readonly "type": "bytes32";
+      }
+    ];
+    readonly "stateMutability": "view";
+    readonly "type": "function";
+  },
+  {
+    readonly "inputs": readonly [];
+    readonly "name": "MAX_LOCK_CAP";
+    readonly "outputs": readonly [
+      {
+        readonly "internalType": "uint256";
+        readonly "name": "";
+        readonly "type": "uint256";
       }
     ];
     readonly "stateMutability": "view";
@@ -8279,6 +8345,19 @@ export declare const collateralVaultAbi: readonly [
     readonly "type": "function";
   },
   {
+    readonly "inputs": readonly [];
+    readonly "name": "maxLockedPerUser";
+    readonly "outputs": readonly [
+      {
+        readonly "internalType": "uint256";
+        readonly "name": "";
+        readonly "type": "uint256";
+      }
+    ];
+    readonly "stateMutability": "view";
+    readonly "type": "function";
+  },
+  {
     readonly "inputs": readonly [
       {
         readonly "internalType": "address";
@@ -8387,6 +8466,19 @@ export declare const collateralVaultAbi: readonly [
       }
     ];
     readonly "name": "setLoanEngine";
+    readonly "outputs": readonly [];
+    readonly "stateMutability": "nonpayable";
+    readonly "type": "function";
+  },
+  {
+    readonly "inputs": readonly [
+      {
+        readonly "internalType": "uint256";
+        readonly "name": "cap";
+        readonly "type": "uint256";
+      }
+    ];
+    readonly "name": "setMaxLockedPerUser";
     readonly "outputs": readonly [];
     readonly "stateMutability": "nonpayable";
     readonly "type": "function";
@@ -9029,7 +9121,7 @@ export declare const collectionsReceiverAbi: readonly [
     readonly "inputs": readonly [
       {
         readonly "internalType": "address";
-        readonly "name": "forwarder";
+        readonly "name": "_keeper";
         readonly "type": "address";
       },
       {
@@ -9041,20 +9133,10 @@ export declare const collectionsReceiverAbi: readonly [
         readonly "internalType": "contract IChargeableSubscriptions";
         readonly "name": "_payments";
         readonly "type": "address";
-      },
-      {
-        readonly "internalType": "address";
-        readonly "name": "_simulationTransmitter";
-        readonly "type": "address";
       }
     ];
     readonly "stateMutability": "nonpayable";
     readonly "type": "constructor";
-  },
-  {
-    readonly "inputs": readonly [];
-    readonly "name": "ForwarderCheckDisabled";
-    readonly "type": "error";
   },
   {
     readonly "inputs": readonly [
@@ -9071,80 +9153,11 @@ export declare const collectionsReceiverAbi: readonly [
     readonly "inputs": readonly [
       {
         readonly "internalType": "address";
-        readonly "name": "received";
-        readonly "type": "address";
-      },
-      {
-        readonly "internalType": "address";
-        readonly "name": "expected";
-        readonly "type": "address";
-      }
-    ];
-    readonly "name": "InvalidAuthor";
-    readonly "type": "error";
-  },
-  {
-    readonly "inputs": readonly [];
-    readonly "name": "InvalidForwarderAddress";
-    readonly "type": "error";
-  },
-  {
-    readonly "inputs": readonly [
-      {
-        readonly "internalType": "address";
         readonly "name": "sender";
         readonly "type": "address";
-      },
-      {
-        readonly "internalType": "address";
-        readonly "name": "expected";
-        readonly "type": "address";
       }
     ];
-    readonly "name": "InvalidSender";
-    readonly "type": "error";
-  },
-  {
-    readonly "inputs": readonly [
-      {
-        readonly "internalType": "bytes32";
-        readonly "name": "received";
-        readonly "type": "bytes32";
-      },
-      {
-        readonly "internalType": "bytes32";
-        readonly "name": "expected";
-        readonly "type": "bytes32";
-      }
-    ];
-    readonly "name": "InvalidWorkflowId";
-    readonly "type": "error";
-  },
-  {
-    readonly "inputs": readonly [
-      {
-        readonly "internalType": "bytes10";
-        readonly "name": "received";
-        readonly "type": "bytes10";
-      },
-      {
-        readonly "internalType": "bytes10";
-        readonly "name": "expected";
-        readonly "type": "bytes10";
-      }
-    ];
-    readonly "name": "InvalidWorkflowName";
-    readonly "type": "error";
-  },
-  {
-    readonly "inputs": readonly [
-      {
-        readonly "internalType": "address";
-        readonly "name": "origin";
-        readonly "type": "address";
-      }
-    ];
-    readonly "name": "NotSimulationTransmitter";
+    readonly "name": "NotKeeper";
     readonly "type": "error";
   },
   {
@@ -9193,12 +9206,12 @@ export declare const collectionsReceiverAbi: readonly [
   },
   {
     readonly "inputs": readonly [];
-    readonly "name": "WorkflowNameRequiresAuthorValidation";
+    readonly "name": "ZeroAddress";
     readonly "type": "error";
   },
   {
     readonly "inputs": readonly [];
-    readonly "name": "ZeroAddress";
+    readonly "name": "ZeroKeeper";
     readonly "type": "error";
   },
   {
@@ -9232,74 +9245,17 @@ export declare const collectionsReceiverAbi: readonly [
       {
         readonly "indexed": true;
         readonly "internalType": "address";
-        readonly "name": "previousAuthor";
+        readonly "name": "previousKeeper";
         readonly "type": "address";
       },
       {
         readonly "indexed": true;
         readonly "internalType": "address";
-        readonly "name": "newAuthor";
+        readonly "name": "keeper";
         readonly "type": "address";
       }
     ];
-    readonly "name": "ExpectedAuthorUpdated";
-    readonly "type": "event";
-  },
-  {
-    readonly "anonymous": false;
-    readonly "inputs": readonly [
-      {
-        readonly "indexed": true;
-        readonly "internalType": "bytes32";
-        readonly "name": "previousId";
-        readonly "type": "bytes32";
-      },
-      {
-        readonly "indexed": true;
-        readonly "internalType": "bytes32";
-        readonly "name": "newId";
-        readonly "type": "bytes32";
-      }
-    ];
-    readonly "name": "ExpectedWorkflowIdUpdated";
-    readonly "type": "event";
-  },
-  {
-    readonly "anonymous": false;
-    readonly "inputs": readonly [
-      {
-        readonly "indexed": true;
-        readonly "internalType": "bytes10";
-        readonly "name": "previousName";
-        readonly "type": "bytes10";
-      },
-      {
-        readonly "indexed": true;
-        readonly "internalType": "bytes10";
-        readonly "name": "newName";
-        readonly "type": "bytes10";
-      }
-    ];
-    readonly "name": "ExpectedWorkflowNameUpdated";
-    readonly "type": "event";
-  },
-  {
-    readonly "anonymous": false;
-    readonly "inputs": readonly [
-      {
-        readonly "indexed": true;
-        readonly "internalType": "address";
-        readonly "name": "previousForwarder";
-        readonly "type": "address";
-      },
-      {
-        readonly "indexed": true;
-        readonly "internalType": "address";
-        readonly "name": "newForwarder";
-        readonly "type": "address";
-      }
-    ];
-    readonly "name": "ForwarderAddressUpdated";
+    readonly "name": "KeeperSet";
     readonly "type": "event";
   },
   {
@@ -9319,32 +9275,6 @@ export declare const collectionsReceiverAbi: readonly [
       }
     ];
     readonly "name": "OwnershipTransferred";
-    readonly "type": "event";
-  },
-  {
-    readonly "anonymous": false;
-    readonly "inputs": readonly [
-      {
-        readonly "indexed": false;
-        readonly "internalType": "string";
-        readonly "name": "message";
-        readonly "type": "string";
-      }
-    ];
-    readonly "name": "SecurityWarning";
-    readonly "type": "event";
-  },
-  {
-    readonly "anonymous": false;
-    readonly "inputs": readonly [
-      {
-        readonly "indexed": true;
-        readonly "internalType": "address";
-        readonly "name": "transmitter";
-        readonly "type": "address";
-      }
-    ];
-    readonly "name": "SimulationTransmitterSet";
     readonly "type": "event";
   },
   {
@@ -9513,46 +9443,7 @@ export declare const collectionsReceiverAbi: readonly [
   },
   {
     readonly "inputs": readonly [];
-    readonly "name": "getExpectedAuthor";
-    readonly "outputs": readonly [
-      {
-        readonly "internalType": "address";
-        readonly "name": "";
-        readonly "type": "address";
-      }
-    ];
-    readonly "stateMutability": "view";
-    readonly "type": "function";
-  },
-  {
-    readonly "inputs": readonly [];
-    readonly "name": "getExpectedWorkflowId";
-    readonly "outputs": readonly [
-      {
-        readonly "internalType": "bytes32";
-        readonly "name": "";
-        readonly "type": "bytes32";
-      }
-    ];
-    readonly "stateMutability": "view";
-    readonly "type": "function";
-  },
-  {
-    readonly "inputs": readonly [];
-    readonly "name": "getExpectedWorkflowName";
-    readonly "outputs": readonly [
-      {
-        readonly "internalType": "bytes10";
-        readonly "name": "";
-        readonly "type": "bytes10";
-      }
-    ];
-    readonly "stateMutability": "view";
-    readonly "type": "function";
-  },
-  {
-    readonly "inputs": readonly [];
-    readonly "name": "getForwarderAddress";
+    readonly "name": "keeper";
     readonly "outputs": readonly [
       {
         readonly "internalType": "address";
@@ -9574,24 +9465,6 @@ export declare const collectionsReceiverAbi: readonly [
       }
     ];
     readonly "stateMutability": "view";
-    readonly "type": "function";
-  },
-  {
-    readonly "inputs": readonly [
-      {
-        readonly "internalType": "bytes";
-        readonly "name": "metadata";
-        readonly "type": "bytes";
-      },
-      {
-        readonly "internalType": "bytes";
-        readonly "name": "report";
-        readonly "type": "bytes";
-      }
-    ];
-    readonly "name": "onReport";
-    readonly "outputs": readonly [];
-    readonly "stateMutability": "nonpayable";
     readonly "type": "function";
   },
   {
@@ -9631,11 +9504,11 @@ export declare const collectionsReceiverAbi: readonly [
     readonly "inputs": readonly [
       {
         readonly "internalType": "address";
-        readonly "name": "_author";
+        readonly "name": "_keeper";
         readonly "type": "address";
       }
     ];
-    readonly "name": "setExpectedAuthor";
+    readonly "name": "setKeeper";
     readonly "outputs": readonly [];
     readonly "stateMutability": "nonpayable";
     readonly "type": "function";
@@ -9643,85 +9516,14 @@ export declare const collectionsReceiverAbi: readonly [
   {
     readonly "inputs": readonly [
       {
-        readonly "internalType": "bytes32";
-        readonly "name": "_id";
-        readonly "type": "bytes32";
+        readonly "internalType": "bytes";
+        readonly "name": "report";
+        readonly "type": "bytes";
       }
     ];
-    readonly "name": "setExpectedWorkflowId";
+    readonly "name": "submitReport";
     readonly "outputs": readonly [];
     readonly "stateMutability": "nonpayable";
-    readonly "type": "function";
-  },
-  {
-    readonly "inputs": readonly [
-      {
-        readonly "internalType": "string";
-        readonly "name": "_name";
-        readonly "type": "string";
-      }
-    ];
-    readonly "name": "setExpectedWorkflowName";
-    readonly "outputs": readonly [];
-    readonly "stateMutability": "nonpayable";
-    readonly "type": "function";
-  },
-  {
-    readonly "inputs": readonly [
-      {
-        readonly "internalType": "address";
-        readonly "name": "_forwarder";
-        readonly "type": "address";
-      }
-    ];
-    readonly "name": "setForwarderAddress";
-    readonly "outputs": readonly [];
-    readonly "stateMutability": "nonpayable";
-    readonly "type": "function";
-  },
-  {
-    readonly "inputs": readonly [
-      {
-        readonly "internalType": "address";
-        readonly "name": "transmitter";
-        readonly "type": "address";
-      }
-    ];
-    readonly "name": "setSimulationTransmitter";
-    readonly "outputs": readonly [];
-    readonly "stateMutability": "nonpayable";
-    readonly "type": "function";
-  },
-  {
-    readonly "inputs": readonly [];
-    readonly "name": "simulationTransmitter";
-    readonly "outputs": readonly [
-      {
-        readonly "internalType": "address";
-        readonly "name": "";
-        readonly "type": "address";
-      }
-    ];
-    readonly "stateMutability": "view";
-    readonly "type": "function";
-  },
-  {
-    readonly "inputs": readonly [
-      {
-        readonly "internalType": "bytes4";
-        readonly "name": "interfaceId";
-        readonly "type": "bytes4";
-      }
-    ];
-    readonly "name": "supportsInterface";
-    readonly "outputs": readonly [
-      {
-        readonly "internalType": "bool";
-        readonly "name": "";
-        readonly "type": "bool";
-      }
-    ];
-    readonly "stateMutability": "view";
     readonly "type": "function";
   },
   {
@@ -9745,27 +9547,17 @@ export declare const underwritingReceiverAbi: readonly [
     readonly "inputs": readonly [
       {
         readonly "internalType": "address";
-        readonly "name": "forwarder";
+        readonly "name": "_keeper";
         readonly "type": "address";
       },
       {
         readonly "internalType": "contract ScoreManager";
         readonly "name": "_scoreManager";
         readonly "type": "address";
-      },
-      {
-        readonly "internalType": "address";
-        readonly "name": "_simulationTransmitter";
-        readonly "type": "address";
       }
     ];
     readonly "stateMutability": "nonpayable";
     readonly "type": "constructor";
-  },
-  {
-    readonly "inputs": readonly [];
-    readonly "name": "ForwarderCheckDisabled";
-    readonly "type": "error";
   },
   {
     readonly "inputs": readonly [
@@ -9782,43 +9574,6 @@ export declare const underwritingReceiverAbi: readonly [
     readonly "inputs": readonly [
       {
         readonly "internalType": "address";
-        readonly "name": "received";
-        readonly "type": "address";
-      },
-      {
-        readonly "internalType": "address";
-        readonly "name": "expected";
-        readonly "type": "address";
-      }
-    ];
-    readonly "name": "InvalidAuthor";
-    readonly "type": "error";
-  },
-  {
-    readonly "inputs": readonly [];
-    readonly "name": "InvalidForwarderAddress";
-    readonly "type": "error";
-  },
-  {
-    readonly "inputs": readonly [
-      {
-        readonly "internalType": "address";
-        readonly "name": "sender";
-        readonly "type": "address";
-      },
-      {
-        readonly "internalType": "address";
-        readonly "name": "expected";
-        readonly "type": "address";
-      }
-    ];
-    readonly "name": "InvalidSender";
-    readonly "type": "error";
-  },
-  {
-    readonly "inputs": readonly [
-      {
-        readonly "internalType": "address";
         readonly "name": "user";
         readonly "type": "address";
       }
@@ -9829,44 +9584,12 @@ export declare const underwritingReceiverAbi: readonly [
   {
     readonly "inputs": readonly [
       {
-        readonly "internalType": "bytes32";
-        readonly "name": "received";
-        readonly "type": "bytes32";
-      },
-      {
-        readonly "internalType": "bytes32";
-        readonly "name": "expected";
-        readonly "type": "bytes32";
-      }
-    ];
-    readonly "name": "InvalidWorkflowId";
-    readonly "type": "error";
-  },
-  {
-    readonly "inputs": readonly [
-      {
-        readonly "internalType": "bytes10";
-        readonly "name": "received";
-        readonly "type": "bytes10";
-      },
-      {
-        readonly "internalType": "bytes10";
-        readonly "name": "expected";
-        readonly "type": "bytes10";
-      }
-    ];
-    readonly "name": "InvalidWorkflowName";
-    readonly "type": "error";
-  },
-  {
-    readonly "inputs": readonly [
-      {
         readonly "internalType": "address";
-        readonly "name": "origin";
+        readonly "name": "sender";
         readonly "type": "address";
       }
     ];
-    readonly "name": "NotSimulationTransmitter";
+    readonly "name": "NotKeeper";
     readonly "type": "error";
   },
   {
@@ -9947,70 +9670,13 @@ export declare const underwritingReceiverAbi: readonly [
   },
   {
     readonly "inputs": readonly [];
-    readonly "name": "WorkflowNameRequiresAuthorValidation";
-    readonly "type": "error";
-  },
-  {
-    readonly "inputs": readonly [];
     readonly "name": "ZeroAddress";
     readonly "type": "error";
   },
   {
-    readonly "anonymous": false;
-    readonly "inputs": readonly [
-      {
-        readonly "indexed": true;
-        readonly "internalType": "address";
-        readonly "name": "previousAuthor";
-        readonly "type": "address";
-      },
-      {
-        readonly "indexed": true;
-        readonly "internalType": "address";
-        readonly "name": "newAuthor";
-        readonly "type": "address";
-      }
-    ];
-    readonly "name": "ExpectedAuthorUpdated";
-    readonly "type": "event";
-  },
-  {
-    readonly "anonymous": false;
-    readonly "inputs": readonly [
-      {
-        readonly "indexed": true;
-        readonly "internalType": "bytes32";
-        readonly "name": "previousId";
-        readonly "type": "bytes32";
-      },
-      {
-        readonly "indexed": true;
-        readonly "internalType": "bytes32";
-        readonly "name": "newId";
-        readonly "type": "bytes32";
-      }
-    ];
-    readonly "name": "ExpectedWorkflowIdUpdated";
-    readonly "type": "event";
-  },
-  {
-    readonly "anonymous": false;
-    readonly "inputs": readonly [
-      {
-        readonly "indexed": true;
-        readonly "internalType": "bytes10";
-        readonly "name": "previousName";
-        readonly "type": "bytes10";
-      },
-      {
-        readonly "indexed": true;
-        readonly "internalType": "bytes10";
-        readonly "name": "newName";
-        readonly "type": "bytes10";
-      }
-    ];
-    readonly "name": "ExpectedWorkflowNameUpdated";
-    readonly "type": "event";
+    readonly "inputs": readonly [];
+    readonly "name": "ZeroKeeper";
+    readonly "type": "error";
   },
   {
     readonly "anonymous": false;
@@ -10018,17 +9684,17 @@ export declare const underwritingReceiverAbi: readonly [
       {
         readonly "indexed": true;
         readonly "internalType": "address";
-        readonly "name": "previousForwarder";
+        readonly "name": "previousKeeper";
         readonly "type": "address";
       },
       {
         readonly "indexed": true;
         readonly "internalType": "address";
-        readonly "name": "newForwarder";
+        readonly "name": "keeper";
         readonly "type": "address";
       }
     ];
-    readonly "name": "ForwarderAddressUpdated";
+    readonly "name": "KeeperSet";
     readonly "type": "event";
   },
   {
@@ -10048,32 +9714,6 @@ export declare const underwritingReceiverAbi: readonly [
       }
     ];
     readonly "name": "OwnershipTransferred";
-    readonly "type": "event";
-  },
-  {
-    readonly "anonymous": false;
-    readonly "inputs": readonly [
-      {
-        readonly "indexed": false;
-        readonly "internalType": "string";
-        readonly "name": "message";
-        readonly "type": "string";
-      }
-    ];
-    readonly "name": "SecurityWarning";
-    readonly "type": "event";
-  },
-  {
-    readonly "anonymous": false;
-    readonly "inputs": readonly [
-      {
-        readonly "indexed": true;
-        readonly "internalType": "address";
-        readonly "name": "transmitter";
-        readonly "type": "address";
-      }
-    ];
-    readonly "name": "SimulationTransmitterSet";
     readonly "type": "event";
   },
   {
@@ -10141,46 +9781,7 @@ export declare const underwritingReceiverAbi: readonly [
   },
   {
     readonly "inputs": readonly [];
-    readonly "name": "getExpectedAuthor";
-    readonly "outputs": readonly [
-      {
-        readonly "internalType": "address";
-        readonly "name": "";
-        readonly "type": "address";
-      }
-    ];
-    readonly "stateMutability": "view";
-    readonly "type": "function";
-  },
-  {
-    readonly "inputs": readonly [];
-    readonly "name": "getExpectedWorkflowId";
-    readonly "outputs": readonly [
-      {
-        readonly "internalType": "bytes32";
-        readonly "name": "";
-        readonly "type": "bytes32";
-      }
-    ];
-    readonly "stateMutability": "view";
-    readonly "type": "function";
-  },
-  {
-    readonly "inputs": readonly [];
-    readonly "name": "getExpectedWorkflowName";
-    readonly "outputs": readonly [
-      {
-        readonly "internalType": "bytes10";
-        readonly "name": "";
-        readonly "type": "bytes10";
-      }
-    ];
-    readonly "stateMutability": "view";
-    readonly "type": "function";
-  },
-  {
-    readonly "inputs": readonly [];
-    readonly "name": "getForwarderAddress";
+    readonly "name": "keeper";
     readonly "outputs": readonly [
       {
         readonly "internalType": "address";
@@ -10208,24 +9809,6 @@ export declare const underwritingReceiverAbi: readonly [
       }
     ];
     readonly "stateMutability": "view";
-    readonly "type": "function";
-  },
-  {
-    readonly "inputs": readonly [
-      {
-        readonly "internalType": "bytes";
-        readonly "name": "metadata";
-        readonly "type": "bytes";
-      },
-      {
-        readonly "internalType": "bytes";
-        readonly "name": "report";
-        readonly "type": "bytes";
-      }
-    ];
-    readonly "name": "onReport";
-    readonly "outputs": readonly [];
-    readonly "stateMutability": "nonpayable";
     readonly "type": "function";
   },
   {
@@ -10265,11 +9848,11 @@ export declare const underwritingReceiverAbi: readonly [
     readonly "inputs": readonly [
       {
         readonly "internalType": "address";
-        readonly "name": "_author";
+        readonly "name": "_keeper";
         readonly "type": "address";
       }
     ];
-    readonly "name": "setExpectedAuthor";
+    readonly "name": "setKeeper";
     readonly "outputs": readonly [];
     readonly "stateMutability": "nonpayable";
     readonly "type": "function";
@@ -10277,85 +9860,14 @@ export declare const underwritingReceiverAbi: readonly [
   {
     readonly "inputs": readonly [
       {
-        readonly "internalType": "bytes32";
-        readonly "name": "_id";
-        readonly "type": "bytes32";
+        readonly "internalType": "bytes";
+        readonly "name": "report";
+        readonly "type": "bytes";
       }
     ];
-    readonly "name": "setExpectedWorkflowId";
+    readonly "name": "submitReport";
     readonly "outputs": readonly [];
     readonly "stateMutability": "nonpayable";
-    readonly "type": "function";
-  },
-  {
-    readonly "inputs": readonly [
-      {
-        readonly "internalType": "string";
-        readonly "name": "_name";
-        readonly "type": "string";
-      }
-    ];
-    readonly "name": "setExpectedWorkflowName";
-    readonly "outputs": readonly [];
-    readonly "stateMutability": "nonpayable";
-    readonly "type": "function";
-  },
-  {
-    readonly "inputs": readonly [
-      {
-        readonly "internalType": "address";
-        readonly "name": "_forwarder";
-        readonly "type": "address";
-      }
-    ];
-    readonly "name": "setForwarderAddress";
-    readonly "outputs": readonly [];
-    readonly "stateMutability": "nonpayable";
-    readonly "type": "function";
-  },
-  {
-    readonly "inputs": readonly [
-      {
-        readonly "internalType": "address";
-        readonly "name": "transmitter";
-        readonly "type": "address";
-      }
-    ];
-    readonly "name": "setSimulationTransmitter";
-    readonly "outputs": readonly [];
-    readonly "stateMutability": "nonpayable";
-    readonly "type": "function";
-  },
-  {
-    readonly "inputs": readonly [];
-    readonly "name": "simulationTransmitter";
-    readonly "outputs": readonly [
-      {
-        readonly "internalType": "address";
-        readonly "name": "";
-        readonly "type": "address";
-      }
-    ];
-    readonly "stateMutability": "view";
-    readonly "type": "function";
-  },
-  {
-    readonly "inputs": readonly [
-      {
-        readonly "internalType": "bytes4";
-        readonly "name": "interfaceId";
-        readonly "type": "bytes4";
-      }
-    ];
-    readonly "name": "supportsInterface";
-    readonly "outputs": readonly [
-      {
-        readonly "internalType": "bool";
-        readonly "name": "";
-        readonly "type": "bool";
-      }
-    ];
-    readonly "stateMutability": "view";
     readonly "type": "function";
   },
   {
@@ -10373,13 +9885,13 @@ export declare const underwritingReceiverAbi: readonly [
   }
 ];
 
-/** ABI of GuardianReceiver. */
-export declare const guardianReceiverAbi: readonly [
+/** ABI of CreditGuard. */
+export declare const creditGuardAbi: readonly [
   {
     readonly "inputs": readonly [
       {
         readonly "internalType": "address";
-        readonly "name": "forwarder";
+        readonly "name": "initialOwner";
         readonly "type": "address";
       },
       {
@@ -10388,22 +9900,7 @@ export declare const guardianReceiverAbi: readonly [
         readonly "type": "address";
       },
       {
-        readonly "internalType": "address";
-        readonly "name": "_simulationTransmitter";
-        readonly "type": "address";
-      },
-      {
         readonly "components": readonly [
-          {
-            readonly "internalType": "int256";
-            readonly "name": "minPrice";
-            readonly "type": "int256";
-          },
-          {
-            readonly "internalType": "int256";
-            readonly "name": "maxPrice";
-            readonly "type": "int256";
-          },
           {
             readonly "internalType": "uint256";
             readonly "name": "minFreeCash";
@@ -10418,21 +9915,11 @@ export declare const guardianReceiverAbi: readonly [
             readonly "internalType": "uint256";
             readonly "name": "minOriginated";
             readonly "type": "uint256";
-          },
-          {
-            readonly "internalType": "uint32";
-            readonly "name": "maxPriceAge";
-            readonly "type": "uint32";
           }
         ];
-        readonly "internalType": "struct GuardianReceiver.Thresholds";
+        readonly "internalType": "struct CreditGuard.Thresholds";
         readonly "name": "thresholds_";
         readonly "type": "tuple";
-      },
-      {
-        readonly "internalType": "uint32";
-        readonly "name": "_maxAttestationAge";
-        readonly "type": "uint32";
       }
     ];
     readonly "stateMutability": "nonpayable";
@@ -10441,76 +9928,7 @@ export declare const guardianReceiverAbi: readonly [
   {
     readonly "inputs": readonly [
       {
-        readonly "internalType": "uint64";
-        readonly "name": "observedAt";
-        readonly "type": "uint64";
-      },
-      {
-        readonly "internalType": "uint64";
-        readonly "name": "latestObservedAt";
-        readonly "type": "uint64";
-      }
-    ];
-    readonly "name": "AttestationOutOfOrder";
-    readonly "type": "error";
-  },
-  {
-    readonly "inputs": readonly [
-      {
-        readonly "internalType": "uint64";
-        readonly "name": "observedAt";
-        readonly "type": "uint64";
-      },
-      {
-        readonly "internalType": "uint32";
-        readonly "name": "maxAttestationAge";
-        readonly "type": "uint32";
-      }
-    ];
-    readonly "name": "AttestationTooOld";
-    readonly "type": "error";
-  },
-  {
-    readonly "inputs": readonly [];
-    readonly "name": "ForwarderCheckDisabled";
-    readonly "type": "error";
-  },
-  {
-    readonly "inputs": readonly [
-      {
-        readonly "internalType": "address";
-        readonly "name": "received";
-        readonly "type": "address";
-      },
-      {
-        readonly "internalType": "address";
-        readonly "name": "expected";
-        readonly "type": "address";
-      }
-    ];
-    readonly "name": "InvalidAuthor";
-    readonly "type": "error";
-  },
-  {
-    readonly "inputs": readonly [];
-    readonly "name": "InvalidForwarderAddress";
-    readonly "type": "error";
-  },
-  {
-    readonly "inputs": readonly [
-      {
-        readonly "internalType": "uint32";
-        readonly "name": "maxAttestationAge";
-        readonly "type": "uint32";
-      }
-    ];
-    readonly "name": "InvalidMaxAttestationAge";
-    readonly "type": "error";
-  },
-  {
-    readonly "inputs": readonly [
-      {
-        readonly "internalType": "enum GuardianReceiver.Override";
+        readonly "internalType": "enum CreditGuard.Override";
         readonly "name": "mode";
         readonly "type": "uint8";
       },
@@ -10524,83 +9942,8 @@ export declare const guardianReceiverAbi: readonly [
     readonly "type": "error";
   },
   {
-    readonly "inputs": readonly [
-      {
-        readonly "internalType": "address";
-        readonly "name": "sender";
-        readonly "type": "address";
-      },
-      {
-        readonly "internalType": "address";
-        readonly "name": "expected";
-        readonly "type": "address";
-      }
-    ];
-    readonly "name": "InvalidSender";
-    readonly "type": "error";
-  },
-  {
     readonly "inputs": readonly [];
     readonly "name": "InvalidThresholds";
-    readonly "type": "error";
-  },
-  {
-    readonly "inputs": readonly [
-      {
-        readonly "internalType": "bytes32";
-        readonly "name": "received";
-        readonly "type": "bytes32";
-      },
-      {
-        readonly "internalType": "bytes32";
-        readonly "name": "expected";
-        readonly "type": "bytes32";
-      }
-    ];
-    readonly "name": "InvalidWorkflowId";
-    readonly "type": "error";
-  },
-  {
-    readonly "inputs": readonly [
-      {
-        readonly "internalType": "bytes10";
-        readonly "name": "received";
-        readonly "type": "bytes10";
-      },
-      {
-        readonly "internalType": "bytes10";
-        readonly "name": "expected";
-        readonly "type": "bytes10";
-      }
-    ];
-    readonly "name": "InvalidWorkflowName";
-    readonly "type": "error";
-  },
-  {
-    readonly "inputs": readonly [
-      {
-        readonly "internalType": "address";
-        readonly "name": "origin";
-        readonly "type": "address";
-      }
-    ];
-    readonly "name": "NotSimulationTransmitter";
-    readonly "type": "error";
-  },
-  {
-    readonly "inputs": readonly [
-      {
-        readonly "internalType": "uint64";
-        readonly "name": "observedAt";
-        readonly "type": "uint64";
-      },
-      {
-        readonly "internalType": "uint256";
-        readonly "name": "blockTimestamp";
-        readonly "type": "uint256";
-      }
-    ];
-    readonly "name": "ObservationInFuture";
     readonly "type": "error";
   },
   {
@@ -10626,92 +9969,9 @@ export declare const guardianReceiverAbi: readonly [
     readonly "type": "error";
   },
   {
-    readonly "inputs": readonly [
-      {
-        readonly "internalType": "uint8";
-        readonly "name": "reportedPoolReasons";
-        readonly "type": "uint8";
-      },
-      {
-        readonly "internalType": "uint8";
-        readonly "name": "livePoolReasons";
-        readonly "type": "uint8";
-      }
-    ];
-    readonly "name": "PoolMismatch";
-    readonly "type": "error";
-  },
-  {
-    readonly "inputs": readonly [
-      {
-        readonly "internalType": "uint80";
-        readonly "name": "roundId";
-        readonly "type": "uint80";
-      }
-    ];
-    readonly "name": "RoundNotFound";
-    readonly "type": "error";
-  },
-  {
-    readonly "inputs": readonly [
-      {
-        readonly "internalType": "uint8";
-        readonly "name": "kind";
-        readonly "type": "uint8";
-      }
-    ];
-    readonly "name": "UnknownReportKind";
-    readonly "type": "error";
-  },
-  {
-    readonly "inputs": readonly [
-      {
-        readonly "internalType": "bool";
-        readonly "name": "reportedPaused";
-        readonly "type": "bool";
-      },
-      {
-        readonly "internalType": "uint8";
-        readonly "name": "reportedReasons";
-        readonly "type": "uint8";
-      },
-      {
-        readonly "internalType": "uint8";
-        readonly "name": "computedReasons";
-        readonly "type": "uint8";
-      }
-    ];
-    readonly "name": "VerdictMismatch";
-    readonly "type": "error";
-  },
-  {
-    readonly "inputs": readonly [];
-    readonly "name": "WorkflowNameRequiresAuthorValidation";
-    readonly "type": "error";
-  },
-  {
     readonly "inputs": readonly [];
     readonly "name": "ZeroAddress";
     readonly "type": "error";
-  },
-  {
-    readonly "anonymous": false;
-    readonly "inputs": readonly [
-      {
-        readonly "indexed": false;
-        readonly "internalType": "uint64";
-        readonly "name": "observedAt";
-        readonly "type": "uint64";
-      },
-      {
-        readonly "indexed": false;
-        readonly "internalType": "bytes";
-        readonly "name": "reason";
-        readonly "type": "bytes";
-      }
-    ];
-    readonly "name": "AttestationRefused";
-    readonly "type": "event";
   },
   {
     readonly "anonymous": false;
@@ -10731,7 +9991,7 @@ export declare const guardianReceiverAbi: readonly [
     readonly "inputs": readonly [
       {
         readonly "indexed": false;
-        readonly "internalType": "enum GuardianReceiver.Override";
+        readonly "internalType": "enum CreditGuard.Override";
         readonly "name": "mode";
         readonly "type": "uint8";
       },
@@ -10743,178 +10003,6 @@ export declare const guardianReceiverAbi: readonly [
       }
     ];
     readonly "name": "CreditGuardOverridden";
-    readonly "type": "event";
-  },
-  {
-    readonly "anonymous": false;
-    readonly "inputs": readonly [
-      {
-        readonly "indexed": true;
-        readonly "internalType": "uint80";
-        readonly "name": "round";
-        readonly "type": "uint80";
-      },
-      {
-        readonly "indexed": true;
-        readonly "internalType": "bool";
-        readonly "name": "creditPaused";
-        readonly "type": "bool";
-      },
-      {
-        readonly "indexed": false;
-        readonly "internalType": "uint8";
-        readonly "name": "reasons";
-        readonly "type": "uint8";
-      },
-      {
-        readonly "components": readonly [
-          {
-            readonly "internalType": "uint80";
-            readonly "name": "priceRoundId";
-            readonly "type": "uint80";
-          },
-          {
-            readonly "internalType": "int256";
-            readonly "name": "price";
-            readonly "type": "int256";
-          },
-          {
-            readonly "internalType": "uint64";
-            readonly "name": "priceUpdatedAt";
-            readonly "type": "uint64";
-          },
-          {
-            readonly "internalType": "uint256";
-            readonly "name": "freeCash";
-            readonly "type": "uint256";
-          },
-          {
-            readonly "internalType": "uint256";
-            readonly "name": "totalOwed";
-            readonly "type": "uint256";
-          },
-          {
-            readonly "internalType": "uint256";
-            readonly "name": "badDebt";
-            readonly "type": "uint256";
-          },
-          {
-            readonly "internalType": "uint256";
-            readonly "name": "totalOriginated";
-            readonly "type": "uint256";
-          },
-          {
-            readonly "internalType": "uint64";
-            readonly "name": "observedAt";
-            readonly "type": "uint64";
-          },
-          {
-            readonly "internalType": "bool";
-            readonly "name": "creditPaused";
-            readonly "type": "bool";
-          },
-          {
-            readonly "internalType": "uint8";
-            readonly "name": "reasons";
-            readonly "type": "uint8";
-          }
-        ];
-        readonly "indexed": false;
-        readonly "internalType": "struct GuardianReceiver.Attestation";
-        readonly "name": "attestation";
-        readonly "type": "tuple";
-      }
-    ];
-    readonly "name": "CreditGuardUpdated";
-    readonly "type": "event";
-  },
-  {
-    readonly "anonymous": false;
-    readonly "inputs": readonly [
-      {
-        readonly "indexed": true;
-        readonly "internalType": "address";
-        readonly "name": "previousAuthor";
-        readonly "type": "address";
-      },
-      {
-        readonly "indexed": true;
-        readonly "internalType": "address";
-        readonly "name": "newAuthor";
-        readonly "type": "address";
-      }
-    ];
-    readonly "name": "ExpectedAuthorUpdated";
-    readonly "type": "event";
-  },
-  {
-    readonly "anonymous": false;
-    readonly "inputs": readonly [
-      {
-        readonly "indexed": true;
-        readonly "internalType": "bytes32";
-        readonly "name": "previousId";
-        readonly "type": "bytes32";
-      },
-      {
-        readonly "indexed": true;
-        readonly "internalType": "bytes32";
-        readonly "name": "newId";
-        readonly "type": "bytes32";
-      }
-    ];
-    readonly "name": "ExpectedWorkflowIdUpdated";
-    readonly "type": "event";
-  },
-  {
-    readonly "anonymous": false;
-    readonly "inputs": readonly [
-      {
-        readonly "indexed": true;
-        readonly "internalType": "bytes10";
-        readonly "name": "previousName";
-        readonly "type": "bytes10";
-      },
-      {
-        readonly "indexed": true;
-        readonly "internalType": "bytes10";
-        readonly "name": "newName";
-        readonly "type": "bytes10";
-      }
-    ];
-    readonly "name": "ExpectedWorkflowNameUpdated";
-    readonly "type": "event";
-  },
-  {
-    readonly "anonymous": false;
-    readonly "inputs": readonly [
-      {
-        readonly "indexed": true;
-        readonly "internalType": "address";
-        readonly "name": "previousForwarder";
-        readonly "type": "address";
-      },
-      {
-        readonly "indexed": true;
-        readonly "internalType": "address";
-        readonly "name": "newForwarder";
-        readonly "type": "address";
-      }
-    ];
-    readonly "name": "ForwarderAddressUpdated";
-    readonly "type": "event";
-  },
-  {
-    readonly "anonymous": false;
-    readonly "inputs": readonly [
-      {
-        readonly "indexed": false;
-        readonly "internalType": "uint32";
-        readonly "name": "maxAttestationAge";
-        readonly "type": "uint32";
-      }
-    ];
-    readonly "name": "MaxAttestationAgeSet";
     readonly "type": "event";
   },
   {
@@ -10940,43 +10028,7 @@ export declare const guardianReceiverAbi: readonly [
     readonly "anonymous": false;
     readonly "inputs": readonly [
       {
-        readonly "indexed": false;
-        readonly "internalType": "string";
-        readonly "name": "message";
-        readonly "type": "string";
-      }
-    ];
-    readonly "name": "SecurityWarning";
-    readonly "type": "event";
-  },
-  {
-    readonly "anonymous": false;
-    readonly "inputs": readonly [
-      {
-        readonly "indexed": true;
-        readonly "internalType": "address";
-        readonly "name": "transmitter";
-        readonly "type": "address";
-      }
-    ];
-    readonly "name": "SimulationTransmitterSet";
-    readonly "type": "event";
-  },
-  {
-    readonly "anonymous": false;
-    readonly "inputs": readonly [
-      {
         readonly "components": readonly [
-          {
-            readonly "internalType": "int256";
-            readonly "name": "minPrice";
-            readonly "type": "int256";
-          },
-          {
-            readonly "internalType": "int256";
-            readonly "name": "maxPrice";
-            readonly "type": "int256";
-          },
           {
             readonly "internalType": "uint256";
             readonly "name": "minFreeCash";
@@ -10991,47 +10043,16 @@ export declare const guardianReceiverAbi: readonly [
             readonly "internalType": "uint256";
             readonly "name": "minOriginated";
             readonly "type": "uint256";
-          },
-          {
-            readonly "internalType": "uint32";
-            readonly "name": "maxPriceAge";
-            readonly "type": "uint32";
           }
         ];
         readonly "indexed": false;
-        readonly "internalType": "struct GuardianReceiver.Thresholds";
+        readonly "internalType": "struct CreditGuard.Thresholds";
         readonly "name": "thresholds";
         readonly "type": "tuple";
       }
     ];
     readonly "name": "ThresholdsSet";
     readonly "type": "event";
-  },
-  {
-    readonly "inputs": readonly [];
-    readonly "name": "MAX_ATTESTATION_AGE_LIMIT";
-    readonly "outputs": readonly [
-      {
-        readonly "internalType": "uint32";
-        readonly "name": "";
-        readonly "type": "uint32";
-      }
-    ];
-    readonly "stateMutability": "view";
-    readonly "type": "function";
-  },
-  {
-    readonly "inputs": readonly [];
-    readonly "name": "MAX_CLOCK_SKEW";
-    readonly "outputs": readonly [
-      {
-        readonly "internalType": "uint32";
-        readonly "name": "";
-        readonly "type": "uint32";
-      }
-    ];
-    readonly "stateMutability": "view";
-    readonly "type": "function";
   },
   {
     readonly "inputs": readonly [];
@@ -11048,72 +10069,7 @@ export declare const guardianReceiverAbi: readonly [
   },
   {
     readonly "inputs": readonly [];
-    readonly "name": "POOL_REASONS";
-    readonly "outputs": readonly [
-      {
-        readonly "internalType": "uint8";
-        readonly "name": "";
-        readonly "type": "uint8";
-      }
-    ];
-    readonly "stateMutability": "view";
-    readonly "type": "function";
-  },
-  {
-    readonly "inputs": readonly [];
-    readonly "name": "PRICE_CEILING";
-    readonly "outputs": readonly [
-      {
-        readonly "internalType": "int256";
-        readonly "name": "";
-        readonly "type": "int256";
-      }
-    ];
-    readonly "stateMutability": "view";
-    readonly "type": "function";
-  },
-  {
-    readonly "inputs": readonly [];
-    readonly "name": "PRICE_DECIMALS";
-    readonly "outputs": readonly [
-      {
-        readonly "internalType": "uint8";
-        readonly "name": "";
-        readonly "type": "uint8";
-      }
-    ];
-    readonly "stateMutability": "view";
-    readonly "type": "function";
-  },
-  {
-    readonly "inputs": readonly [];
-    readonly "name": "PRICE_REASONS";
-    readonly "outputs": readonly [
-      {
-        readonly "internalType": "uint8";
-        readonly "name": "";
-        readonly "type": "uint8";
-      }
-    ];
-    readonly "stateMutability": "view";
-    readonly "type": "function";
-  },
-  {
-    readonly "inputs": readonly [];
     readonly "name": "REASON_BAD_DEBT";
-    readonly "outputs": readonly [
-      {
-        readonly "internalType": "uint8";
-        readonly "name": "";
-        readonly "type": "uint8";
-      }
-    ];
-    readonly "stateMutability": "view";
-    readonly "type": "function";
-  },
-  {
-    readonly "inputs": readonly [];
-    readonly "name": "REASON_DEPEG";
     readonly "outputs": readonly [
       {
         readonly "internalType": "uint8";
@@ -11152,32 +10108,6 @@ export declare const guardianReceiverAbi: readonly [
   },
   {
     readonly "inputs": readonly [];
-    readonly "name": "REASON_STALE_PRICE";
-    readonly "outputs": readonly [
-      {
-        readonly "internalType": "uint8";
-        readonly "name": "";
-        readonly "type": "uint8";
-      }
-    ];
-    readonly "stateMutability": "view";
-    readonly "type": "function";
-  },
-  {
-    readonly "inputs": readonly [];
-    readonly "name": "REPORT_KIND";
-    readonly "outputs": readonly [
-      {
-        readonly "internalType": "uint8";
-        readonly "name": "";
-        readonly "type": "uint8";
-      }
-    ];
-    readonly "stateMutability": "view";
-    readonly "type": "function";
-  },
-  {
-    readonly "inputs": readonly [];
     readonly "name": "acknowledgeBadDebt";
     readonly "outputs": readonly [];
     readonly "stateMutability": "nonpayable";
@@ -11188,7 +10118,7 @@ export declare const guardianReceiverAbi: readonly [
     readonly "name": "activeOverride";
     readonly "outputs": readonly [
       {
-        readonly "internalType": "enum GuardianReceiver.Override";
+        readonly "internalType": "enum CreditGuard.Override";
         readonly "name": "";
         readonly "type": "uint8";
       }
@@ -11199,19 +10129,6 @@ export declare const guardianReceiverAbi: readonly [
   {
     readonly "inputs": readonly [];
     readonly "name": "badDebtAcknowledged";
-    readonly "outputs": readonly [
-      {
-        readonly "internalType": "uint256";
-        readonly "name": "";
-        readonly "type": "uint256";
-      }
-    ];
-    readonly "stateMutability": "view";
-    readonly "type": "function";
-  },
-  {
-    readonly "inputs": readonly [];
-    readonly "name": "cashScale";
     readonly "outputs": readonly [
       {
         readonly "internalType": "uint256";
@@ -11239,39 +10156,14 @@ export declare const guardianReceiverAbi: readonly [
             readonly "type": "uint8";
           },
           {
-            readonly "internalType": "bool";
-            readonly "name": "attestedPaused";
-            readonly "type": "bool";
-          },
-          {
             readonly "internalType": "uint8";
-            readonly "name": "attestedReasons";
+            readonly "name": "poolReasons";
             readonly "type": "uint8";
           },
           {
-            readonly "internalType": "uint64";
-            readonly "name": "observedAt";
-            readonly "type": "uint64";
-          },
-          {
-            readonly "internalType": "bool";
-            readonly "name": "stale";
-            readonly "type": "bool";
-          },
-          {
-            readonly "internalType": "enum GuardianReceiver.Override";
+            readonly "internalType": "enum CreditGuard.Override";
             readonly "name": "overrideMode";
             readonly "type": "uint8";
-          },
-          {
-            readonly "internalType": "uint32";
-            readonly "name": "maxAttestationAge";
-            readonly "type": "uint32";
-          },
-          {
-            readonly "internalType": "uint80";
-            readonly "name": "round";
-            readonly "type": "uint80";
           },
           {
             readonly "internalType": "uint64";
@@ -11279,289 +10171,63 @@ export declare const guardianReceiverAbi: readonly [
             readonly "type": "uint64";
           },
           {
-            readonly "internalType": "uint8";
-            readonly "name": "poolReasons";
-            readonly "type": "uint8";
-          },
-          {
-            readonly "internalType": "uint8";
-            readonly "name": "priceReasons";
-            readonly "type": "uint8";
-          },
-          {
             readonly "internalType": "uint256";
             readonly "name": "badDebtAcknowledged";
             readonly "type": "uint256";
+          },
+          {
+            readonly "components": readonly [
+              {
+                readonly "internalType": "uint256";
+                readonly "name": "freeCash";
+                readonly "type": "uint256";
+              },
+              {
+                readonly "internalType": "uint256";
+                readonly "name": "totalOwed";
+                readonly "type": "uint256";
+              },
+              {
+                readonly "internalType": "uint256";
+                readonly "name": "badDebt";
+                readonly "type": "uint256";
+              },
+              {
+                readonly "internalType": "uint256";
+                readonly "name": "totalOriginated";
+                readonly "type": "uint256";
+              }
+            ];
+            readonly "internalType": "struct IPolarisPool.PoolState";
+            readonly "name": "pool";
+            readonly "type": "tuple";
+          },
+          {
+            readonly "components": readonly [
+              {
+                readonly "internalType": "uint256";
+                readonly "name": "minFreeCash";
+                readonly "type": "uint256";
+              },
+              {
+                readonly "internalType": "uint16";
+                readonly "name": "maxBadDebtBps";
+                readonly "type": "uint16";
+              },
+              {
+                readonly "internalType": "uint256";
+                readonly "name": "minOriginated";
+                readonly "type": "uint256";
+              }
+            ];
+            readonly "internalType": "struct CreditGuard.Thresholds";
+            readonly "name": "thresholds";
+            readonly "type": "tuple";
           }
         ];
-        readonly "internalType": "struct GuardianReceiver.CreditStatus";
+        readonly "internalType": "struct CreditGuard.CreditStatus";
         readonly "name": "s";
         readonly "type": "tuple";
-      }
-    ];
-    readonly "stateMutability": "view";
-    readonly "type": "function";
-  },
-  {
-    readonly "inputs": readonly [];
-    readonly "name": "currentInputs";
-    readonly "outputs": readonly [
-      {
-        readonly "components": readonly [
-          {
-            readonly "internalType": "uint256";
-            readonly "name": "freeCash";
-            readonly "type": "uint256";
-          },
-          {
-            readonly "internalType": "uint256";
-            readonly "name": "totalOwed";
-            readonly "type": "uint256";
-          },
-          {
-            readonly "internalType": "uint256";
-            readonly "name": "badDebt";
-            readonly "type": "uint256";
-          },
-          {
-            readonly "internalType": "uint256";
-            readonly "name": "totalOriginated";
-            readonly "type": "uint256";
-          }
-        ];
-        readonly "internalType": "struct IPolarisPool.PoolState";
-        readonly "name": "state";
-        readonly "type": "tuple";
-      },
-      {
-        readonly "components": readonly [
-          {
-            readonly "internalType": "int256";
-            readonly "name": "minPrice";
-            readonly "type": "int256";
-          },
-          {
-            readonly "internalType": "int256";
-            readonly "name": "maxPrice";
-            readonly "type": "int256";
-          },
-          {
-            readonly "internalType": "uint256";
-            readonly "name": "minFreeCash";
-            readonly "type": "uint256";
-          },
-          {
-            readonly "internalType": "uint16";
-            readonly "name": "maxBadDebtBps";
-            readonly "type": "uint16";
-          },
-          {
-            readonly "internalType": "uint256";
-            readonly "name": "minOriginated";
-            readonly "type": "uint256";
-          },
-          {
-            readonly "internalType": "uint32";
-            readonly "name": "maxPriceAge";
-            readonly "type": "uint32";
-          }
-        ];
-        readonly "internalType": "struct GuardianReceiver.Thresholds";
-        readonly "name": "limits";
-        readonly "type": "tuple";
-      },
-      {
-        readonly "internalType": "uint256";
-        readonly "name": "acknowledgedBadDebt";
-        readonly "type": "uint256";
-      }
-    ];
-    readonly "stateMutability": "view";
-    readonly "type": "function";
-  },
-  {
-    readonly "inputs": readonly [];
-    readonly "name": "decimals";
-    readonly "outputs": readonly [
-      {
-        readonly "internalType": "uint8";
-        readonly "name": "";
-        readonly "type": "uint8";
-      }
-    ];
-    readonly "stateMutability": "pure";
-    readonly "type": "function";
-  },
-  {
-    readonly "inputs": readonly [];
-    readonly "name": "description";
-    readonly "outputs": readonly [
-      {
-        readonly "internalType": "string";
-        readonly "name": "";
-        readonly "type": "string";
-      }
-    ];
-    readonly "stateMutability": "pure";
-    readonly "type": "function";
-  },
-  {
-    readonly "inputs": readonly [
-      {
-        readonly "components": readonly [
-          {
-            readonly "internalType": "uint80";
-            readonly "name": "priceRoundId";
-            readonly "type": "uint80";
-          },
-          {
-            readonly "internalType": "int256";
-            readonly "name": "price";
-            readonly "type": "int256";
-          },
-          {
-            readonly "internalType": "uint64";
-            readonly "name": "priceUpdatedAt";
-            readonly "type": "uint64";
-          },
-          {
-            readonly "internalType": "uint256";
-            readonly "name": "freeCash";
-            readonly "type": "uint256";
-          },
-          {
-            readonly "internalType": "uint256";
-            readonly "name": "totalOwed";
-            readonly "type": "uint256";
-          },
-          {
-            readonly "internalType": "uint256";
-            readonly "name": "badDebt";
-            readonly "type": "uint256";
-          },
-          {
-            readonly "internalType": "uint256";
-            readonly "name": "totalOriginated";
-            readonly "type": "uint256";
-          },
-          {
-            readonly "internalType": "uint64";
-            readonly "name": "observedAt";
-            readonly "type": "uint64";
-          },
-          {
-            readonly "internalType": "bool";
-            readonly "name": "creditPaused";
-            readonly "type": "bool";
-          },
-          {
-            readonly "internalType": "uint8";
-            readonly "name": "reasons";
-            readonly "type": "uint8";
-          }
-        ];
-        readonly "internalType": "struct GuardianReceiver.Attestation";
-        readonly "name": "a";
-        readonly "type": "tuple";
-      }
-    ];
-    readonly "name": "evaluate";
-    readonly "outputs": readonly [
-      {
-        readonly "internalType": "uint8";
-        readonly "name": "reasons";
-        readonly "type": "uint8";
-      }
-    ];
-    readonly "stateMutability": "view";
-    readonly "type": "function";
-  },
-  {
-    readonly "inputs": readonly [];
-    readonly "name": "getExpectedAuthor";
-    readonly "outputs": readonly [
-      {
-        readonly "internalType": "address";
-        readonly "name": "";
-        readonly "type": "address";
-      }
-    ];
-    readonly "stateMutability": "view";
-    readonly "type": "function";
-  },
-  {
-    readonly "inputs": readonly [];
-    readonly "name": "getExpectedWorkflowId";
-    readonly "outputs": readonly [
-      {
-        readonly "internalType": "bytes32";
-        readonly "name": "";
-        readonly "type": "bytes32";
-      }
-    ];
-    readonly "stateMutability": "view";
-    readonly "type": "function";
-  },
-  {
-    readonly "inputs": readonly [];
-    readonly "name": "getExpectedWorkflowName";
-    readonly "outputs": readonly [
-      {
-        readonly "internalType": "bytes10";
-        readonly "name": "";
-        readonly "type": "bytes10";
-      }
-    ];
-    readonly "stateMutability": "view";
-    readonly "type": "function";
-  },
-  {
-    readonly "inputs": readonly [];
-    readonly "name": "getForwarderAddress";
-    readonly "outputs": readonly [
-      {
-        readonly "internalType": "address";
-        readonly "name": "";
-        readonly "type": "address";
-      }
-    ];
-    readonly "stateMutability": "view";
-    readonly "type": "function";
-  },
-  {
-    readonly "inputs": readonly [
-      {
-        readonly "internalType": "uint80";
-        readonly "name": "roundId";
-        readonly "type": "uint80";
-      }
-    ];
-    readonly "name": "getRoundData";
-    readonly "outputs": readonly [
-      {
-        readonly "internalType": "uint80";
-        readonly "name": "";
-        readonly "type": "uint80";
-      },
-      {
-        readonly "internalType": "int256";
-        readonly "name": "answer";
-        readonly "type": "int256";
-      },
-      {
-        readonly "internalType": "uint256";
-        readonly "name": "startedAt";
-        readonly "type": "uint256";
-      },
-      {
-        readonly "internalType": "uint256";
-        readonly "name": "updatedAt";
-        readonly "type": "uint256";
-      },
-      {
-        readonly "internalType": "uint80";
-        readonly "name": "answeredInRound";
-        readonly "type": "uint80";
       }
     ];
     readonly "stateMutability": "view";
@@ -11587,165 +10253,10 @@ export declare const guardianReceiverAbi: readonly [
   },
   {
     readonly "inputs": readonly [];
-    readonly "name": "isStale";
-    readonly "outputs": readonly [
-      {
-        readonly "internalType": "bool";
-        readonly "name": "";
-        readonly "type": "bool";
-      }
-    ];
-    readonly "stateMutability": "view";
-    readonly "type": "function";
-  },
-  {
-    readonly "inputs": readonly [];
-    readonly "name": "latestAttestation";
-    readonly "outputs": readonly [
-      {
-        readonly "components": readonly [
-          {
-            readonly "internalType": "uint80";
-            readonly "name": "priceRoundId";
-            readonly "type": "uint80";
-          },
-          {
-            readonly "internalType": "int256";
-            readonly "name": "price";
-            readonly "type": "int256";
-          },
-          {
-            readonly "internalType": "uint64";
-            readonly "name": "priceUpdatedAt";
-            readonly "type": "uint64";
-          },
-          {
-            readonly "internalType": "uint256";
-            readonly "name": "freeCash";
-            readonly "type": "uint256";
-          },
-          {
-            readonly "internalType": "uint256";
-            readonly "name": "totalOwed";
-            readonly "type": "uint256";
-          },
-          {
-            readonly "internalType": "uint256";
-            readonly "name": "badDebt";
-            readonly "type": "uint256";
-          },
-          {
-            readonly "internalType": "uint256";
-            readonly "name": "totalOriginated";
-            readonly "type": "uint256";
-          },
-          {
-            readonly "internalType": "uint64";
-            readonly "name": "observedAt";
-            readonly "type": "uint64";
-          },
-          {
-            readonly "internalType": "bool";
-            readonly "name": "creditPaused";
-            readonly "type": "bool";
-          },
-          {
-            readonly "internalType": "uint8";
-            readonly "name": "reasons";
-            readonly "type": "uint8";
-          }
-        ];
-        readonly "internalType": "struct GuardianReceiver.Attestation";
-        readonly "name": "";
-        readonly "type": "tuple";
-      }
-    ];
-    readonly "stateMutability": "view";
-    readonly "type": "function";
-  },
-  {
-    readonly "inputs": readonly [];
-    readonly "name": "latestRound";
-    readonly "outputs": readonly [
-      {
-        readonly "internalType": "uint80";
-        readonly "name": "";
-        readonly "type": "uint80";
-      }
-    ];
-    readonly "stateMutability": "view";
-    readonly "type": "function";
-  },
-  {
-    readonly "inputs": readonly [];
-    readonly "name": "latestRoundData";
-    readonly "outputs": readonly [
-      {
-        readonly "internalType": "uint80";
-        readonly "name": "roundId";
-        readonly "type": "uint80";
-      },
-      {
-        readonly "internalType": "int256";
-        readonly "name": "answer";
-        readonly "type": "int256";
-      },
-      {
-        readonly "internalType": "uint256";
-        readonly "name": "startedAt";
-        readonly "type": "uint256";
-      },
-      {
-        readonly "internalType": "uint256";
-        readonly "name": "updatedAt";
-        readonly "type": "uint256";
-      },
-      {
-        readonly "internalType": "uint80";
-        readonly "name": "answeredInRound";
-        readonly "type": "uint80";
-      }
-    ];
-    readonly "stateMutability": "view";
-    readonly "type": "function";
-  },
-  {
-    readonly "inputs": readonly [];
-    readonly "name": "maxAttestationAge";
-    readonly "outputs": readonly [
-      {
-        readonly "internalType": "uint32";
-        readonly "name": "";
-        readonly "type": "uint32";
-      }
-    ];
-    readonly "stateMutability": "view";
-    readonly "type": "function";
-  },
-  {
-    readonly "inputs": readonly [
-      {
-        readonly "internalType": "bytes";
-        readonly "name": "metadata";
-        readonly "type": "bytes";
-      },
-      {
-        readonly "internalType": "bytes";
-        readonly "name": "report";
-        readonly "type": "bytes";
-      }
-    ];
-    readonly "name": "onReport";
-    readonly "outputs": readonly [];
-    readonly "stateMutability": "nonpayable";
-    readonly "type": "function";
-  },
-  {
-    readonly "inputs": readonly [];
     readonly "name": "overrideMode";
     readonly "outputs": readonly [
       {
-        readonly "internalType": "enum GuardianReceiver.Override";
+        readonly "internalType": "enum CreditGuard.Override";
         readonly "name": "";
         readonly "type": "uint8";
       }
@@ -11793,6 +10304,47 @@ export declare const guardianReceiverAbi: readonly [
     readonly "type": "function";
   },
   {
+    readonly "inputs": readonly [
+      {
+        readonly "components": readonly [
+          {
+            readonly "internalType": "uint256";
+            readonly "name": "freeCash";
+            readonly "type": "uint256";
+          },
+          {
+            readonly "internalType": "uint256";
+            readonly "name": "totalOwed";
+            readonly "type": "uint256";
+          },
+          {
+            readonly "internalType": "uint256";
+            readonly "name": "badDebt";
+            readonly "type": "uint256";
+          },
+          {
+            readonly "internalType": "uint256";
+            readonly "name": "totalOriginated";
+            readonly "type": "uint256";
+          }
+        ];
+        readonly "internalType": "struct IPolarisPool.PoolState";
+        readonly "name": "s";
+        readonly "type": "tuple";
+      }
+    ];
+    readonly "name": "poolReasons";
+    readonly "outputs": readonly [
+      {
+        readonly "internalType": "uint8";
+        readonly "name": "reasons";
+        readonly "type": "uint8";
+      }
+    ];
+    readonly "stateMutability": "view";
+    readonly "type": "function";
+  },
+  {
     readonly "inputs": readonly [];
     readonly "name": "renounceOwnership";
     readonly "outputs": readonly [];
@@ -11802,72 +10354,7 @@ export declare const guardianReceiverAbi: readonly [
   {
     readonly "inputs": readonly [
       {
-        readonly "internalType": "address";
-        readonly "name": "_author";
-        readonly "type": "address";
-      }
-    ];
-    readonly "name": "setExpectedAuthor";
-    readonly "outputs": readonly [];
-    readonly "stateMutability": "nonpayable";
-    readonly "type": "function";
-  },
-  {
-    readonly "inputs": readonly [
-      {
-        readonly "internalType": "bytes32";
-        readonly "name": "_id";
-        readonly "type": "bytes32";
-      }
-    ];
-    readonly "name": "setExpectedWorkflowId";
-    readonly "outputs": readonly [];
-    readonly "stateMutability": "nonpayable";
-    readonly "type": "function";
-  },
-  {
-    readonly "inputs": readonly [
-      {
-        readonly "internalType": "string";
-        readonly "name": "_name";
-        readonly "type": "string";
-      }
-    ];
-    readonly "name": "setExpectedWorkflowName";
-    readonly "outputs": readonly [];
-    readonly "stateMutability": "nonpayable";
-    readonly "type": "function";
-  },
-  {
-    readonly "inputs": readonly [
-      {
-        readonly "internalType": "address";
-        readonly "name": "_forwarder";
-        readonly "type": "address";
-      }
-    ];
-    readonly "name": "setForwarderAddress";
-    readonly "outputs": readonly [];
-    readonly "stateMutability": "nonpayable";
-    readonly "type": "function";
-  },
-  {
-    readonly "inputs": readonly [
-      {
-        readonly "internalType": "uint32";
-        readonly "name": "age";
-        readonly "type": "uint32";
-      }
-    ];
-    readonly "name": "setMaxAttestationAge";
-    readonly "outputs": readonly [];
-    readonly "stateMutability": "nonpayable";
-    readonly "type": "function";
-  },
-  {
-    readonly "inputs": readonly [
-      {
-        readonly "internalType": "enum GuardianReceiver.Override";
+        readonly "internalType": "enum CreditGuard.Override";
         readonly "name": "mode";
         readonly "type": "uint8";
       },
@@ -11885,30 +10372,7 @@ export declare const guardianReceiverAbi: readonly [
   {
     readonly "inputs": readonly [
       {
-        readonly "internalType": "address";
-        readonly "name": "transmitter";
-        readonly "type": "address";
-      }
-    ];
-    readonly "name": "setSimulationTransmitter";
-    readonly "outputs": readonly [];
-    readonly "stateMutability": "nonpayable";
-    readonly "type": "function";
-  },
-  {
-    readonly "inputs": readonly [
-      {
         readonly "components": readonly [
-          {
-            readonly "internalType": "int256";
-            readonly "name": "minPrice";
-            readonly "type": "int256";
-          },
-          {
-            readonly "internalType": "int256";
-            readonly "name": "maxPrice";
-            readonly "type": "int256";
-          },
           {
             readonly "internalType": "uint256";
             readonly "name": "minFreeCash";
@@ -11923,14 +10387,9 @@ export declare const guardianReceiverAbi: readonly [
             readonly "internalType": "uint256";
             readonly "name": "minOriginated";
             readonly "type": "uint256";
-          },
-          {
-            readonly "internalType": "uint32";
-            readonly "name": "maxPriceAge";
-            readonly "type": "uint32";
           }
         ];
-        readonly "internalType": "struct GuardianReceiver.Thresholds";
+        readonly "internalType": "struct CreditGuard.Thresholds";
         readonly "name": "t";
         readonly "type": "tuple";
       }
@@ -11942,52 +10401,10 @@ export declare const guardianReceiverAbi: readonly [
   },
   {
     readonly "inputs": readonly [];
-    readonly "name": "simulationTransmitter";
-    readonly "outputs": readonly [
-      {
-        readonly "internalType": "address";
-        readonly "name": "";
-        readonly "type": "address";
-      }
-    ];
-    readonly "stateMutability": "view";
-    readonly "type": "function";
-  },
-  {
-    readonly "inputs": readonly [
-      {
-        readonly "internalType": "bytes4";
-        readonly "name": "interfaceId";
-        readonly "type": "bytes4";
-      }
-    ];
-    readonly "name": "supportsInterface";
-    readonly "outputs": readonly [
-      {
-        readonly "internalType": "bool";
-        readonly "name": "";
-        readonly "type": "bool";
-      }
-    ];
-    readonly "stateMutability": "view";
-    readonly "type": "function";
-  },
-  {
-    readonly "inputs": readonly [];
     readonly "name": "thresholds";
     readonly "outputs": readonly [
       {
         readonly "components": readonly [
-          {
-            readonly "internalType": "int256";
-            readonly "name": "minPrice";
-            readonly "type": "int256";
-          },
-          {
-            readonly "internalType": "int256";
-            readonly "name": "maxPrice";
-            readonly "type": "int256";
-          },
           {
             readonly "internalType": "uint256";
             readonly "name": "minFreeCash";
@@ -12002,14 +10419,9 @@ export declare const guardianReceiverAbi: readonly [
             readonly "internalType": "uint256";
             readonly "name": "minOriginated";
             readonly "type": "uint256";
-          },
-          {
-            readonly "internalType": "uint32";
-            readonly "name": "maxPriceAge";
-            readonly "type": "uint32";
           }
         ];
-        readonly "internalType": "struct GuardianReceiver.Thresholds";
+        readonly "internalType": "struct CreditGuard.Thresholds";
         readonly "name": "";
         readonly "type": "tuple";
       }
@@ -12028,473 +10440,6 @@ export declare const guardianReceiverAbi: readonly [
     readonly "name": "transferOwnership";
     readonly "outputs": readonly [];
     readonly "stateMutability": "nonpayable";
-    readonly "type": "function";
-  },
-  {
-    readonly "inputs": readonly [];
-    readonly "name": "version";
-    readonly "outputs": readonly [
-      {
-        readonly "internalType": "uint256";
-        readonly "name": "";
-        readonly "type": "uint256";
-      }
-    ];
-    readonly "stateMutability": "pure";
-    readonly "type": "function";
-  }
-];
-
-/** ABI of MockKeystoneForwarder. */
-export declare const mockKeystoneForwarderAbi: readonly [
-  {
-    readonly "inputs": readonly [];
-    readonly "name": "InvalidReport";
-    readonly "type": "error";
-  },
-  {
-    readonly "anonymous": false;
-    readonly "inputs": readonly [
-      {
-        readonly "indexed": true;
-        readonly "internalType": "address";
-        readonly "name": "receiver";
-        readonly "type": "address";
-      },
-      {
-        readonly "indexed": true;
-        readonly "internalType": "bytes32";
-        readonly "name": "workflowExecutionId";
-        readonly "type": "bytes32";
-      },
-      {
-        readonly "indexed": true;
-        readonly "internalType": "bytes2";
-        readonly "name": "reportId";
-        readonly "type": "bytes2";
-      },
-      {
-        readonly "indexed": false;
-        readonly "internalType": "bool";
-        readonly "name": "result";
-        readonly "type": "bool";
-      }
-    ];
-    readonly "name": "ReportProcessed";
-    readonly "type": "event";
-  },
-  {
-    readonly "inputs": readonly [];
-    readonly "name": "lastRevertData";
-    readonly "outputs": readonly [
-      {
-        readonly "internalType": "bytes";
-        readonly "name": "";
-        readonly "type": "bytes";
-      }
-    ];
-    readonly "stateMutability": "view";
-    readonly "type": "function";
-  },
-  {
-    readonly "inputs": readonly [
-      {
-        readonly "internalType": "address";
-        readonly "name": "receiver";
-        readonly "type": "address";
-      },
-      {
-        readonly "internalType": "bytes";
-        readonly "name": "rawReport";
-        readonly "type": "bytes";
-      },
-      {
-        readonly "internalType": "bytes";
-        readonly "name": "";
-        readonly "type": "bytes";
-      },
-      {
-        readonly "internalType": "bytes[]";
-        readonly "name": "";
-        readonly "type": "bytes[]";
-      }
-    ];
-    readonly "name": "report";
-    readonly "outputs": readonly [];
-    readonly "stateMutability": "nonpayable";
-    readonly "type": "function";
-  },
-  {
-    readonly "inputs": readonly [
-      {
-        readonly "internalType": "address";
-        readonly "name": "receiver";
-        readonly "type": "address";
-      },
-      {
-        readonly "internalType": "bytes";
-        readonly "name": "metadata";
-        readonly "type": "bytes";
-      },
-      {
-        readonly "internalType": "bytes";
-        readonly "name": "body";
-        readonly "type": "bytes";
-      }
-    ];
-    readonly "name": "route";
-    readonly "outputs": readonly [
-      {
-        readonly "internalType": "bool";
-        readonly "name": "";
-        readonly "type": "bool";
-      }
-    ];
-    readonly "stateMutability": "nonpayable";
-    readonly "type": "function";
-  },
-  {
-    readonly "inputs": readonly [];
-    readonly "name": "typeAndVersion";
-    readonly "outputs": readonly [
-      {
-        readonly "internalType": "string";
-        readonly "name": "";
-        readonly "type": "string";
-      }
-    ];
-    readonly "stateMutability": "pure";
-    readonly "type": "function";
-  }
-];
-
-/** ABI of MockPriceFeed. */
-export declare const mockPriceFeedAbi: readonly [
-  {
-    readonly "inputs": readonly [
-      {
-        readonly "internalType": "uint8";
-        readonly "name": "_decimals";
-        readonly "type": "uint8";
-      },
-      {
-        readonly "internalType": "string";
-        readonly "name": "_description";
-        readonly "type": "string";
-      },
-      {
-        readonly "internalType": "int256";
-        readonly "name": "initialAnswer";
-        readonly "type": "int256";
-      }
-    ];
-    readonly "stateMutability": "nonpayable";
-    readonly "type": "constructor";
-  },
-  {
-    readonly "inputs": readonly [
-      {
-        readonly "internalType": "uint80";
-        readonly "name": "roundId";
-        readonly "type": "uint80";
-      }
-    ];
-    readonly "name": "RoundNotFound";
-    readonly "type": "error";
-  },
-  {
-    readonly "anonymous": false;
-    readonly "inputs": readonly [
-      {
-        readonly "indexed": true;
-        readonly "internalType": "int256";
-        readonly "name": "current";
-        readonly "type": "int256";
-      },
-      {
-        readonly "indexed": true;
-        readonly "internalType": "uint256";
-        readonly "name": "roundId";
-        readonly "type": "uint256";
-      },
-      {
-        readonly "indexed": false;
-        readonly "internalType": "uint256";
-        readonly "name": "updatedAt";
-        readonly "type": "uint256";
-      }
-    ];
-    readonly "name": "AnswerUpdated";
-    readonly "type": "event";
-  },
-  {
-    readonly "inputs": readonly [];
-    readonly "name": "decimals";
-    readonly "outputs": readonly [
-      {
-        readonly "internalType": "uint8";
-        readonly "name": "";
-        readonly "type": "uint8";
-      }
-    ];
-    readonly "stateMutability": "view";
-    readonly "type": "function";
-  },
-  {
-    readonly "inputs": readonly [];
-    readonly "name": "description";
-    readonly "outputs": readonly [
-      {
-        readonly "internalType": "string";
-        readonly "name": "";
-        readonly "type": "string";
-      }
-    ];
-    readonly "stateMutability": "view";
-    readonly "type": "function";
-  },
-  {
-    readonly "inputs": readonly [
-      {
-        readonly "internalType": "uint80";
-        readonly "name": "roundId";
-        readonly "type": "uint80";
-      }
-    ];
-    readonly "name": "getRoundData";
-    readonly "outputs": readonly [
-      {
-        readonly "internalType": "uint80";
-        readonly "name": "";
-        readonly "type": "uint80";
-      },
-      {
-        readonly "internalType": "int256";
-        readonly "name": "answer";
-        readonly "type": "int256";
-      },
-      {
-        readonly "internalType": "uint256";
-        readonly "name": "startedAt";
-        readonly "type": "uint256";
-      },
-      {
-        readonly "internalType": "uint256";
-        readonly "name": "updatedAt";
-        readonly "type": "uint256";
-      },
-      {
-        readonly "internalType": "uint80";
-        readonly "name": "answeredInRound";
-        readonly "type": "uint80";
-      }
-    ];
-    readonly "stateMutability": "view";
-    readonly "type": "function";
-  },
-  {
-    readonly "inputs": readonly [];
-    readonly "name": "latestRound";
-    readonly "outputs": readonly [
-      {
-        readonly "internalType": "uint80";
-        readonly "name": "";
-        readonly "type": "uint80";
-      }
-    ];
-    readonly "stateMutability": "view";
-    readonly "type": "function";
-  },
-  {
-    readonly "inputs": readonly [];
-    readonly "name": "latestRoundData";
-    readonly "outputs": readonly [
-      {
-        readonly "internalType": "uint80";
-        readonly "name": "roundId";
-        readonly "type": "uint80";
-      },
-      {
-        readonly "internalType": "int256";
-        readonly "name": "answer";
-        readonly "type": "int256";
-      },
-      {
-        readonly "internalType": "uint256";
-        readonly "name": "startedAt";
-        readonly "type": "uint256";
-      },
-      {
-        readonly "internalType": "uint256";
-        readonly "name": "updatedAt";
-        readonly "type": "uint256";
-      },
-      {
-        readonly "internalType": "uint80";
-        readonly "name": "answeredInRound";
-        readonly "type": "uint80";
-      }
-    ];
-    readonly "stateMutability": "view";
-    readonly "type": "function";
-  },
-  {
-    readonly "inputs": readonly [
-      {
-        readonly "internalType": "int256";
-        readonly "name": "answer";
-        readonly "type": "int256";
-      }
-    ];
-    readonly "name": "setAnswer";
-    readonly "outputs": readonly [];
-    readonly "stateMutability": "nonpayable";
-    readonly "type": "function";
-  },
-  {
-    readonly "inputs": readonly [
-      {
-        readonly "internalType": "int256";
-        readonly "name": "answer";
-        readonly "type": "int256";
-      },
-      {
-        readonly "internalType": "uint256";
-        readonly "name": "updatedAt";
-        readonly "type": "uint256";
-      }
-    ];
-    readonly "name": "setRound";
-    readonly "outputs": readonly [];
-    readonly "stateMutability": "nonpayable";
-    readonly "type": "function";
-  },
-  {
-    readonly "inputs": readonly [];
-    readonly "name": "version";
-    readonly "outputs": readonly [
-      {
-        readonly "internalType": "uint256";
-        readonly "name": "";
-        readonly "type": "uint256";
-      }
-    ];
-    readonly "stateMutability": "pure";
-    readonly "type": "function";
-  }
-];
-
-/** ABI of AggregatorV3Interface. */
-export declare const aggregatorV3InterfaceAbi: readonly [
-  {
-    readonly "inputs": readonly [];
-    readonly "name": "decimals";
-    readonly "outputs": readonly [
-      {
-        readonly "internalType": "uint8";
-        readonly "name": "";
-        readonly "type": "uint8";
-      }
-    ];
-    readonly "stateMutability": "view";
-    readonly "type": "function";
-  },
-  {
-    readonly "inputs": readonly [];
-    readonly "name": "description";
-    readonly "outputs": readonly [
-      {
-        readonly "internalType": "string";
-        readonly "name": "";
-        readonly "type": "string";
-      }
-    ];
-    readonly "stateMutability": "view";
-    readonly "type": "function";
-  },
-  {
-    readonly "inputs": readonly [
-      {
-        readonly "internalType": "uint80";
-        readonly "name": "_roundId";
-        readonly "type": "uint80";
-      }
-    ];
-    readonly "name": "getRoundData";
-    readonly "outputs": readonly [
-      {
-        readonly "internalType": "uint80";
-        readonly "name": "roundId";
-        readonly "type": "uint80";
-      },
-      {
-        readonly "internalType": "int256";
-        readonly "name": "answer";
-        readonly "type": "int256";
-      },
-      {
-        readonly "internalType": "uint256";
-        readonly "name": "startedAt";
-        readonly "type": "uint256";
-      },
-      {
-        readonly "internalType": "uint256";
-        readonly "name": "updatedAt";
-        readonly "type": "uint256";
-      },
-      {
-        readonly "internalType": "uint80";
-        readonly "name": "answeredInRound";
-        readonly "type": "uint80";
-      }
-    ];
-    readonly "stateMutability": "view";
-    readonly "type": "function";
-  },
-  {
-    readonly "inputs": readonly [];
-    readonly "name": "latestRoundData";
-    readonly "outputs": readonly [
-      {
-        readonly "internalType": "uint80";
-        readonly "name": "roundId";
-        readonly "type": "uint80";
-      },
-      {
-        readonly "internalType": "int256";
-        readonly "name": "answer";
-        readonly "type": "int256";
-      },
-      {
-        readonly "internalType": "uint256";
-        readonly "name": "startedAt";
-        readonly "type": "uint256";
-      },
-      {
-        readonly "internalType": "uint256";
-        readonly "name": "updatedAt";
-        readonly "type": "uint256";
-      },
-      {
-        readonly "internalType": "uint80";
-        readonly "name": "answeredInRound";
-        readonly "type": "uint80";
-      }
-    ];
-    readonly "stateMutability": "view";
-    readonly "type": "function";
-  },
-  {
-    readonly "inputs": readonly [];
-    readonly "name": "version";
-    readonly "outputs": readonly [
-      {
-        readonly "internalType": "uint256";
-        readonly "name": "";
-        readonly "type": "uint256";
-      }
-    ];
-    readonly "stateMutability": "view";
     readonly "type": "function";
   }
 ];
@@ -12521,10 +10466,16 @@ export declare const iCreditGuardAbi: readonly [
   }
 ];
 
-/** ABI of MockAUSD. */
-export declare const mockAUSDAbi: readonly [
+/** ABI of MockUSDC. */
+export declare const mockUSDCAbi: readonly [
   {
-    readonly "inputs": readonly [];
+    readonly "inputs": readonly [
+      {
+        readonly "internalType": "string";
+        readonly "name": "name_";
+        readonly "type": "string";
+      }
+    ];
     readonly "stateMutability": "nonpayable";
     readonly "type": "constructor";
   },
@@ -12662,33 +10613,6 @@ export declare const mockAUSDAbi: readonly [
     readonly "type": "error";
   },
   {
-    readonly "inputs": readonly [
-      {
-        readonly "internalType": "uint256";
-        readonly "name": "deadline";
-        readonly "type": "uint256";
-      }
-    ];
-    readonly "name": "ERC2612ExpiredSignature";
-    readonly "type": "error";
-  },
-  {
-    readonly "inputs": readonly [
-      {
-        readonly "internalType": "address";
-        readonly "name": "signer";
-        readonly "type": "address";
-      },
-      {
-        readonly "internalType": "address";
-        readonly "name": "owner";
-        readonly "type": "address";
-      }
-    ];
-    readonly "name": "ERC2612InvalidSigner";
-    readonly "type": "error";
-  },
-  {
     readonly "inputs": readonly [];
     readonly "name": "FaucetCooldown";
     readonly "type": "error";
@@ -12716,18 +10640,12 @@ export declare const mockAUSDAbi: readonly [
   },
   {
     readonly "inputs": readonly [];
-    readonly "name": "InvalidShortString";
+    readonly "name": "InvalidPermitSignature";
     readonly "type": "error";
   },
   {
-    readonly "inputs": readonly [
-      {
-        readonly "internalType": "string";
-        readonly "name": "str";
-        readonly "type": "string";
-      }
-    ];
-    readonly "name": "StringTooLong";
+    readonly "inputs": readonly [];
+    readonly "name": "PermitExpired";
     readonly "type": "error";
   },
   {
@@ -12795,12 +10713,6 @@ export declare const mockAUSDAbi: readonly [
   },
   {
     readonly "anonymous": false;
-    readonly "inputs": readonly [];
-    readonly "name": "EIP712DomainChanged";
-    readonly "type": "event";
-  },
-  {
-    readonly "anonymous": false;
     readonly "inputs": readonly [
       {
         readonly "indexed": true;
@@ -12858,6 +10770,19 @@ export declare const mockAUSDAbi: readonly [
         readonly "internalType": "uint256";
         readonly "name": "";
         readonly "type": "uint256";
+      }
+    ];
+    readonly "stateMutability": "view";
+    readonly "type": "function";
+  },
+  {
+    readonly "inputs": readonly [];
+    readonly "name": "PERMIT_TYPEHASH";
+    readonly "outputs": readonly [
+      {
+        readonly "internalType": "bytes32";
+        readonly "name": "";
+        readonly "type": "bytes32";
       }
     ];
     readonly "stateMutability": "view";
@@ -13024,49 +10949,6 @@ export declare const mockAUSDAbi: readonly [
       }
     ];
     readonly "stateMutability": "pure";
-    readonly "type": "function";
-  },
-  {
-    readonly "inputs": readonly [];
-    readonly "name": "eip712Domain";
-    readonly "outputs": readonly [
-      {
-        readonly "internalType": "bytes1";
-        readonly "name": "fields";
-        readonly "type": "bytes1";
-      },
-      {
-        readonly "internalType": "string";
-        readonly "name": "name";
-        readonly "type": "string";
-      },
-      {
-        readonly "internalType": "string";
-        readonly "name": "version";
-        readonly "type": "string";
-      },
-      {
-        readonly "internalType": "uint256";
-        readonly "name": "chainId";
-        readonly "type": "uint256";
-      },
-      {
-        readonly "internalType": "address";
-        readonly "name": "verifyingContract";
-        readonly "type": "address";
-      },
-      {
-        readonly "internalType": "bytes32";
-        readonly "name": "salt";
-        readonly "type": "bytes32";
-      },
-      {
-        readonly "internalType": "uint256[]";
-        readonly "name": "extensions";
-        readonly "type": "uint256[]";
-      }
-    ];
-    readonly "stateMutability": "view";
     readonly "type": "function";
   },
   {
@@ -13372,105 +11254,24 @@ export declare const mockAUSDAbi: readonly [
     readonly "outputs": readonly [];
     readonly "stateMutability": "nonpayable";
     readonly "type": "function";
+  },
+  {
+    readonly "inputs": readonly [];
+    readonly "name": "version";
+    readonly "outputs": readonly [
+      {
+        readonly "internalType": "string";
+        readonly "name": "";
+        readonly "type": "string";
+      }
+    ];
+    readonly "stateMutability": "pure";
+    readonly "type": "function";
   }
 ];
 
-/** ABI of IAUSD. */
-export declare const iausdAbi: readonly [
-  {
-    readonly "inputs": readonly [
-      {
-        readonly "internalType": "address";
-        readonly "name": "frozenAccount";
-        readonly "type": "address";
-      }
-    ];
-    readonly "name": "AccountIsFrozen";
-    readonly "type": "error";
-  },
-  {
-    readonly "inputs": readonly [
-      {
-        readonly "internalType": "address";
-        readonly "name": "sender";
-        readonly "type": "address";
-      },
-      {
-        readonly "internalType": "uint256";
-        readonly "name": "balance";
-        readonly "type": "uint256";
-      },
-      {
-        readonly "internalType": "uint256";
-        readonly "name": "needed";
-        readonly "type": "uint256";
-      }
-    ];
-    readonly "name": "ERC20InsufficientBalance";
-    readonly "type": "error";
-  },
-  {
-    readonly "inputs": readonly [
-      {
-        readonly "internalType": "uint256";
-        readonly "name": "deadline";
-        readonly "type": "uint256";
-      }
-    ];
-    readonly "name": "Erc2612ExpiredSignature";
-    readonly "type": "error";
-  },
-  {
-    readonly "inputs": readonly [];
-    readonly "name": "Erc2612InvalidSignature";
-    readonly "type": "error";
-  },
-  {
-    readonly "inputs": readonly [];
-    readonly "name": "ExpiredAuthorization";
-    readonly "type": "error";
-  },
-  {
-    readonly "inputs": readonly [];
-    readonly "name": "InvalidAuthorization";
-    readonly "type": "error";
-  },
-  {
-    readonly "inputs": readonly [
-      {
-        readonly "internalType": "address";
-        readonly "name": "caller";
-        readonly "type": "address";
-      },
-      {
-        readonly "internalType": "address";
-        readonly "name": "payee";
-        readonly "type": "address";
-      }
-    ];
-    readonly "name": "InvalidPayee";
-    readonly "type": "error";
-  },
-  {
-    readonly "inputs": readonly [];
-    readonly "name": "InvalidSignature";
-    readonly "type": "error";
-  },
-  {
-    readonly "inputs": readonly [];
-    readonly "name": "SignatureVerificationPaused";
-    readonly "type": "error";
-  },
-  {
-    readonly "inputs": readonly [];
-    readonly "name": "TransferPaused";
-    readonly "type": "error";
-  },
-  {
-    readonly "inputs": readonly [];
-    readonly "name": "UsedOrCanceledAuthorization";
-    readonly "type": "error";
-  },
+/** ABI of IUSDC. */
+export declare const iusdcAbi: readonly [
   {
     readonly "anonymous": false;
     readonly "inputs": readonly [
@@ -13711,49 +11512,6 @@ export declare const iausdAbi: readonly [
   },
   {
     readonly "inputs": readonly [];
-    readonly "name": "eip712Domain";
-    readonly "outputs": readonly [
-      {
-        readonly "internalType": "bytes1";
-        readonly "name": "fields";
-        readonly "type": "bytes1";
-      },
-      {
-        readonly "internalType": "string";
-        readonly "name": "name";
-        readonly "type": "string";
-      },
-      {
-        readonly "internalType": "string";
-        readonly "name": "version";
-        readonly "type": "string";
-      },
-      {
-        readonly "internalType": "uint256";
-        readonly "name": "chainId";
-        readonly "type": "uint256";
-      },
-      {
-        readonly "internalType": "address";
-        readonly "name": "verifyingContract";
-        readonly "type": "address";
-      },
-      {
-        readonly "internalType": "bytes32";
-        readonly "name": "salt";
-        readonly "type": "bytes32";
-      },
-      {
-        readonly "internalType": "uint256[]";
-        readonly "name": "extensions";
-        readonly "type": "uint256[]";
-      }
-    ];
-    readonly "stateMutability": "view";
-    readonly "type": "function";
-  },
-  {
-    readonly "inputs": readonly [];
     readonly "name": "name";
     readonly "outputs": readonly [
       {
@@ -13823,49 +11581,6 @@ export declare const iausdAbi: readonly [
       }
     ];
     readonly "name": "permit";
-    readonly "outputs": readonly [];
-    readonly "stateMutability": "nonpayable";
-    readonly "type": "function";
-  },
-  {
-    readonly "inputs": readonly [
-      {
-        readonly "internalType": "address";
-        readonly "name": "from";
-        readonly "type": "address";
-      },
-      {
-        readonly "internalType": "address";
-        readonly "name": "to";
-        readonly "type": "address";
-      },
-      {
-        readonly "internalType": "uint256";
-        readonly "name": "value";
-        readonly "type": "uint256";
-      },
-      {
-        readonly "internalType": "uint256";
-        readonly "name": "validAfter";
-        readonly "type": "uint256";
-      },
-      {
-        readonly "internalType": "uint256";
-        readonly "name": "validBefore";
-        readonly "type": "uint256";
-      },
-      {
-        readonly "internalType": "bytes32";
-        readonly "name": "nonce";
-        readonly "type": "bytes32";
-      },
-      {
-        readonly "internalType": "bytes";
-        readonly "name": "signature";
-        readonly "type": "bytes";
-      }
-    ];
-    readonly "name": "receiveWithAuthorization";
     readonly "outputs": readonly [];
     readonly "stateMutability": "nonpayable";
     readonly "type": "function";
@@ -14054,6 +11769,19 @@ export declare const iausdAbi: readonly [
     readonly "outputs": readonly [];
     readonly "stateMutability": "nonpayable";
     readonly "type": "function";
+  },
+  {
+    readonly "inputs": readonly [];
+    readonly "name": "version";
+    readonly "outputs": readonly [
+      {
+        readonly "internalType": "string";
+        readonly "name": "";
+        readonly "type": "string";
+      }
+    ];
+    readonly "stateMutability": "view";
+    readonly "type": "function";
   }
 ];
 
@@ -14187,47 +11915,6 @@ export declare const ierc3009Abi: readonly [
     readonly "name": "transferWithAuthorization";
     readonly "outputs": readonly [];
     readonly "stateMutability": "nonpayable";
-    readonly "type": "function";
-  }
-];
-
-/** ABI of IReceiver. */
-export declare const iReceiverAbi: readonly [
-  {
-    readonly "inputs": readonly [
-      {
-        readonly "internalType": "bytes";
-        readonly "name": "metadata";
-        readonly "type": "bytes";
-      },
-      {
-        readonly "internalType": "bytes";
-        readonly "name": "report";
-        readonly "type": "bytes";
-      }
-    ];
-    readonly "name": "onReport";
-    readonly "outputs": readonly [];
-    readonly "stateMutability": "nonpayable";
-    readonly "type": "function";
-  },
-  {
-    readonly "inputs": readonly [
-      {
-        readonly "internalType": "bytes4";
-        readonly "name": "interfaceId";
-        readonly "type": "bytes4";
-      }
-    ];
-    readonly "name": "supportsInterface";
-    readonly "outputs": readonly [
-      {
-        readonly "internalType": "bool";
-        readonly "name": "";
-        readonly "type": "bool";
-      }
-    ];
-    readonly "stateMutability": "view";
     readonly "type": "function";
   }
 ];

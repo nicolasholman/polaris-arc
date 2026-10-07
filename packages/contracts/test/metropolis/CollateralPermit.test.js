@@ -1,6 +1,6 @@
 /**
  * CollateralVault.lockWithPermit: collateral a relayer carries, so a borrower
- * who secures a Pay in 4 line never holds MON.
+ * who secures a Pay in 4 line never holds USDC (gas).
  *
  * The permit is the borrower's consent (spender: the vault, value: the
  * amount), and the vault only moves it into the borrower's own position. It is
@@ -19,7 +19,7 @@ describe("CollateralVault.lockWithPermit (gasless collateral)", () => {
 
   beforeEach(async () => {
     [owner, borrower, relayer, stranger] = await ethers.getSigners();
-    token = await (await ethers.getContractFactory("MockAUSD")).deploy();
+    token = await (await ethers.getContractFactory("MockUSDC")).deploy("USDC");
     vault = await (await ethers.getContractFactory("CollateralVault")).deploy(owner.address, await token.getAddress());
     await token.mint(borrower.address, USD(500));
   });

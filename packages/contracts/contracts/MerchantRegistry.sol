@@ -94,7 +94,7 @@ contract MerchantRegistry is Ownable, EIP712, Nonces {
     /**
      * @notice Register `merchant` on their behalf, with their signature. Owner
      *         or operator only.
-     * @dev Merchants sign up with Privy embedded wallets that never hold MON,
+     * @dev Merchants sign up with Privy embedded wallets that never hold USDC (gas),
      *      so they cannot send `register` themselves; the platform sends it for
      *      them. The entry is identical to a self-registration -- inactive, at
      *      the default cap, keyed to the merchant's own address.

@@ -14,7 +14,7 @@ const { time } = require("@nomicfoundation/hardhat-network-helpers");
 
 const { MAX_UINT, domainOf, signTyped, signReceive } = require("../helpers/sign");
 
-const AUSD = (n) => ethers.parseUnits(String(n), 6);
+const USDC = (n) => ethers.parseUnits(String(n), 6);
 const DAY = 24 * 60 * 60;
 const MIN_LIFETIME = 5 * 60;
 const MAX_EXPIRY = 30 * DAY;
@@ -72,27 +72,27 @@ function appCutoff() {
 }
 
 describe("PolarisSend: send dollars by link", () => {
-  let ausd, ps, psAddr, alice, bob, carol, relayer, attacker;
+  let usdc, ps, psAddr, alice, bob, carol, relayer, attacker;
 
   beforeEach(async () => {
     [, alice, bob, carol, relayer, attacker] = await ethers.getSigners();
-    ausd = await (await ethers.getContractFactory("MockAUSD")).deploy();
-    ps = await (await ethers.getContractFactory("PolarisSend")).deploy(await ausd.getAddress());
+    usdc = await (await ethers.getContractFactory("MockUSDC")).deploy("USDC");
+    ps = await (await ethers.getContractFactory("PolarisSend")).deploy(await usdc.getAddress());
     psAddr = await ps.getAddress();
-    await ausd.mint(alice.address, AUSD(1_000));
+    await usdc.mint(alice.address, USDC(1_000));
   });
 
   // ---------------------------------------------------------------
   // Helpers: each one signs or submits exactly what the app would.
   // `via` and `token` point them at another deployment when a test
-  // needs a token MockAUSD cannot imitate.
+  // needs a token MockUSDC cannot imitate.
   // ---------------------------------------------------------------
 
   /**
    * Everything the app signs to open one link: the sender's
    * ReceiveWithAuthorization, and the link key's Open.
    */
-  async function signSend(sender, key, amount, expiresAt, { validBefore, via = ps, token = ausd } = {}) {
+  async function signSend(sender, key, amount, expiresAt, { validBefore, via = ps, token = usdc } = {}) {
     const auth = await signReceive(token, sender, await via.getAddress(), amount, linkNonce(key.address, expiresAt), {
       validBefore: validBefore ?? (await appCutoff()),
     });
@@ -107,7 +107,7 @@ describe("PolarisSend: send dollars by link", () => {
   }
 
   /** Sign and relay a send in one step. */
-  async function openLink({ sender = alice, amount = AUSD(100), lifetime = 7 * DAY, key = newLinkKey() } = {}) {
+  async function openLink({ sender = alice, amount = USDC(100), lifetime = 7 * DAY, key = newLinkKey() } = {}) {
     const expiresAt = await expiryIn(lifetime);
     const a = await signSend(sender, key, amount, expiresAt);
     await submitSend(sender.address, key.address, expiresAt, a);
@@ -138,24 +138,24 @@ describe("PolarisSend: send dollars by link", () => {
 
   describe("sending", () => {
     it("a sender sends with a signature and nothing else", async () => {
-      // A brand-new account: no MON, no transactions, no allowance.
+      // A brand-new account: no USDC (gas), no transactions, no allowance.
       const sender = ethers.Wallet.createRandom();
-      await ausd.mint(sender.address, AUSD(50));
+      await usdc.mint(sender.address, USDC(50));
       const key = newLinkKey();
       const expiresAt = await expiryIn(DAY);
 
-      const a = await signSend(sender, key, AUSD(50), expiresAt);
+      const a = await signSend(sender, key, USDC(50), expiresAt);
       await submitSend(sender.address, key.address, expiresAt, a);
 
       expect(await ethers.provider.getBalance(sender.address)).to.equal(0n);
       expect(await ethers.provider.getTransactionCount(sender.address)).to.equal(0);
-      expect(await ausd.allowance(sender.address, psAddr)).to.equal(0n);
-      expect(await ausd.balanceOf(sender.address)).to.equal(0n);
-      expect(await ausd.balanceOf(psAddr)).to.equal(AUSD(50));
+      expect(await usdc.allowance(sender.address, psAddr)).to.equal(0n);
+      expect(await usdc.balanceOf(sender.address)).to.equal(0n);
+      expect(await usdc.balanceOf(psAddr)).to.equal(USDC(50));
 
       const link = await ps.linkOf(key.address);
       expect(link.sender).to.equal(sender.address);
-      expect(link.amount).to.equal(AUSD(50));
+      expect(link.amount).to.equal(USDC(50));
       expect(link.expiresAt).to.equal(expiresAt);
       expect(await ps.keyUsed(key.address)).to.equal(true);
     });
@@ -164,33 +164,33 @@ describe("PolarisSend: send dollars by link", () => {
       const key = newLinkKey();
       const relayersKey = newLinkKey();
       const expiresAt = await expiryIn(DAY);
-      const a = await signSend(alice, key, AUSD(100), expiresAt);
+      const a = await signSend(alice, key, USDC(100), expiresAt);
 
       // The relayer holds its own key, so it can sign Open for it. The nonce
       // is derived from the key, so the token no longer sees alice's
       // signature over what it is asked to execute.
       const relayersOpen = await signTyped(relayersKey, ps, OPEN_TYPES, {
         sender: alice.address,
-        amount: AUSD(100),
+        amount: USDC(100),
         expiresAt,
       });
       await expect(
         submitSend(alice.address, relayersKey.address, expiresAt, { ...a, open: relayersOpen })
-      ).to.be.revertedWithCustomError(ausd, "InvalidAuthorizationSignature");
+      ).to.be.revertedWithCustomError(usdc, "InvalidAuthorizationSignature");
       expect(await ps.keyUsed(relayersKey.address)).to.equal(false);
       expect((await ps.linkOf(relayersKey.address)).sender).to.equal(ethers.ZeroAddress);
 
       // And the refusal did not burn alice's authorization: it still funds
       // the link she actually signed for.
       await submitSend(alice.address, key.address, expiresAt, a);
-      expect((await ps.linkOf(key.address)).amount).to.equal(AUSD(100));
+      expect((await ps.linkOf(key.address)).amount).to.equal(USDC(100));
     });
 
     it("a relayer cannot change the expiry, amount or sender that was signed, even holding the link key", async () => {
-      await ausd.mint(bob.address, AUSD(1_000));
+      await usdc.mint(bob.address, USDC(1_000));
       const key = newLinkKey();
       const expiresAt = await expiryIn(DAY);
-      const a = await signSend(alice, key, AUSD(100), expiresAt);
+      const a = await signSend(alice, key, USDC(100), expiresAt);
       const tampered = (sender, amount, e, open) =>
         ps
           .connect(relayer)
@@ -198,15 +198,15 @@ describe("PolarisSend: send dollars by link", () => {
 
       // Without the key, the link key's Open no longer matches, so the
       // contract refuses before the token is even asked.
-      await expect(tampered(alice.address, AUSD(100), expiresAt + 3600n, a.open)).to.be.revertedWithCustomError(
+      await expect(tampered(alice.address, USDC(100), expiresAt + 3600n, a.open)).to.be.revertedWithCustomError(
         ps,
         "InvalidOpenSignature"
       );
-      await expect(tampered(alice.address, AUSD(900), expiresAt, a.open)).to.be.revertedWithCustomError(
+      await expect(tampered(alice.address, USDC(900), expiresAt, a.open)).to.be.revertedWithCustomError(
         ps,
         "InvalidOpenSignature"
       );
-      await expect(tampered(bob.address, AUSD(100), expiresAt, a.open)).to.be.revertedWithCustomError(
+      await expect(tampered(bob.address, USDC(100), expiresAt, a.open)).to.be.revertedWithCustomError(
         ps,
         "InvalidOpenSignature"
       );
@@ -216,18 +216,18 @@ describe("PolarisSend: send dollars by link", () => {
       // it: a longer expiry, to keep the money out of her reach longer...
       const reopen = (sender, amount, e) => signTyped(key, ps, OPEN_TYPES, { sender, amount, expiresAt: e });
       await expect(
-        tampered(alice.address, AUSD(100), expiresAt + 3600n, await reopen(alice.address, AUSD(100), expiresAt + 3600n))
-      ).to.be.revertedWithCustomError(ausd, "InvalidAuthorizationSignature");
+        tampered(alice.address, USDC(100), expiresAt + 3600n, await reopen(alice.address, USDC(100), expiresAt + 3600n))
+      ).to.be.revertedWithCustomError(usdc, "InvalidAuthorizationSignature");
       // ...a larger amount...
       await expect(
-        tampered(alice.address, AUSD(900), expiresAt, await reopen(alice.address, AUSD(900), expiresAt))
-      ).to.be.revertedWithCustomError(ausd, "InvalidAuthorizationSignature");
+        tampered(alice.address, USDC(900), expiresAt, await reopen(alice.address, USDC(900), expiresAt))
+      ).to.be.revertedWithCustomError(usdc, "InvalidAuthorizationSignature");
       // ...or someone else's money, under alice's signature.
       await expect(
-        tampered(bob.address, AUSD(100), expiresAt, await reopen(bob.address, AUSD(100), expiresAt))
-      ).to.be.revertedWithCustomError(ausd, "InvalidAuthorizationSignature");
+        tampered(bob.address, USDC(100), expiresAt, await reopen(bob.address, USDC(100), expiresAt))
+      ).to.be.revertedWithCustomError(usdc, "InvalidAuthorizationSignature");
 
-      expect(await ausd.balanceOf(psAddr)).to.equal(0n);
+      expect(await usdc.balanceOf(psAddr)).to.equal(0n);
       expect(await ps.keyUsed(key.address)).to.equal(false);
     });
 
@@ -237,13 +237,13 @@ describe("PolarisSend: send dollars by link", () => {
       // never the key itself.
       const key = newLinkKey();
       const expiresAt = await expiryIn(7 * DAY);
-      const alices = await signSend(alice, key, AUSD(100), expiresAt);
+      const alices = await signSend(alice, key, USDC(100), expiresAt);
 
       // It tries to file a one-unit link of its own under the key, meaning to
       // cancel it at once and so burn the key for free.
-      await ausd.mint(attacker.address, 1n);
+      await usdc.mint(attacker.address, 1n);
       const atkExpiry = await expiryIn(MIN_LIFETIME + 60);
-      const own = await signReceive(ausd, attacker, psAddr, 1n, linkNonce(key.address, atkExpiry), {
+      const own = await signReceive(usdc, attacker, psAddr, 1n, linkNonce(key.address, atkExpiry), {
         validBefore: await appCutoff(),
       });
       const squat = (open) =>
@@ -258,44 +258,44 @@ describe("PolarisSend: send dollars by link", () => {
       await expect(squat(alices.open)).to.be.revertedWithCustomError(ps, "InvalidOpenSignature");
 
       expect(await ps.keyUsed(key.address)).to.equal(false);
-      expect(await ausd.balanceOf(attacker.address)).to.equal(1n);
+      expect(await usdc.balanceOf(attacker.address)).to.equal(1n);
 
       // Alice's send lands, and the only Sent under the key is hers.
       await expect(submitSend(alice.address, key.address, expiresAt, alices))
         .to.emit(ps, "Sent")
-        .withArgs(key.address, alice.address, AUSD(100), expiresAt);
+        .withArgs(key.address, alice.address, USDC(100), expiresAt);
       const sent = await ps.queryFilter(ps.filters.Sent(key.address));
-      expect(sent.map((e) => [e.args.sender, e.args.amount])).to.deep.equal([[alice.address, AUSD(100)]]);
+      expect(sent.map((e) => [e.args.sender, e.args.amount])).to.deep.equal([[alice.address, USDC(100)]]);
     });
 
     it("a replayed send is refused before it reaches the token", async () => {
       const key = newLinkKey();
       const expiresAt = await expiryIn(DAY);
-      const a = await signSend(alice, key, AUSD(100), expiresAt);
+      const a = await signSend(alice, key, USDC(100), expiresAt);
       await submitSend(alice.address, key.address, expiresAt, a);
 
       await expect(submitSend(alice.address, key.address, expiresAt, a)).to.be.revertedWithCustomError(
         ps,
         "LinkKeyUsed"
       );
-      expect(await ausd.balanceOf(alice.address)).to.equal(AUSD(900));
+      expect(await usdc.balanceOf(alice.address)).to.equal(USDC(900));
     });
 
     it("a relayer cannot spend the send authorization anywhere but PolarisSend", async () => {
       const key = newLinkKey();
       const expiresAt = await expiryIn(DAY);
-      const a = await signSend(alice, key, AUSD(100), expiresAt);
+      const a = await signSend(alice, key, USDC(100), expiresAt);
       const nonce = linkNonce(key.address, expiresAt);
 
       // Straight to the token, naming PolarisSend as payee: only the payee may call.
       await expect(
-        ausd
+        usdc
           .connect(relayer)
           .receiveWithAuthorization(alice.address, psAddr, a.value, a.validAfter, a.validBefore, nonce, a.v, a.r, a.s)
-      ).to.be.revertedWithCustomError(ausd, "CallerMustBePayee");
+      ).to.be.revertedWithCustomError(usdc, "CallerMustBePayee");
       // As a plain transfer to itself: a different typehash, so a different signer.
       await expect(
-        ausd
+        usdc
           .connect(relayer)
           .transferWithAuthorization(
             alice.address,
@@ -308,32 +308,32 @@ describe("PolarisSend: send dollars by link", () => {
             a.r,
             a.s
           )
-      ).to.be.revertedWithCustomError(ausd, "InvalidAuthorizationSignature");
+      ).to.be.revertedWithCustomError(usdc, "InvalidAuthorizationSignature");
 
-      expect(await ausd.balanceOf(alice.address)).to.equal(AUSD(1_000));
+      expect(await usdc.balanceOf(alice.address)).to.equal(USDC(1_000));
     });
 
     it("a token that delivers less than was signed cannot leave a link promising more than the escrow holds", async () => {
       // A token that burns 1% of every transfer: the escrow would receive 99
       // against a link that promises 100, and the last claimant on this
       // escrow could not be paid.
-      const feeToken = await (await ethers.getContractFactory("FeeOnTransferAUSD")).deploy();
+      const feeToken = await (await ethers.getContractFactory("FeeOnTransferUSDC")).deploy();
       const psFee = await (await ethers.getContractFactory("PolarisSend")).deploy(await feeToken.getAddress());
-      await feeToken.mint(alice.address, AUSD(1_000));
+      await feeToken.mint(alice.address, USDC(1_000));
       const key = newLinkKey();
       const expiresAt = await expiryIn(DAY);
-      const a = await signSend(alice, key, AUSD(100), expiresAt, { via: psFee, token: feeToken });
+      const a = await signSend(alice, key, USDC(100), expiresAt, { via: psFee, token: feeToken });
 
       await expect(submitSend(alice.address, key.address, expiresAt, a, relayer, psFee))
         .to.be.revertedWithCustomError(psFee, "UnexpectedAmount")
-        .withArgs(AUSD(100), AUSD(99));
+        .withArgs(USDC(100), USDC(99));
 
       // Everything rolls back: the key is still unused, no link is filed,
       // and alice keeps her money.
       expect(await psFee.keyUsed(key.address)).to.equal(false);
       expect((await psFee.linkOf(key.address)).sender).to.equal(ethers.ZeroAddress);
       expect(await feeToken.balanceOf(await psFee.getAddress())).to.equal(0n);
-      expect(await feeToken.balanceOf(alice.address)).to.equal(AUSD(1_000));
+      expect(await feeToken.balanceOf(alice.address)).to.equal(USDC(1_000));
     });
 
     describe("a link key can never fund a second link, even after a claim, cancel or refund", () => {
@@ -342,14 +342,14 @@ describe("PolarisSend: send dollars by link", () => {
       // second send. Only keyUsed stops it.
       async function expectKeyRefused(key) {
         const expiresAt = await expiryIn(2 * DAY);
-        const again = await signSend(alice, key, AUSD(10), expiresAt);
+        const again = await signSend(alice, key, USDC(10), expiresAt);
         await expect(submitSend(alice.address, key.address, expiresAt, again)).to.be.revertedWithCustomError(
           ps,
           "LinkKeyUsed"
         );
 
-        await ausd.mint(bob.address, AUSD(10));
-        const fromBob = await signSend(bob, key, AUSD(10), expiresAt);
+        await usdc.mint(bob.address, USDC(10));
+        const fromBob = await signSend(bob, key, USDC(10), expiresAt);
         await expect(submitSend(bob.address, key.address, expiresAt, fromBob)).to.be.revertedWithCustomError(
           ps,
           "LinkKeyUsed"
@@ -384,7 +384,7 @@ describe("PolarisSend: send dollars by link", () => {
         now += 10n;
         const key = newLinkKey();
         const expiresAt = now + lifetime;
-        const a = await signSend(alice, key, AUSD(1), expiresAt, { validBefore: now + BigInt(APP_WINDOW) });
+        const a = await signSend(alice, key, USDC(1), expiresAt, { validBefore: now + BigInt(APP_WINDOW) });
         await time.setNextBlockTimestamp(now);
         return { key, expiresAt, submit: () => submitSend(alice.address, key.address, expiresAt, a) };
       };
@@ -407,7 +407,7 @@ describe("PolarisSend: send dollars by link", () => {
       expect((await ps.linkOf(longest.key.address)).expiresAt).to.equal(longest.expiresAt);
     });
 
-    it("amount bounds: zero and anything that does not fit in a uint128 are refused", async () => {
+    it("amount bounds: zero and anything above the $10,000 link cap are refused", async () => {
       const expiresAt = await expiryIn(DAY);
 
       let key = newLinkKey();
@@ -418,24 +418,26 @@ describe("PolarisSend: send dollars by link", () => {
       );
 
       key = newLinkKey();
-      a = await signSend(alice, key, UINT128_MAX + 1n, expiresAt);
+      a = await signSend(alice, key, (await ps.MAX_AMOUNT()) + 1n, expiresAt);
       await expect(submitSend(alice.address, key.address, expiresAt, a)).to.be.revertedWithCustomError(
         ps,
         "InvalidAmount"
       );
 
-      // The largest amount that fits is stored without truncation.
-      await ausd.mint(carol.address, UINT128_MAX);
+      // The cap itself is allowed, and stored without truncation.
+      const max = await ps.MAX_AMOUNT();
+      expect(max).to.equal(10_000_000_000n);
+      await usdc.mint(carol.address, max);
       key = newLinkKey();
-      a = await signSend(carol, key, UINT128_MAX, expiresAt);
+      a = await signSend(carol, key, max, expiresAt);
       await submitSend(carol.address, key.address, expiresAt, a);
-      expect((await ps.linkOf(key.address)).amount).to.equal(UINT128_MAX);
+      expect((await ps.linkOf(key.address)).amount).to.equal(max);
     });
 
     it("a send needs a real sender and a real link key", async () => {
       const expiresAt = await expiryIn(DAY);
       const key = newLinkKey();
-      const a = await signSend(alice, key, AUSD(1), expiresAt);
+      const a = await signSend(alice, key, USDC(1), expiresAt);
 
       await expect(submitSend(alice.address, ethers.ZeroAddress, expiresAt, a)).to.be.revertedWithCustomError(
         ps,
@@ -463,10 +465,10 @@ describe("PolarisSend: send dollars by link", () => {
 
       await submitClaim(key.address, recipient, await signClaim(key, recipient));
 
-      expect(await ausd.balanceOf(recipient)).to.equal(amount);
+      expect(await usdc.balanceOf(recipient)).to.equal(amount);
       expect(await ethers.provider.getBalance(recipient)).to.equal(0n);
       expect(await ethers.provider.getBalance(key.address)).to.equal(0n);
-      expect(await ausd.balanceOf(psAddr)).to.equal(0n);
+      expect(await usdc.balanceOf(psAddr)).to.equal(0n);
       expect((await ps.linkOf(key.address)).sender).to.equal(ethers.ZeroAddress);
     });
 
@@ -483,10 +485,10 @@ describe("PolarisSend: send dollars by link", () => {
       await expect(
         submitClaim(key.address, bob.address, { ...c, deadline: c.deadline + 60n }, attacker)
       ).to.be.revertedWithCustomError(ps, "InvalidClaimSignature");
-      expect(await ausd.balanceOf(attacker.address)).to.equal(0n);
+      expect(await usdc.balanceOf(attacker.address)).to.equal(0n);
 
       await submitClaim(key.address, bob.address, c);
-      expect(await ausd.balanceOf(bob.address)).to.equal(amount);
+      expect(await usdc.balanceOf(bob.address)).to.equal(amount);
     });
 
     it("front-running a claim with the same signature only pays the recipient sooner", async () => {
@@ -494,8 +496,8 @@ describe("PolarisSend: send dollars by link", () => {
       const c = await signClaim(key, bob.address);
 
       await submitClaim(key.address, bob.address, c, attacker);
-      expect(await ausd.balanceOf(bob.address)).to.equal(amount);
-      expect(await ausd.balanceOf(attacker.address)).to.equal(0n);
+      expect(await usdc.balanceOf(bob.address)).to.equal(amount);
+      expect(await usdc.balanceOf(attacker.address)).to.equal(0n);
 
       await expect(submitClaim(key.address, bob.address, c)).to.be.revertedWithCustomError(ps, "LinkNotFound");
     });
@@ -514,8 +516,8 @@ describe("PolarisSend: send dollars by link", () => {
     });
 
     it("a claim signature for one link cannot claim another", async () => {
-      const small = await openLink({ amount: AUSD(5) });
-      const large = await openLink({ amount: AUSD(500) });
+      const small = await openLink({ amount: USDC(5) });
+      const large = await openLink({ amount: USDC(500) });
 
       const c = await signClaim(small.key, bob.address);
       await expect(submitClaim(large.key.address, bob.address, c)).to.be.revertedWithCustomError(
@@ -524,13 +526,13 @@ describe("PolarisSend: send dollars by link", () => {
       );
 
       await submitClaim(small.key.address, bob.address, c);
-      expect(await ausd.balanceOf(bob.address)).to.equal(AUSD(5));
-      expect((await ps.linkOf(large.key.address)).amount).to.equal(AUSD(500));
+      expect(await usdc.balanceOf(bob.address)).to.equal(USDC(5));
+      expect((await ps.linkOf(large.key.address)).amount).to.equal(USDC(500));
     });
 
     it("a claim signed for another deployment is refused", async () => {
       const { key } = await openLink();
-      const other = await (await ethers.getContractFactory("PolarisSend")).deploy(await ausd.getAddress());
+      const other = await (await ethers.getContractFactory("PolarisSend")).deploy(await usdc.getAddress());
 
       const c = await signClaim(key, bob.address, undefined, other);
       await expect(submitClaim(key.address, bob.address, c)).to.be.revertedWithCustomError(
@@ -570,14 +572,14 @@ describe("PolarisSend: send dollars by link", () => {
 
       await expect(submitClaim(key.address, bob.address, c)).to.be.revertedWithCustomError(ps, "LinkExpired");
 
-      const aliceBefore = await ausd.balanceOf(alice.address);
+      const aliceBefore = await usdc.balanceOf(alice.address);
       await expect(ps.connect(attacker).refund(key.address))
         .to.emit(ps, "Refunded")
         .withArgs(key.address, alice.address, amount);
 
-      expect(await ausd.balanceOf(alice.address)).to.equal(aliceBefore + amount);
-      expect(await ausd.balanceOf(attacker.address)).to.equal(0n);
-      expect(await ausd.balanceOf(psAddr)).to.equal(0n);
+      expect(await usdc.balanceOf(alice.address)).to.equal(aliceBefore + amount);
+      expect(await usdc.balanceOf(attacker.address)).to.equal(0n);
+      expect(await usdc.balanceOf(psAddr)).to.equal(0n);
     });
 
     it("a refund before expiry is refused", async () => {
@@ -595,10 +597,10 @@ describe("PolarisSend: send dollars by link", () => {
         await submitSend(alice.address, key.address, expiresAt, await signSend(alice, key, amount, expiresAt));
         return key;
       };
-      const refundEarly = await at(T + 1n, AUSD(1));
-      const claimLate = await at(T + 2n, AUSD(2));
-      const claimAtExpiry = await at(T + 2n, AUSD(3));
-      const refundAtExpiry = await at(T + 3n, AUSD(4));
+      const refundEarly = await at(T + 1n, USDC(1));
+      const claimLate = await at(T + 2n, USDC(2));
+      const claimAtExpiry = await at(T + 2n, USDC(3));
+      const refundAtExpiry = await at(T + 3n, USDC(4));
       // Signed for the moment they land, a day from now.
       const claimSig = await signClaim(claimLate, bob.address, T + BigInt(APP_WINDOW));
       const lateSig = await signClaim(claimAtExpiry, bob.address, T + BigInt(APP_WINDOW));
@@ -609,7 +611,7 @@ describe("PolarisSend: send dollars by link", () => {
       // ...and still claimable.
       await time.setNextBlockTimestamp(T + 1n);
       await submitClaim(claimLate.address, bob.address, claimSig);
-      expect(await ausd.balanceOf(bob.address)).to.equal(AUSD(2));
+      expect(await usdc.balanceOf(bob.address)).to.equal(USDC(2));
 
       // At expiry: no longer claimable...
       await time.setNextBlockTimestamp(T + 2n);
@@ -621,7 +623,7 @@ describe("PolarisSend: send dollars by link", () => {
       await time.setNextBlockTimestamp(T + 3n);
       await expect(ps.refund(refundAtExpiry.address))
         .to.emit(ps, "Refunded")
-        .withArgs(refundAtExpiry.address, alice.address, AUSD(4));
+        .withArgs(refundAtExpiry.address, alice.address, USDC(4));
     });
   });
 
@@ -633,8 +635,8 @@ describe("PolarisSend: send dollars by link", () => {
     let bobs;
 
     beforeEach(async () => {
-      await ausd.mint(bob.address, AUSD(100));
-      bobs = await openLink({ sender: bob, amount: AUSD(100), lifetime: 7 * DAY });
+      await usdc.mint(bob.address, USDC(100));
+      bobs = await openLink({ sender: bob, amount: USDC(100), lifetime: 7 * DAY });
     });
 
     async function expectClosedForGood({ key, expiresAt }) {
@@ -650,40 +652,40 @@ describe("PolarisSend: send dollars by link", () => {
       await expect(ps.connect(attacker).refund(key.address)).to.be.revertedWithCustomError(ps, "LinkNotFound");
 
       // Bob's link is untouched, fully backed, and still pays out in full.
-      expect(await ausd.balanceOf(psAddr)).to.equal(AUSD(100));
+      expect(await usdc.balanceOf(psAddr)).to.equal(USDC(100));
       await submitClaim(bobs.key.address, bob.address, await signClaim(bobs.key, bob.address));
-      expect(await ausd.balanceOf(bob.address)).to.equal(AUSD(100));
-      expect(await ausd.balanceOf(psAddr)).to.equal(0n);
+      expect(await usdc.balanceOf(bob.address)).to.equal(USDC(100));
+      expect(await usdc.balanceOf(psAddr)).to.equal(0n);
     }
 
     it("a claimed link pays out once", async () => {
       const alices = await openLink({ lifetime: DAY });
       await submitClaim(alices.key.address, carol.address, await signClaim(alices.key, carol.address));
-      expect(await ausd.balanceOf(carol.address)).to.equal(AUSD(100));
+      expect(await usdc.balanceOf(carol.address)).to.equal(USDC(100));
 
       await expectClosedForGood(alices);
-      expect(await ausd.balanceOf(carol.address)).to.equal(AUSD(100));
-      expect(await ausd.balanceOf(alice.address)).to.equal(AUSD(900));
+      expect(await usdc.balanceOf(carol.address)).to.equal(USDC(100));
+      expect(await usdc.balanceOf(alice.address)).to.equal(USDC(900));
     });
 
     it("a cancelled link pays out once, even to a fresh cancel signature", async () => {
       const alices = await openLink({ lifetime: DAY });
       await submitCancel(alices.key.address, await signCancel(alice, alices.key.address));
-      expect(await ausd.balanceOf(alice.address)).to.equal(AUSD(1_000));
+      expect(await usdc.balanceOf(alice.address)).to.equal(USDC(1_000));
 
       await expectClosedForGood(alices);
-      expect(await ausd.balanceOf(alice.address)).to.equal(AUSD(1_000));
+      expect(await usdc.balanceOf(alice.address)).to.equal(USDC(1_000));
     });
 
     it("a refunded link pays out once, so a second refund cannot drain other senders' links", async () => {
       const alices = await openLink({ lifetime: MIN_LIFETIME + 60 });
       await time.increaseTo(alices.expiresAt);
       await ps.connect(attacker).refund(alices.key.address);
-      expect(await ausd.balanceOf(alice.address)).to.equal(AUSD(1_000));
+      expect(await usdc.balanceOf(alice.address)).to.equal(USDC(1_000));
 
       await expectClosedForGood(alices);
-      expect(await ausd.balanceOf(alice.address)).to.equal(AUSD(1_000));
-      expect(await ausd.balanceOf(attacker.address)).to.equal(0n);
+      expect(await usdc.balanceOf(alice.address)).to.equal(USDC(1_000));
+      expect(await usdc.balanceOf(attacker.address)).to.equal(0n);
     });
   });
 
@@ -706,9 +708,9 @@ describe("PolarisSend: send dollars by link", () => {
       await expect(submitCancel(key.address, await signCancel(alice, key.address)))
         .to.emit(ps, "Cancelled")
         .withArgs(key.address, alice.address, amount);
-      expect(await ausd.balanceOf(alice.address)).to.equal(AUSD(1_000));
-      expect(await ausd.balanceOf(relayer.address)).to.equal(0n);
-      expect(await ausd.balanceOf(psAddr)).to.equal(0n);
+      expect(await usdc.balanceOf(alice.address)).to.equal(USDC(1_000));
+      expect(await usdc.balanceOf(relayer.address)).to.equal(0n);
+      expect(await usdc.balanceOf(psAddr)).to.equal(0n);
 
       await expect(
         submitClaim(key.address, bob.address, await signClaim(key, bob.address))
@@ -716,20 +718,20 @@ describe("PolarisSend: send dollars by link", () => {
     });
 
     it("a cancel signature for one link cannot cancel another", async () => {
-      const first = await openLink({ amount: AUSD(10) });
-      const second = await openLink({ amount: AUSD(20) });
+      const first = await openLink({ amount: USDC(10) });
+      const second = await openLink({ amount: USDC(20) });
 
       const c = await signCancel(alice, first.key.address);
       await expect(submitCancel(second.key.address, c)).to.be.revertedWithCustomError(ps, "NotSender");
-      expect((await ps.linkOf(second.key.address)).amount).to.equal(AUSD(20));
+      expect((await ps.linkOf(second.key.address)).amount).to.equal(USDC(20));
 
       await submitCancel(first.key.address, c);
       expect((await ps.linkOf(first.key.address)).sender).to.equal(ethers.ZeroAddress);
-      expect((await ps.linkOf(second.key.address)).amount).to.equal(AUSD(20));
+      expect((await ps.linkOf(second.key.address)).amount).to.equal(USDC(20));
     });
 
     it("a cancel signature for another sender's link is refused, even when signed by a sender", async () => {
-      await ausd.mint(bob.address, AUSD(100));
+      await usdc.mint(bob.address, USDC(100));
       const bobs = await openLink({ sender: bob });
       await expect(
         submitCancel(bobs.key.address, await signCancel(alice, bobs.key.address))
@@ -758,21 +760,21 @@ describe("PolarisSend: send dollars by link", () => {
       await expect(submitCancel(key.address, await signCancel(alice, key.address)))
         .to.emit(ps, "Cancelled")
         .withArgs(key.address, alice.address, amount);
-      expect(await ausd.balanceOf(alice.address)).to.equal(AUSD(1_000));
+      expect(await usdc.balanceOf(alice.address)).to.equal(USDC(1_000));
     });
 
     describe("smart-account senders", () => {
-      // Real AUSD checks the sender's ERC-3009 authorization with ERC-1271
-      // for a contract account, so a Safe can fund a link. ERC1271AUSD does
+      // Real USDC checks the sender's ERC-3009 authorization with ERC-1271
+      // for a contract account, so a Safe can fund a link. ERC1271USDC does
       // the same; OwnedSmartAccount accepts whatever its owner, alice, signs.
       let token, psSA, account, accountAddr, asAccount;
 
       beforeEach(async () => {
-        token = await (await ethers.getContractFactory("ERC1271AUSD")).deploy();
+        token = await (await ethers.getContractFactory("ERC1271USDC")).deploy();
         psSA = await (await ethers.getContractFactory("PolarisSend")).deploy(await token.getAddress());
         account = await (await ethers.getContractFactory("OwnedSmartAccount")).deploy(alice.address);
         accountAddr = await account.getAddress();
-        await token.mint(accountAddr, AUSD(1_000));
+        await token.mint(accountAddr, USDC(1_000));
         // What the account's wallet signs with: the account's address, the owner's key.
         asAccount = { address: accountAddr, signTypedData: (...args) => alice.signTypedData(...args) };
       });
@@ -780,7 +782,7 @@ describe("PolarisSend: send dollars by link", () => {
       async function openSmartLink() {
         const key = newLinkKey();
         const expiresAt = await expiryIn(7 * DAY);
-        const a = await signSend(asAccount, key, AUSD(100), expiresAt, { via: psSA, token });
+        const a = await signSend(asAccount, key, USDC(100), expiresAt, { via: psSA, token });
         await submitSend(accountAddr, key.address, expiresAt, a, relayer, psSA);
         expect((await psSA.linkOf(key.address)).sender).to.equal(accountAddr);
         return key;
@@ -788,13 +790,13 @@ describe("PolarisSend: send dollars by link", () => {
 
       it("a smart-account sender that can fund a link can also cancel it, without waiting for expiry", async () => {
         const key = await openSmartLink();
-        expect(await token.balanceOf(accountAddr)).to.equal(AUSD(900));
+        expect(await token.balanceOf(accountAddr)).to.equal(USDC(900));
 
         const c = await signCancel(asAccount, key.address, undefined, psSA);
         await expect(submitCancel(key.address, c, relayer, psSA))
           .to.emit(psSA, "Cancelled")
-          .withArgs(key.address, accountAddr, AUSD(100));
-        expect(await token.balanceOf(accountAddr)).to.equal(AUSD(1_000));
+          .withArgs(key.address, accountAddr, USDC(100));
+        expect(await token.balanceOf(accountAddr)).to.equal(USDC(1_000));
         expect(await token.balanceOf(await psSA.getAddress())).to.equal(0n);
       });
 
@@ -802,7 +804,7 @@ describe("PolarisSend: send dollars by link", () => {
         const key = await openSmartLink();
         const c = await signCancel(attacker, key.address, undefined, psSA);
         await expect(submitCancel(key.address, c, relayer, psSA)).to.be.revertedWithCustomError(psSA, "NotSender");
-        expect((await psSA.linkOf(key.address)).amount).to.equal(AUSD(100));
+        expect((await psSA.linkOf(key.address)).amount).to.equal(USDC(100));
       });
     });
   });
@@ -813,27 +815,27 @@ describe("PolarisSend: send dollars by link", () => {
     it("a relayer cannot sit on a send and land it when the link has almost run out", async () => {
       const key = newLinkKey();
       const expiresAt = await expiryIn(7 * DAY);
-      const a = await signSend(alice, key, AUSD(100), expiresAt);
+      const a = await signSend(alice, key, USDC(100), expiresAt);
 
       // Held back until the week-long link has five minutes left.
       await time.setNextBlockTimestamp(expiresAt - BigInt(MIN_LIFETIME));
       await expect(submitSend(alice.address, key.address, expiresAt, a)).to.be.revertedWithCustomError(
-        ausd,
+        usdc,
         "AuthorizationExpired"
       );
       expect(await ps.keyUsed(key.address)).to.equal(false);
-      expect(await ausd.balanceOf(alice.address)).to.equal(AUSD(1_000));
+      expect(await usdc.balanceOf(alice.address)).to.equal(USDC(1_000));
     });
 
     it("retrying a send under the same link key can never escrow the sender twice", async () => {
       const key = newLinkKey();
       const expiresAt = await expiryIn(7 * DAY);
-      const withheld = await signSend(alice, key, AUSD(100), expiresAt);
+      const withheld = await signSend(alice, key, USDC(100), expiresAt);
 
       // The app gives up on the first attempt and signs again under the same
       // key, here even with a different expiry and so a different nonce.
       const retryExpiry = expiresAt + 60n;
-      const retry = await signSend(alice, key, AUSD(100), retryExpiry);
+      const retry = await signSend(alice, key, USDC(100), retryExpiry);
       await submitSend(alice.address, key.address, retryExpiry, retry);
 
       // The first attempt surfaces while it is still valid, and is refused.
@@ -841,28 +843,28 @@ describe("PolarisSend: send dollars by link", () => {
         ps,
         "LinkKeyUsed"
       );
-      expect(await ausd.balanceOf(alice.address)).to.equal(AUSD(900));
-      expect(await ausd.balanceOf(psAddr)).to.equal(AUSD(100));
+      expect(await usdc.balanceOf(alice.address)).to.equal(USDC(900));
+      expect(await usdc.balanceOf(psAddr)).to.equal(USDC(100));
     });
 
     it("an app that must switch to a fresh key first spends the old authorization, so both cannot land", async () => {
       const oldKey = newLinkKey();
       const oldExpiry = await expiryIn(7 * DAY);
-      const withheld = await signSend(alice, oldKey, AUSD(100), oldExpiry);
+      const withheld = await signSend(alice, oldKey, USDC(100), oldExpiry);
 
       // Alice spends the withheld authorization's nonce at the token, with
       // the nonce the contract reports for that key and expiry.
       const nonce = await ps.sendNonce(oldKey.address, oldExpiry);
-      const spent = await signTyped(alice, ausd, CANCEL_AUTHORIZATION_TYPES, { authorizer: alice.address, nonce });
-      await ausd.connect(relayer).cancelAuthorization(alice.address, nonce, spent.v, spent.r, spent.s);
+      const spent = await signTyped(alice, usdc, CANCEL_AUTHORIZATION_TYPES, { authorizer: alice.address, nonce });
+      await usdc.connect(relayer).cancelAuthorization(alice.address, nonce, spent.v, spent.r, spent.s);
 
-      const fresh = await openLink({ amount: AUSD(100) });
+      const fresh = await openLink({ amount: USDC(100) });
       await expect(submitSend(alice.address, oldKey.address, oldExpiry, withheld)).to.be.revertedWithCustomError(
-        ausd,
+        usdc,
         "AuthorizationAlreadyUsed"
       );
-      expect(await ausd.balanceOf(alice.address)).to.equal(AUSD(900));
-      expect((await ps.linkOf(fresh.key.address)).amount).to.equal(AUSD(100));
+      expect(await usdc.balanceOf(alice.address)).to.equal(USDC(900));
+      expect((await ps.linkOf(fresh.key.address)).amount).to.equal(USDC(100));
     });
 
     it("a relayer cannot hold a cancel for days and fire it just ahead of the recipient's claim", async () => {
@@ -872,7 +874,7 @@ describe("PolarisSend: send dollars by link", () => {
 
       await expect(submitCancel(key.address, abandoned)).to.be.revertedWithCustomError(ps, "SignatureExpired");
       await submitClaim(key.address, bob.address, await signClaim(key, bob.address));
-      expect(await ausd.balanceOf(bob.address)).to.equal(amount);
+      expect(await usdc.balanceOf(bob.address)).to.equal(amount);
     });
 
     it("a claim the holder has since corrected cannot land once its deadline has passed", async () => {
@@ -888,8 +890,8 @@ describe("PolarisSend: send dollars by link", () => {
         "SignatureExpired"
       );
       await submitClaim(key.address, bob.address, corrected);
-      expect(await ausd.balanceOf(bob.address)).to.equal(amount);
-      expect(await ausd.balanceOf(carol.address)).to.equal(0n);
+      expect(await usdc.balanceOf(bob.address)).to.equal(amount);
+      expect(await usdc.balanceOf(carol.address)).to.equal(0n);
     });
 
     it("a signature valid for longer than an hour is refused, so an app cannot ship one by mistake", async () => {
@@ -917,10 +919,10 @@ describe("PolarisSend: send dollars by link", () => {
       const key = newLinkKey();
       const expiresAt = await expiryIn(DAY);
       await expectCappedAtTheHour(async (validBefore) => {
-        const a = await signSend(alice, key, AUSD(1), expiresAt, { validBefore });
+        const a = await signSend(alice, key, USDC(1), expiresAt, { validBefore });
         return () => submitSend(alice.address, key.address, expiresAt, a);
       });
-      expect((await ps.linkOf(key.address)).amount).to.equal(AUSD(1));
+      expect((await ps.linkOf(key.address)).amount).to.equal(USDC(1));
 
       // A claim's deadline.
       const forClaim = await openLink();
@@ -928,7 +930,7 @@ describe("PolarisSend: send dollars by link", () => {
         const c = await signClaim(forClaim.key, bob.address, deadline);
         return () => submitClaim(forClaim.key.address, bob.address, c);
       });
-      expect(await ausd.balanceOf(bob.address)).to.equal(forClaim.amount);
+      expect(await usdc.balanceOf(bob.address)).to.equal(forClaim.amount);
 
       // A cancel's deadline.
       const forCancel = await openLink();
@@ -946,25 +948,25 @@ describe("PolarisSend: send dollars by link", () => {
     it("events carry what an indexer needs", async () => {
       const key = newLinkKey();
       const expiresAt = await expiryIn(DAY);
-      const a = await signSend(alice, key, AUSD(42), expiresAt);
+      const a = await signSend(alice, key, USDC(42), expiresAt);
       await expect(submitSend(alice.address, key.address, expiresAt, a))
         .to.emit(ps, "Sent")
-        .withArgs(key.address, alice.address, AUSD(42), expiresAt);
+        .withArgs(key.address, alice.address, USDC(42), expiresAt);
 
       await expect(submitClaim(key.address, bob.address, await signClaim(key, bob.address)))
         .to.emit(ps, "Claimed")
-        .withArgs(key.address, bob.address, AUSD(42));
+        .withArgs(key.address, bob.address, USDC(42));
 
-      const cancelled = await openLink({ amount: AUSD(7) });
+      const cancelled = await openLink({ amount: USDC(7) });
       await expect(submitCancel(cancelled.key.address, await signCancel(alice, cancelled.key.address)))
         .to.emit(ps, "Cancelled")
-        .withArgs(cancelled.key.address, alice.address, AUSD(7));
+        .withArgs(cancelled.key.address, alice.address, USDC(7));
 
-      const refunded = await openLink({ amount: AUSD(3), lifetime: MIN_LIFETIME + 1 });
+      const refunded = await openLink({ amount: USDC(3), lifetime: MIN_LIFETIME + 1 });
       await time.increaseTo(refunded.expiresAt);
       await expect(ps.refund(refunded.key.address))
         .to.emit(ps, "Refunded")
-        .withArgs(refunded.key.address, alice.address, AUSD(3));
+        .withArgs(refunded.key.address, alice.address, USDC(3));
 
       // Link key and party are indexed, so a link's page can find its whole
       // history, and a sender's activity feed is one filter.
@@ -981,8 +983,8 @@ describe("PolarisSend: send dollars by link", () => {
       expect(domain.version).to.equal("1");
 
       const key = newLinkKey();
-      expect(await ps.openDigest(alice.address, AUSD(5), 99n)).to.equal(
-        ethers.TypedDataEncoder.hash(domain, OPEN_TYPES, { sender: alice.address, amount: AUSD(5), expiresAt: 99n })
+      expect(await ps.openDigest(alice.address, USDC(5), 99n)).to.equal(
+        ethers.TypedDataEncoder.hash(domain, OPEN_TYPES, { sender: alice.address, amount: USDC(5), expiresAt: 99n })
       );
       expect(await ps.claimDigest(bob.address, 1234n)).to.equal(
         ethers.TypedDataEncoder.hash(domain, CLAIM_TYPES, { to: bob.address, deadline: 1234n })
@@ -998,21 +1000,21 @@ describe("PolarisSend: send dollars by link", () => {
     });
 
     it("the escrow always holds exactly what open links owe", async () => {
-      const a = await openLink({ amount: AUSD(10) });
-      const b = await openLink({ amount: AUSD(20) });
-      const c = await openLink({ amount: AUSD(30), lifetime: MIN_LIFETIME + 1 });
-      expect(await ausd.balanceOf(psAddr)).to.equal(AUSD(60));
+      const a = await openLink({ amount: USDC(10) });
+      const b = await openLink({ amount: USDC(20) });
+      const c = await openLink({ amount: USDC(30), lifetime: MIN_LIFETIME + 1 });
+      expect(await usdc.balanceOf(psAddr)).to.equal(USDC(60));
 
       await submitClaim(a.key.address, bob.address, await signClaim(a.key, bob.address));
-      expect(await ausd.balanceOf(psAddr)).to.equal(AUSD(50));
+      expect(await usdc.balanceOf(psAddr)).to.equal(USDC(50));
 
       await submitCancel(b.key.address, await signCancel(alice, b.key.address));
-      expect(await ausd.balanceOf(psAddr)).to.equal(AUSD(30));
+      expect(await usdc.balanceOf(psAddr)).to.equal(USDC(30));
 
       await time.increaseTo(c.expiresAt);
       await ps.refund(c.key.address);
-      expect(await ausd.balanceOf(psAddr)).to.equal(0n);
-      expect(await ausd.balanceOf(alice.address)).to.equal(AUSD(1_000) - AUSD(10));
+      expect(await usdc.balanceOf(psAddr)).to.equal(0n);
+      expect(await usdc.balanceOf(alice.address)).to.equal(USDC(1_000) - USDC(10));
     });
   });
 });

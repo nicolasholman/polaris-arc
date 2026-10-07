@@ -1,23 +1,19 @@
 // EIP-712 signing helpers shared by the Metropolis test suites.
 //
 // Every user action in Polaris is a signature that a relayer submits, so the
-// tests sign exactly what a Mera or Privy account would sign in the app. The
-// domain is always read from the verifying contract (ERC-5267) rather than
-// rebuilt by hand: that is what the app has to do against real AUSD, whose
-// name and version we do not control.
+// tests sign exactly what a passkey or Privy account would sign in the app. The
+// domain is always read from the verifying contract rather than rebuilt by
+// hand: ERC-5267 for Polaris contracts, and name()/version() checked against
+// DOMAIN_SEPARATOR() for USDC, as the app does against USDC on Arc.
 
 const { ethers } = require("hardhat");
+const { readDomain } = require("../../lib/eip712");
 
 const MAX_UINT = ethers.MaxUint256;
 
 async function domainOf(contract) {
-  const d = await contract.eip712Domain();
-  return {
-    name: d.name,
-    version: d.version,
-    chainId: d.chainId,
-    verifyingContract: d.verifyingContract,
-  };
+  const d = await readDomain(contract);
+  return { name: d.name, version: d.version, chainId: d.chainId, verifyingContract: d.verifyingContract };
 }
 
 async function signTyped(signer, contract, types, value) {

@@ -4,7 +4,7 @@ pragma solidity ^0.8.24;
 /**
  * @title IERC3009
  * @notice Transfer With Authorization (EIP-3009), as implemented by Circle's
- *         USDC and Agora's AUSD. The owner signs an EIP-712 message off chain
+ *         USDC and Agora's USDC. The owner signs an EIP-712 message off chain
  *         and anyone may submit it, which is what lets a buyer pay without
  *         holding gas.
  * @dev Polaris only ever calls `receiveWithAuthorization`, never

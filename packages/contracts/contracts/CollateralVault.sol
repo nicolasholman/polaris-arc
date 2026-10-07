@@ -31,7 +31,7 @@ import {SignatureChecker} from "@openzeppelin/contracts/utils/cryptography/Signa
  *      two copies of the same number is how a vault ends up releasing
  *      collateral that is still securing a loan.
  *
- *      Taking collateral out by signature. A Polaris account holds no MON,
+ *      Taking collateral out by signature. A Polaris account holds no USDC (gas),
  *      so it can't call `withdraw` itself. `withdrawWithSig` carries the
  *      borrower's EIP-712 `Withdraw` instead: anyone may submit it (the
  *      relayer does), the dollars go to the borrower and nowhere else, and
@@ -74,7 +74,15 @@ contract CollateralVault is Ownable, ReentrancyGuard, IERC5267 {
     uint256 public creditMultiplierBps = 15_000;
     uint256 public constant MAX_MULTIPLIER_BPS = 30_000;
 
+    /// Highest per-account cap the owner may set: $1,000,000.
+    uint256 public constant MAX_LOCK_CAP = 1_000_000e6;
+
     IERC20 public immutable collateralToken;
+
+    /// Most one account may have locked at once (default $10,000). Boost is a
+    /// way to raise a Pay in 4 limit, not a savings product, so the vault
+    /// holds no more than the credit it backs needs.
+    uint256 public maxLockedPerUser = 10_000e6;
     ILoanEngineDebt public loanEngine;
 
     mapping(address => uint256) public lockedOf;
@@ -97,6 +105,7 @@ contract CollateralVault is Ownable, ReentrancyGuard, IERC5267 {
     event CollateralSeized(address indexed user, uint256 amount, address indexed to);
     event SeizerSet(address indexed seizer, bool allowed);
     event MultiplierChanged(uint256 bps);
+    event MaxLockedPerUserSet(uint256 cap);
     event LoanEngineSet(address indexed engine);
     event NonceInvalidated(address indexed borrower, uint256 nonce);
 
@@ -105,6 +114,8 @@ contract CollateralVault is Ownable, ReentrancyGuard, IERC5267 {
     error DebtOutstanding(uint256 debt);
     error NotSeizer();
     error InvalidMultiplier();
+    error LockCapExceeded(uint256 lockedAfter, uint256 cap);
+    error InvalidLockCap(uint256 cap);
     error InvalidSignature();
     error SignatureExpired();
     error SignatureWindowTooLong();
@@ -169,8 +180,17 @@ contract CollateralVault is Ownable, ReentrancyGuard, IERC5267 {
         _lock(borrower, amount);
     }
 
+    /// @notice Set the per-account lock cap; at most MAX_LOCK_CAP. Existing locks above it stay.
+    function setMaxLockedPerUser(uint256 cap) external onlyOwner {
+        if (cap == 0 || cap > MAX_LOCK_CAP) revert InvalidLockCap(cap);
+        maxLockedPerUser = cap;
+        emit MaxLockedPerUserSet(cap);
+    }
+
     function _lock(address borrower, uint256 amount) private {
         if (amount == 0) revert ZeroAmount();
+        uint256 lockedAfter = lockedOf[borrower] + amount;
+        if (lockedAfter > maxLockedPerUser) revert LockCapExceeded(lockedAfter, maxLockedPerUser);
         collateralToken.safeTransferFrom(borrower, address(this), amount);
         lockedOf[borrower] += amount;
         totalLocked += amount;
@@ -241,7 +261,7 @@ contract CollateralVault is Ownable, ReentrancyGuard, IERC5267 {
 
     /// The borrower's own key first, then ERC-1271 for an account with code. In
     /// that order so an EOA that has since delegated its code (EIP-7702) still
-    /// signs with its key, as PolarisCheckout and AUSD itself accept.
+    /// signs with its key, as PolarisCheckout and USDC itself accept.
     function _requireSigned(address borrower, bytes32 digest, bytes calldata signature) private view {
         (address recovered, ECDSA.RecoverError err, ) = ECDSA.tryRecoverCalldata(digest, signature);
         if (err == ECDSA.RecoverError.NoError && recovered == borrower) return;

@@ -32,6 +32,17 @@
     "type": "error"
   },
   {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "cap",
+        "type": "uint256"
+      }
+    ],
+    "name": "InvalidLockCap",
+    "type": "error"
+  },
+  {
     "inputs": [],
     "name": "InvalidMultiplier",
     "type": "error"
@@ -39,6 +50,22 @@
   {
     "inputs": [],
     "name": "InvalidSignature",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "lockedAfter",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "cap",
+        "type": "uint256"
+      }
+    ],
+    "name": "LockCapExceeded",
     "type": "error"
   },
   {
@@ -199,6 +226,19 @@
       {
         "indexed": false,
         "internalType": "uint256",
+        "name": "cap",
+        "type": "uint256"
+      }
+    ],
+    "name": "MaxLockedPerUserSet",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "uint256",
         "name": "bps",
         "type": "uint256"
       }
@@ -271,6 +311,19 @@
         "internalType": "bytes32",
         "name": "",
         "type": "bytes32"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "MAX_LOCK_CAP",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
       }
     ],
     "stateMutability": "view",
@@ -519,6 +572,19 @@
     "type": "function"
   },
   {
+    "inputs": [],
+    "name": "maxLockedPerUser",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
     "inputs": [
       {
         "internalType": "address",
@@ -627,6 +693,19 @@
       }
     ],
     "name": "setLoanEngine",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "cap",
+        "type": "uint256"
+      }
+    ],
+    "name": "setMaxLockedPerUser",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"

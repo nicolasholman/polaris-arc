@@ -22,7 +22,7 @@ const { pathToFileURL } = require("node:url");
 const PKG = path.join(__dirname, "../../../underwriting/src");
 const load = (rel) => import(pathToFileURL(path.join(PKG, rel)).href);
 
-const AUSD = (n) => BigInt(Math.round(n * 1e6));
+const USDC = (n) => BigInt(Math.round(n * 1e6));
 const DAY = 24 * 60 * 60;
 const FACTS_TUPLE = "tuple(uint32 walletAgeDays, uint32 txCount, uint64 stableBalance, uint32 defiTenureDays, uint16 priorLiquidations, uint16 relatedWallets, bool exchangeFunded, uint64 observedAt)";
 /** UnderwritingReceiver._processReport: abi.decode(report, (uint8, Underwriting[])). */
@@ -40,7 +40,7 @@ function mulberry32(seed) {
 
 describe("@polarispay/underwriting against ScoreManager and PolarisLoanEngine", function () {
   let core, collect, fixtures, nansenMod, zerionMod, etherscanMod, rpcMod;
-  let ausd, scores, engine, owner, underwriter, merchant;
+  let usdc, scores, engine, owner, underwriter, merchant;
 
   before(async function () {
     if (!process.features || !process.features.typescript) this.skip();
@@ -55,16 +55,16 @@ describe("@polarispay/underwriting against ScoreManager and PolarisLoanEngine", 
 
   beforeEach(async () => {
     [owner, underwriter, merchant] = await ethers.getSigners();
-    ausd = await (await ethers.getContractFactory("MockAUSD")).deploy();
+    usdc = await (await ethers.getContractFactory("MockUSDC")).deploy("USDC");
     scores = await (await ethers.getContractFactory("ScoreManager")).deploy(owner.address);
-    engine = await (await ethers.getContractFactory("PolarisLoanEngine")).deploy(owner.address, await ausd.getAddress(), await scores.getAddress(), owner.address, 3 * DAY, 0);
+    engine = await (await ethers.getContractFactory("PolarisLoanEngine")).deploy(owner.address, await usdc.getAddress(), await scores.getAddress(), owner.address, 3 * DAY, 0);
     await scores.setWriter(await engine.getAddress(), true);
     await scores.setUnderwriter(underwriter.address, true);
     await scores.setRequireUnderwriting(true);
     await engine.setOriginator(owner.address, true);
-    await ausd.mint(owner.address, AUSD(1_000_000));
-    await ausd.approve(await engine.getAddress(), AUSD(1_000_000));
-    await engine.fund(AUSD(500_000));
+    await usdc.mint(owner.address, USDC(1_000_000));
+    await usdc.approve(await engine.getAddress(), USDC(1_000_000));
+    await engine.fund(USDC(500_000));
   });
 
   /** Providers answered by the package's fixture test double, with test keys so they run as live clients do. */
@@ -179,9 +179,9 @@ describe("@polarispay/underwriting against ScoreManager and PolarisLoanEngine", 
 
       // "You can pay in 4 for up to $X" is exactly what the engine accepts.
       const max = out.decision.payIn4.maxPurchase;
-      await ausd.mint(buyer.address, AUSD(10_000));
+      await usdc.mint(buyer.address, USDC(10_000));
       await owner.sendTransaction({ to: buyer.address, value: ethers.parseEther("1") });
-      await ausd.connect(buyer).approve(await engine.getAddress(), AUSD(10_000));
+      await usdc.connect(buyer).approve(await engine.getAddress(), USDC(10_000));
       const week = BigInt(core.LOAN.PAY_IN_4_INTERVAL);
       await expect(engine.createLoan(buyer.address, merchant.address, max + 1n, 4, week)).to.be.revertedWithCustomError(engine, "ExceedsCreditLimit");
       await expect(engine.createLoan(buyer.address, merchant.address, max, 4, week)).to.emit(engine, "LoanCreated");

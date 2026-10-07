@@ -20,14 +20,14 @@ interface ICollateralBoost {
  *
  *      The one exception is the first line, which has no repayment history to
  *      read. `underwrite` takes facts about the wallet's life elsewhere, as
- *      attested by the Chainlink DON, and computes the opening score here, in
+ *      reported by the Polaris keeper, and computes the opening score here, in
  *      `scoreFromFacts`. The facts are attested; the score never is. Anyone can
  *      re-derive a borrower's opening score from the report that produced it,
  *      and nobody, including us, can hand a wallet a number the formula would
  *      not give it.
  *
  *      The two kinds of write are two roles. A writer records repayment
- *      events; an underwriter (the receiver that verifies DON reports) opens
+ *      events; an underwriter (the receiver that takes the keeper's reports) opens
  *      first lines. Sharing one role meant the receiver could also call
  *      `recordOnTimePayment` for any wallet and lift it past the $1,000
  *      underwriting cap, so a bug in the receiver became unlimited credit.
@@ -59,7 +59,7 @@ contract ScoreManager is Ownable {
     /// reached only by repaying.
     uint16 public constant MAX_UNDERWRITTEN_SCORE = 739;
     /// How old the facts behind an underwriting report may be. Long enough for
-    /// a DON round and a relayed transaction, short enough that a report cannot
+    /// a keeper review and its transaction, short enough that a report cannot
     /// be held back and replayed after the wallet's history has turned.
     uint256 public constant MAX_EVIDENCE_AGE = 15 minutes;
 
@@ -74,7 +74,7 @@ contract ScoreManager is Ownable {
 
     /// How many liquidations close a wallet's unsecured line for good. The
     /// same count declines a report in `scoreFromFacts`, so a default on
-    /// Polaris weighs at least as much as one the DON attests elsewhere.
+    /// Polaris weighs at least as much as one the keeper reads elsewhere.
     uint32 public constant DECLINE_AT_LIQUIDATIONS = 2;
 
     /// The least history a report must show before it opens any unsecured
@@ -109,13 +109,13 @@ contract ScoreManager is Ownable {
         /// face value.
         bool declined;
         /// Set only by `underwrite`. `initialized` says the wallet has a
-        /// record; this says the DON has looked at it. While
+        /// record; this says the keeper has reviewed it. While
         /// `requireUnderwriting` is on, only this opens an unsecured line.
         bool underwritten;
     }
 
     /**
-     * @notice What the Chainlink DON attests about a wallet's life elsewhere.
+     * @notice What the keeper reports about a wallet's life, on Arc and elsewhere.
      * @dev Raw observations only, never a score or a verdict, so the contract
      *      keeps the whole decision. `stableBalance` is in 6-decimal base units.
      *      `observedAt` is when the facts were read, which is what staleness is
@@ -135,7 +135,7 @@ contract ScoreManager is Ownable {
     mapping(address => Profile) private _profiles;
     /// May record repayment events. The LoanEngine.
     mapping(address => bool) public isWriter;
-    /// May open a first line from attested facts. The DON report receiver.
+    /// May open a first line from attested facts. The keeper's report receiver.
     mapping(address => bool) public isUnderwriter;
     /// The moment each wallet's last on-time bonus counts from, or its report
     /// if that is later. See BONUS_PERIOD.
@@ -149,14 +149,14 @@ contract ScoreManager is Ownable {
      *         underwritten.
      * @dev Off by default so a deployment behaves as it always has: a stranger
      *      reads at STARTING_SCORE and may borrow the tier that implies. On
-     *      Monad that default is a faucet, since a fresh Face ID account costs
+     *      Arc that default is a faucet, since a fresh passkey account costs
      *      nothing to create, so the deployment turns this on and every
      *      unsecured line starts from an underwriting report instead.
      *
      *      "Has a record" is not the same as "was underwritten". Every record
      *      starts life at STARTING_SCORE, whether it was created by an on-time
      *      payment, a late one or a liquidation, so gating on the record let a
-     *      wallet skip the DON by repaying a dust plan on the secured path, and
+     *      wallet skip underwriting by repaying a dust plan on the secured path, and
      *      a secured-path default opened a $200 line a clean stranger could not
      *      get. The gate reads `underwritten`, which only `underwrite` sets.
      *      History earned on the secured path is not thrown away: on-time and
@@ -416,7 +416,7 @@ contract ScoreManager is Ownable {
 
     /**
      * @notice Open a wallet's first line from attested facts.
-     * @dev Underwriter-only: the receiver that verifies the DON's report calls
+     * @dev Underwriter-only: the receiver that takes the keeper's report calls
      *      this.
      *
      *      Runs once per wallet, and never over a record that holds a

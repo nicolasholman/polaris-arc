@@ -10,7 +10,7 @@ const hre = require("hardhat");
 const { ethers } = hre;
 
 const { CONTRACTS, ABI_DIR, camel } = require("../../scripts/export-abi");
-const { TYPES, DOMAIN_NAMES, AUSD_DOMAIN_NAME, typeString } = require("../../lib/eip712");
+const { TYPES, DOMAIN_NAMES, USDC_DOMAIN, typeString, readDomain } = require("../../lib/eip712");
 
 describe("Published interfaces", () => {
   describe("abi/", () => {
@@ -34,7 +34,7 @@ describe("Published interfaces", () => {
         expect(dts).to.include(`export declare const ${id}: readonly [`);
         expect(esm).to.include(`export const ${id} = [`);
       }
-      expect(Object.keys(cjs)).to.include.members(["polarisCheckoutAbi", "collectionsReceiverAbi", "underwritingReceiverAbi", "iausdAbi"]);
+      expect(Object.keys(cjs)).to.include.members(["polarisCheckoutAbi", "collectionsReceiverAbi", "underwritingReceiverAbi", "creditGuardAbi", "iusdcAbi"]);
     });
   });
 
@@ -43,19 +43,19 @@ describe("Published interfaces", () => {
 
     before(async () => {
       const [owner] = await ethers.getSigners();
-      const ausd = await (await ethers.getContractFactory("MockAUSD")).deploy();
+      const usdc = await (await ethers.getContractFactory("MockUSDC")).deploy("USDC");
       const scores = await (await ethers.getContractFactory("ScoreManager")).deploy(owner.address);
-      const engine = await (await ethers.getContractFactory("PolarisLoanEngine")).deploy(owner.address, ausd, scores, owner.address, 0, 0);
-      const payments = await (await ethers.getContractFactory("PolarisPayments")).deploy(owner.address, ausd, owner.address, 0);
+      const engine = await (await ethers.getContractFactory("PolarisLoanEngine")).deploy(owner.address, usdc, scores, owner.address, 0, 0);
+      const payments = await (await ethers.getContractFactory("PolarisPayments")).deploy(owner.address, usdc, owner.address, 0);
       Object.assign(deployed, {
-        MockAUSD: ausd,
+        MockUSDC: usdc,
         PolarisLoanEngine: engine,
         PolarisPayments: payments,
         PolarisCheckout: await (await ethers.getContractFactory("PolarisCheckout")).deploy(owner.address, engine, payments, scores),
-        PolarisSend: await (await ethers.getContractFactory("PolarisSend")).deploy(ausd),
-        PolarisSplit: await (await ethers.getContractFactory("PolarisSplit")).deploy(ausd),
+        PolarisSend: await (await ethers.getContractFactory("PolarisSend")).deploy(usdc),
+        PolarisSplit: await (await ethers.getContractFactory("PolarisSplit")).deploy(usdc),
         MerchantRegistry: await (await ethers.getContractFactory("MerchantRegistry")).deploy(owner.address),
-        CollateralVault: await (await ethers.getContractFactory("CollateralVault")).deploy(owner.address, ausd),
+        CollateralVault: await (await ethers.getContractFactory("CollateralVault")).deploy(owner.address, usdc),
       });
     });
 
@@ -73,8 +73,8 @@ describe("Published interfaces", () => {
         ["MerchantRegistry", "REGISTRATION_TYPEHASH", "MerchantRegistry", "Registration"],
         ["MerchantRegistry", "PAYOUT_UPDATE_TYPEHASH", "MerchantRegistry", "PayoutUpdate"],
         ["CollateralVault", "WITHDRAW_TYPEHASH", "CollateralVault", "Withdraw"],
-        ["MockAUSD", "RECEIVE_WITH_AUTHORIZATION_TYPEHASH", "Stablecoin", "ReceiveWithAuthorization"],
-        ["MockAUSD", "TRANSFER_WITH_AUTHORIZATION_TYPEHASH", "Stablecoin", "TransferWithAuthorization"],
+        ["MockUSDC", "RECEIVE_WITH_AUTHORIZATION_TYPEHASH", "Stablecoin", "ReceiveWithAuthorization"],
+        ["MockUSDC", "TRANSFER_WITH_AUTHORIZATION_TYPEHASH", "Stablecoin", "TransferWithAuthorization"],
       ];
       for (const [contract, constant, group, primary] of cases) {
         const s = typeString(primary, TYPES[group][primary]);
@@ -90,9 +90,11 @@ describe("Published interfaces", () => {
         const d = await deployed[name].eip712Domain();
         expect([d.name, d.version], name).to.deep.equal([dn, version]);
       }
-      const t = await deployed.MockAUSD.eip712Domain();
-      expect([t.name, t.version]).to.deep.equal([AUSD_DOMAIN_NAME.name, AUSD_DOMAIN_NAME.version]);
-      expect(await deployed.MockAUSD.name()).to.equal("Mock AUSD", "name() is not the EIP-712 name, as on real AUSD");
+      // MockUSDC mirrors Arc's USDC: no ERC-5267, and a domain of
+      // { name(), version(), chainId, address } that DOMAIN_SEPARATOR() confirms.
+      expect(deployed.MockUSDC.interface.getFunction("eip712Domain")).to.equal(null);
+      const t = await readDomain(deployed.MockUSDC);
+      expect([t.name, t.version]).to.deep.equal([USDC_DOMAIN.name, USDC_DOMAIN.version]);
     });
   });
 });

@@ -22,7 +22,7 @@
 const { mkdirSync, writeFileSync } = require("node:fs");
 const { join } = require("node:path");
 
-/** Everything a client, the relayer, the indexer or a CRE workflow calls or decodes. */
+/** Everything a client, the relayer, the indexer or the keeper calls or decodes. */
 const CONTRACTS = [
   "PolarisCheckout",
   "PolarisLoanEngine",
@@ -35,21 +35,17 @@ const CONTRACTS = [
   "BatchSettlement",
   "CollectionsReceiver",
   "UnderwritingReceiver",
-  "GuardianReceiver",
-  "MockKeystoneForwarder",
-  "MockPriceFeed",
-  "AggregatorV3Interface",
+  "CreditGuard",
   "ICreditGuard",
-  "MockAUSD",
-  "IAUSD",
+  "MockUSDC",
+  "IUSDC",
   "IERC3009",
-  "IReceiver",
 ];
 
 const ABI_DIR = join(__dirname, "..", "abi");
 
 const camel = (name) => {
-  // PolarisCheckout -> polarisCheckout, IAUSD -> iausd, IERC3009 -> ierc3009
+  // PolarisCheckout -> polarisCheckout, IUSDC -> iusdc, IERC3009 -> ierc3009
   const lead = name.match(/^[A-Z]+(?=[A-Z][a-z]|$|\d)/);
   if (lead && lead[0].length > 1) return lead[0].toLowerCase() + name.slice(lead[0].length);
   return name[0].toLowerCase() + name.slice(1);

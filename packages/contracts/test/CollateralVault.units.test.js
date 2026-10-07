@@ -19,7 +19,7 @@ describe("CollateralVault units", () => {
   beforeEach(async () => {
     [owner, user, merchant, outsider] = await ethers.getSigners();
 
-    usdc = await (await ethers.getContractFactory("MockUSDC")).deploy();
+    usdc = await (await ethers.getContractFactory("MockUSDC")).deploy("USDC");
     scores = await (await ethers.getContractFactory("ScoreManager")).deploy(owner.address);
     engine = await (
       await ethers.getContractFactory("PolarisLoanEngine")
@@ -217,5 +217,20 @@ describe("CollateralVault units", () => {
         vault.connect(outsider).setCreditMultiplierBps(30_000)
       ).to.be.revertedWithCustomError(vault, "OwnableUnauthorizedAccount");
     });
+  });
+
+  it("caps what one account may lock, and only the owner moves the cap, within MAX_LOCK_CAP", async () => {
+    const cap = await vault.maxLockedPerUser();
+    expect(cap).to.equal(10_000_000_000n);
+    await expect(vault.connect(user).setMaxLockedPerUser(1n)).to.be.revertedWithCustomError(vault, "OwnableUnauthorizedAccount");
+    await expect(vault.setMaxLockedPerUser(0n)).to.be.revertedWithCustomError(vault, "InvalidLockCap");
+    await expect(vault.setMaxLockedPerUser((await vault.MAX_LOCK_CAP()) + 1n)).to.be.revertedWithCustomError(vault, "InvalidLockCap");
+    await expect(vault.setMaxLockedPerUser(USDC(100))).to.emit(vault, "MaxLockedPerUserSet").withArgs(USDC(100));
+    await usdc.mint(user.address, USDC(200));
+    await usdc.connect(user).approve(await vault.getAddress(), USDC(200));
+    const before = await vault.lockedOf(user.address);
+    const room = USDC(100) - before;
+    if (room > 0n) await vault.connect(user).lock(room);
+    await expect(vault.connect(user).lock(1n)).to.be.revertedWithCustomError(vault, "LockCapExceeded");
   });
 });

@@ -1,0 +1,557 @@
+[
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "initialOwner",
+        "type": "address"
+      },
+      {
+        "internalType": "contract IPolarisPool",
+        "name": "_pool",
+        "type": "address"
+      },
+      {
+        "components": [
+          {
+            "internalType": "uint256",
+            "name": "minFreeCash",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint16",
+            "name": "maxBadDebtBps",
+            "type": "uint16"
+          },
+          {
+            "internalType": "uint256",
+            "name": "minOriginated",
+            "type": "uint256"
+          }
+        ],
+        "internalType": "struct CreditGuard.Thresholds",
+        "name": "thresholds_",
+        "type": "tuple"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "constructor"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "enum CreditGuard.Override",
+        "name": "mode",
+        "type": "uint8"
+      },
+      {
+        "internalType": "uint64",
+        "name": "until",
+        "type": "uint64"
+      }
+    ],
+    "name": "InvalidOverride",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "InvalidThresholds",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "owner",
+        "type": "address"
+      }
+    ],
+    "name": "OwnableInvalidOwner",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "account",
+        "type": "address"
+      }
+    ],
+    "name": "OwnableUnauthorizedAccount",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "ZeroAddress",
+    "type": "error"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "badDebt",
+        "type": "uint256"
+      }
+    ],
+    "name": "BadDebtAcknowledged",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "enum CreditGuard.Override",
+        "name": "mode",
+        "type": "uint8"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint64",
+        "name": "until",
+        "type": "uint64"
+      }
+    ],
+    "name": "CreditGuardOverridden",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "previousOwner",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "newOwner",
+        "type": "address"
+      }
+    ],
+    "name": "OwnershipTransferred",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "components": [
+          {
+            "internalType": "uint256",
+            "name": "minFreeCash",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint16",
+            "name": "maxBadDebtBps",
+            "type": "uint16"
+          },
+          {
+            "internalType": "uint256",
+            "name": "minOriginated",
+            "type": "uint256"
+          }
+        ],
+        "indexed": false,
+        "internalType": "struct CreditGuard.Thresholds",
+        "name": "thresholds",
+        "type": "tuple"
+      }
+    ],
+    "name": "ThresholdsSet",
+    "type": "event"
+  },
+  {
+    "inputs": [],
+    "name": "MAX_FORCE_RESUME",
+    "outputs": [
+      {
+        "internalType": "uint32",
+        "name": "",
+        "type": "uint32"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "REASON_BAD_DEBT",
+    "outputs": [
+      {
+        "internalType": "uint8",
+        "name": "",
+        "type": "uint8"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "REASON_LOW_CASH",
+    "outputs": [
+      {
+        "internalType": "uint8",
+        "name": "",
+        "type": "uint8"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "REASON_OWNER_PAUSE",
+    "outputs": [
+      {
+        "internalType": "uint8",
+        "name": "",
+        "type": "uint8"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "acknowledgeBadDebt",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "activeOverride",
+    "outputs": [
+      {
+        "internalType": "enum CreditGuard.Override",
+        "name": "",
+        "type": "uint8"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "badDebtAcknowledged",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "creditStatus",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "bool",
+            "name": "paused",
+            "type": "bool"
+          },
+          {
+            "internalType": "uint8",
+            "name": "reasons",
+            "type": "uint8"
+          },
+          {
+            "internalType": "uint8",
+            "name": "poolReasons",
+            "type": "uint8"
+          },
+          {
+            "internalType": "enum CreditGuard.Override",
+            "name": "overrideMode",
+            "type": "uint8"
+          },
+          {
+            "internalType": "uint64",
+            "name": "overrideUntil",
+            "type": "uint64"
+          },
+          {
+            "internalType": "uint256",
+            "name": "badDebtAcknowledged",
+            "type": "uint256"
+          },
+          {
+            "components": [
+              {
+                "internalType": "uint256",
+                "name": "freeCash",
+                "type": "uint256"
+              },
+              {
+                "internalType": "uint256",
+                "name": "totalOwed",
+                "type": "uint256"
+              },
+              {
+                "internalType": "uint256",
+                "name": "badDebt",
+                "type": "uint256"
+              },
+              {
+                "internalType": "uint256",
+                "name": "totalOriginated",
+                "type": "uint256"
+              }
+            ],
+            "internalType": "struct IPolarisPool.PoolState",
+            "name": "pool",
+            "type": "tuple"
+          },
+          {
+            "components": [
+              {
+                "internalType": "uint256",
+                "name": "minFreeCash",
+                "type": "uint256"
+              },
+              {
+                "internalType": "uint16",
+                "name": "maxBadDebtBps",
+                "type": "uint16"
+              },
+              {
+                "internalType": "uint256",
+                "name": "minOriginated",
+                "type": "uint256"
+              }
+            ],
+            "internalType": "struct CreditGuard.Thresholds",
+            "name": "thresholds",
+            "type": "tuple"
+          }
+        ],
+        "internalType": "struct CreditGuard.CreditStatus",
+        "name": "s",
+        "type": "tuple"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "isCreditPaused",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "paused",
+        "type": "bool"
+      },
+      {
+        "internalType": "uint8",
+        "name": "reasons",
+        "type": "uint8"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "overrideMode",
+    "outputs": [
+      {
+        "internalType": "enum CreditGuard.Override",
+        "name": "",
+        "type": "uint8"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "overrideUntil",
+    "outputs": [
+      {
+        "internalType": "uint64",
+        "name": "",
+        "type": "uint64"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "owner",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "pool",
+    "outputs": [
+      {
+        "internalType": "contract IPolarisPool",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "components": [
+          {
+            "internalType": "uint256",
+            "name": "freeCash",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "totalOwed",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "badDebt",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "totalOriginated",
+            "type": "uint256"
+          }
+        ],
+        "internalType": "struct IPolarisPool.PoolState",
+        "name": "s",
+        "type": "tuple"
+      }
+    ],
+    "name": "poolReasons",
+    "outputs": [
+      {
+        "internalType": "uint8",
+        "name": "reasons",
+        "type": "uint8"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "renounceOwnership",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "enum CreditGuard.Override",
+        "name": "mode",
+        "type": "uint8"
+      },
+      {
+        "internalType": "uint64",
+        "name": "until",
+        "type": "uint64"
+      }
+    ],
+    "name": "setOverride",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "components": [
+          {
+            "internalType": "uint256",
+            "name": "minFreeCash",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint16",
+            "name": "maxBadDebtBps",
+            "type": "uint16"
+          },
+          {
+            "internalType": "uint256",
+            "name": "minOriginated",
+            "type": "uint256"
+          }
+        ],
+        "internalType": "struct CreditGuard.Thresholds",
+        "name": "t",
+        "type": "tuple"
+      }
+    ],
+    "name": "setThresholds",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "thresholds",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "uint256",
+            "name": "minFreeCash",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint16",
+            "name": "maxBadDebtBps",
+            "type": "uint16"
+          },
+          {
+            "internalType": "uint256",
+            "name": "minOriginated",
+            "type": "uint256"
+          }
+        ],
+        "internalType": "struct CreditGuard.Thresholds",
+        "name": "",
+        "type": "tuple"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "newOwner",
+        "type": "address"
+      }
+    ],
+    "name": "transferOwnership",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  }
+]

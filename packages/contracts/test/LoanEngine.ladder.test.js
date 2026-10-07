@@ -34,7 +34,7 @@ describe("PolarisLoanEngine ladder and boundaries", () => {
     // Indices 0-3 are the fixed cast; everything after is a disposable wallet.
     nextSigner = 4;
 
-    usdc = await (await ethers.getContractFactory("MockUSDC")).deploy();
+    usdc = await (await ethers.getContractFactory("MockUSDC")).deploy("USDC");
     scores = await (await ethers.getContractFactory("ScoreManager")).deploy(owner.address);
     engine = await (
       await ethers.getContractFactory("PolarisLoanEngine")

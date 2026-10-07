@@ -18,7 +18,7 @@ describe("BatchSettlement guards", () => {
 
   beforeEach(async () => {
     [owner, keeper, m1, m2, outsider] = await ethers.getSigners();
-    usdc = await (await ethers.getContractFactory("MockUSDC")).deploy();
+    usdc = await (await ethers.getContractFactory("MockUSDC")).deploy("USDC");
     batch = await (
       await ethers.getContractFactory("BatchSettlement")
     ).deploy(owner.address, await usdc.getAddress());

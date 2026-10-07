@@ -1,15 +1,15 @@
 const path = require("node:path");
 
 require("@nomicfoundation/hardhat-toolbox");
-// The repo-root .env (git-ignored). Resolved from this file, not from the
-// shell's working directory, so `pnpm --filter` and a plain `npx hardhat` in
-// this folder read the same file.
-require("dotenv").config({ path: path.join(__dirname, "..", "..", ".env") });
+// The repo-root .env.local (git-ignored), if any. The deployer key is never
+// kept in this repo: scripts/deploy.js reads it from the environment, which the
+// deploy command fills by sourcing the key file outside the repo (MAINNET.md).
+require("dotenv").config({ path: path.join(__dirname, "..", "..", ".env.local"), quiet: true });
 
 const DEPLOYER_PRIVATE_KEY = process.env.DEPLOYER_PRIVATE_KEY;
 const accounts = DEPLOYER_PRIVATE_KEY ? [DEPLOYER_PRIVATE_KEY] : [];
 
-/** The local node the end-to-end run uses: `pnpm node:local` (port 8600). */
+/** The local node: `pnpm node:local` (port 8600). */
 const LOCAL_NODE_PORT = Number(process.env.POLARIS_LOCAL_NODE_PORT || 8600);
 
 /** @type import('hardhat/config').HardhatUserConfig */
@@ -18,7 +18,7 @@ module.exports = {
     version: "0.8.24",
     settings: {
       optimizer: { enabled: true, runs: 200 },
-      // Monad and Sepolia both have the cancun opcodes.
+      // Arc targets Osaka, a superset of cancun.
       evmVersion: "cancun",
     },
   },
@@ -26,64 +26,39 @@ module.exports = {
     hardhat: {
       chainId: 31337,
     },
-    // A `hardhat node` started by scripts/e2e-local.js (or `pnpm node:local`).
+    // A `hardhat node` for the local stack (`pnpm node:local`, port 8600).
     // Its accounts are the node's own unlocked test accounts.
-    monadLocal: {
+    arcLocal: {
       url: `http://127.0.0.1:${LOCAL_NODE_PORT}`,
       chainId: 31337,
     },
-    // Monad is EVM-equivalent, so the same compiler settings apply. Monad
-    // charges gas on the gas limit rather than gas used, so every sender we
-    // write estimates first instead of passing a blanket limit (lib/tx.js).
-    monadTestnet: {
-      url: process.env.MONAD_TESTNET_RPC_URL || "https://testnet-rpc.monad.xyz",
-      chainId: 10143,
+    // Arc testnet. Gas is USDC; lib/tx.js prices every transaction at or
+    // above Arc's 20 gwei floor.
+    arcTestnet: {
+      url: process.env.ARC_TESTNET_RPC_URL || "https://rpc.testnet.arc.io",
+      chainId: 5042002,
       accounts,
     },
-    // A local fork of Monad testnet (anvil, README "Rehearse real AUSD on a
-    // fork"): real AUSD and Agora's faucet as they stand on testnet. No key
-    // from .env: the node's own unlocked test accounts sign, so this network
-    // can send nothing to a public RPC. The fork scripts also refuse any node
-    // that is not a local fork (lib/fork.js).
-    monadFork: {
-      url: process.env.MONAD_FORK_RPC_URL || "http://127.0.0.1:18555",
-      chainId: 10143,
-    },
-    monad: {
-      url: process.env.MONAD_RPC_URL || "https://rpc.monad.xyz",
-      chainId: 143,
-      accounts,
-    },
-    sepolia: {
-      url: process.env.SEPOLIA_RPC_URL || "https://ethereum-sepolia-rpc.publicnode.com",
-      chainId: 11155111,
+    // Arc mainnet. scripts/deploy.js refuses it without POLARIS_CONFIRM_MAINNET=yes.
+    arcMainnet: {
+      url: process.env.ARC_MAINNET_RPC_URL || "https://rpc.mainnet.arc.io",
+      chainId: 5042,
       accounts,
     },
   },
+  // Arc's explorers are Blockscout, which takes any API key.
   etherscan: {
-    // One Etherscan V2 key covers Sepolia and Monadscan (Monad testnet is on
-    // the free tier: https://docs.etherscan.io/supported-chains). A single
-    // string, not one per network: hardhat-verify then speaks V2 and sends
-    // `chainid` on every call. Given an object it falls back to V1, drops the
-    // `chainid` from the URL below when it checks a contract or polls a
-    // submission, and V2 answers "Missing chainid parameter".
-    apiKey: process.env.ETHERSCAN_API_KEY || "",
+    apiKey: { arcTestnet: "blockscout", arcMainnet: "blockscout" },
     customChains: [
       {
-        network: "sepolia",
-        chainId: 11155111,
-        urls: {
-          apiURL: "https://api-sepolia.etherscan.io/api",
-          browserURL: "https://sepolia.etherscan.io",
-        },
+        network: "arcTestnet",
+        chainId: 5042002,
+        urls: { apiURL: "https://explorer.testnet.arc.io/api", browserURL: "https://explorer.testnet.arc.io" },
       },
       {
-        network: "monadTestnet",
-        chainId: 10143,
-        urls: {
-          apiURL: "https://api.etherscan.io/v2/api",
-          browserURL: "https://testnet.monadscan.com",
-        },
+        network: "arcMainnet",
+        chainId: 5042,
+        urls: { apiURL: "https://explorer.arc.io/api", browserURL: "https://explorer.arc.io" },
       },
     ],
   },

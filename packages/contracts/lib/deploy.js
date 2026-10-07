@@ -1,115 +1,91 @@
 /**
- * Deploy and wire the whole Polaris contract layer, in dependency order.
+ * Deploy and wire the whole Polaris contract layer on Arc, in dependency order.
  *
- * Used by scripts/deploy-monad.js (Monad testnet, or a local Hardhat node for
- * the end-to-end run) and by test/metropolis/Deploy.test.js, which runs it
- * in-process and checks every role it grants. It returns a plain record; the
- * script decides where to write it.
+ * Used by scripts/deploy.js (Arc testnet, Arc mainnet, or a local Hardhat
+ * node) and by test/metropolis/Deploy.test.js, which runs it in-process and
+ * checks every role it grants. It returns a plain record; the script decides
+ * where to write it.
  *
- * Every transaction goes through lib/tx.js, so each carries an estimated gas
- * limit plus 15% (Monad bills the limit).
+ * Every transaction goes through lib/tx.js: an estimated gas limit plus 15%,
+ * priced at or above Arc's 20 gwei fee floor. Gas is paid in USDC.
  */
 
 "use strict";
 
-const { Wallet, ZeroAddress, getAddress, id: eventTopic } = require("ethers");
+const { execFileSync } = require("node:child_process");
+const { getAddress, ZeroAddress, Wallet } = require("ethers");
 
 const tx = require("./tx");
-const { headSource } = require("./verify");
-const { TYPES, DOMAIN_NAMES, AUSD_DOMAIN_NAME, readDomain, domainJson } = require("./eip712");
-const {
-  ACTION,
-  REPORT_KIND,
-  WORKFLOW_NAMES,
-  TASKS_TYPE,
-  UNDERWRITINGS_TYPE,
-  ATTESTATION_TYPE,
-  GUARDIAN_REASON,
-  GUARDIAN_OVERRIDE,
-  GUARDIAN_DEFAULTS,
-  GUARDIAN_PRICE_DECIMALS,
-  guardianThresholds: toGuardianThresholds,
-  AUSD_USD_FEED_MONAD_MAINNET,
-  workflowNameBytes10,
-} = require("./cre");
-
-/** Addresses on Monad testnet (10143), verified in docs/research/ausd.md and cre.md. */
-const MONAD_TESTNET = {
-  chainId: 10143,
-  AUSD: "0xa9012a055bd4e0eDfF8Ce09f960291C09D5322dC",
-  CRE_MOCK_FORWARDER: "0xB9F79d863261869B234c481D1f9A7af84AeAd192", // `cre workflow simulate`
-  CRE_KEYSTONE_FORWARDER: "0xF8344CFd5c43616a4366C34E3EEE75af79a74482", // deployed workflows
-  MULTICALL3: "0xcA11bde05977b3631167028862bE2a173976CA11",
-  EXPLORER: "https://testnet.monadscan.com",
-};
+const { TYPES, DOMAIN_NAMES, USDC_DOMAIN, readDomain, domainJson } = require("./eip712");
+const { ACTION, REPORT_KIND, TASKS_TYPE, UNDERWRITINGS_TYPE, GUARD_REASON, GUARD_OVERRIDE, guardThresholds } = require("./keeper");
 
 const USD = (n) => BigInt(Math.round(Number(n) * 1e6));
 
 /**
  * @typedef {object} DeployConfig
- * @property {"ausd"|"mock"} tokenMode  real AUSD at `tokenAddress`, or a fresh MockAUSD
- * @property {string} [tokenAddress]
- * @property {string} treasury
+ * @property {import("./networks").ARC_TESTNET} network   the Arc network (lib/networks.js)
+ * @property {"arc"|"mock"} tokenMode   Circle's USDC/EURC on Arc, or fresh MockUSDC/MockEURC (local only)
+ * @property {string} treasury          protocol fees go here
+ * @property {string} keeper            the keeper EOA: the only writer to the receivers
+ * @property {string} [relayer]         the relayer EOA: operator on Payments and the registry, settler on BatchSettlement
  * @property {number} graceSeconds      LoanEngine grace period
  * @property {number} minInterval       LoanEngine minimum instalment interval
  * @property {number} minPeriod         PolarisPayments minimum subscription period
- * @property {"local"|"simulation"|"production"} forwarderKind
- * @property {string} [forwarderAddress] required unless forwarderKind is "local"
- * @property {string} simulationTransmitter  the three receivers' origin guard (zero to disable)
- * @property {{minPrice?: bigint, maxPrice?: bigint, minFreeCash?: bigint, maxBadDebtBps?: number, minOriginated?: bigint, maxPriceAge?: number}} [guardianThresholds]
- *                                      GuardianReceiver thresholds (default: lib/cre.js GUARDIAN_DEFAULTS)
- * @property {number} [maxAttestationAge] seconds before the guardian's attestation is stale and credit fails open (3600)
- * @property {string} [workflowOwner]   production only: expected CRE workflow owner
- * @property {string} [relayer]         Privy server wallet that relays; gets operator roles
+ * @property {{minFreeCash?: bigint, maxBadDebtBps?: number, minOriginated?: bigint}} [guard] CreditGuard thresholds
  * @property {import("ethers").Wallet} demoMerchant  signs its own registration
- * @property {bigint} poolSeed          AUSD base units to fund the credit pool with
- * @property {bigint} [mintToDeployer]  mock only: extra test dollars for the deployer
+ * @property {bigint} poolSeed          USDC base units to fund the credit pool with (at most what the deployer holds)
+ * @property {bigint} [merchantCap]     the demo merchant's max order value
  */
 
 async function deployPolaris(hre, cfg, log = () => {}) {
   const { ethers } = hre;
   const [deployer] = await ethers.getSigners();
-  // Behind Chainlink's public simulation forwarder the transmitter's tx.origin
-  // is UnderwritingReceiver's only guard, so it must be a key kept for the CRE
-  // simulator alone: never missing, never the deployer's (see
-  // scripts/deploy-monad.js, simulationTransmitterFor). Checked before
-  // anything is sent.
-  if (cfg.forwarderKind === "simulation") {
-    const t = cfg.simulationTransmitter;
-    if (!t || getAddress(t) === ZeroAddress) {
-      throw new Error("A simulation forwarder needs a simulationTransmitter, or anyone can write credit facts.");
-    }
-    if (getAddress(t) === deployer.address) {
-      throw new Error("The CRE simulation transmitter must be a dedicated key, not the deployer.");
-    }
+  if (!cfg.keeper || getAddress(cfg.keeper) === ZeroAddress) throw new Error("A keeper address is required.");
+  if (getAddress(cfg.keeper) === deployer.address) {
+    throw new Error("The keeper must be its own key, not the deployer: it is the only writer of credit facts.");
   }
+  if (cfg.tokenMode === "mock" && cfg.network.key !== "local") throw new Error("MockUSDC is for a local node only.");
+
   const net = await ethers.provider.getNetwork();
+  if (Number(net.chainId) !== cfg.network.chainId) {
+    throw new Error(`Connected to chain ${net.chainId}, but NETWORK=${cfg.network.key} is chain ${cfg.network.chainId}.`);
+  }
   const record = {
-    network: hre.network.name,
+    network: cfg.network.key,
     chainId: Number(net.chainId),
+    chainName: cfg.network.name,
+    rpcUrl: cfg.network.rpcUrl,
+    explorerUrl: cfg.network.explorerUrl,
     deployer: deployer.address,
     deployedAt: new Date().toISOString(),
-    // The commit the bytecode is built from: what verify:monad submits for a
-    // contract whose sources change later (lib/verify.js).
     ...sourceCommitOf(log),
+    circle: cfg.network.circle,
     contracts: {},
     config: {},
     roles: {},
+    keeper: {},
     demo: {},
+    gas: { totalUsed: "0", note: "Arc gas is paid in USDC; see totalCostUsdc." },
   };
   const addresses = {};
+  let gasUsed = 0n;
+  let gasCost = 0n;
+  const tally = (receipt) => {
+    gasUsed += receipt.gasUsed;
+    gasCost += receipt.gasUsed * (receipt.gasPrice ?? receipt.effectiveGasPrice ?? 0n);
+  };
 
   async function deployContract(name, args, label = name) {
     const factory = await ethers.getContractFactory(name, deployer);
     const d = await tx.deploy(factory, args);
+    tally(d.receipt);
     record.contracts[label] = {
       address: d.address,
       blockNumber: d.receipt.blockNumber,
       txHash: d.receipt.hash,
       gasUsed: d.receipt.gasUsed.toString(),
+      contract: name,
       abi: `abi/${name}.json`,
-      // The constructor arguments, JSON-safe, for verification (scripts/verify-monad.js):
-      // later reconfiguration (lock-receivers) changes what the record says elsewhere.
       args: jsonSafe(args),
     };
     addresses[label] = d.address;
@@ -117,51 +93,46 @@ async function deployPolaris(hre, cfg, log = () => {}) {
     return d.contract;
   }
 
-  const send = (contract, method, args) => tx.send(contract, method, args);
+  const send = async (contract, method, args) => {
+    const r = await tx.send(contract, method, args);
+    tally(r);
+    return r;
+  };
 
-  // ---------------------------------------------------------------- token
-  log("Stablecoin");
-  let token;
+  // ------------------------------------------------------------ tokens
+  log("Stablecoins");
+  let usdc;
+  let eurc = null;
   if (cfg.tokenMode === "mock") {
-    token = await deployContract("MockAUSD", [], "Stablecoin");
-    record.contracts.Stablecoin.kind = "MockAUSD";
+    usdc = await deployContract("MockUSDC", ["USDC"], "USDC");
+    eurc = await deployContract("MockUSDC", ["EURC"], "EURC");
+    record.contracts.USDC.kind = "MockUSDC (local only)";
+    record.contracts.EURC.kind = "MockUSDC named EURC (local only)";
   } else {
-    const address = getAddress(cfg.tokenAddress);
-    if ((await ethers.provider.getCode(address)) === "0x") throw new Error(`No token code at ${address}`);
-    token = await ethers.getContractAt("MockAUSD", address, deployer); // same 2612/3009/5267 surface
-    const d = await readDomain(token);
-    if (d.name !== AUSD_DOMAIN_NAME.name || d.version !== AUSD_DOMAIN_NAME.version) {
-      throw new Error(`AUSD EIP-712 domain changed: ${JSON.stringify(domainJson(d))}`);
+    usdc = await useCircleToken(ethers, deployer, cfg.network.circle.usdc, "USDC", record, addresses, log);
+    if (cfg.network.circle.eurc) {
+      eurc = await useCircleToken(ethers, deployer, cfg.network.circle.eurc, "EURC", record, addresses, log);
     }
-    if (Number(await token.decimals()) !== 6) throw new Error("AUSD decimals changed");
-    record.contracts.Stablecoin = { address, kind: "AUSD", abi: "abi/IAUSD.json" };
-    addresses.Stablecoin = address;
-    log(`  Stablecoin             ${address}  (Agora AUSD, domain verified)`);
   }
 
-  // ------------------------------------------------------------- core
+  // -------------------------------------------------------------- core
   log("Core");
   const scores = await deployContract("ScoreManager", [deployer.address]);
   const engine = await deployContract("PolarisLoanEngine", [
     deployer.address,
-    addresses.Stablecoin,
+    addresses.USDC,
     addresses.ScoreManager,
     cfg.treasury,
     cfg.graceSeconds,
     cfg.minInterval,
   ]);
-  const payments = await deployContract("PolarisPayments", [
-    deployer.address,
-    addresses.Stablecoin,
-    cfg.treasury,
-    cfg.minPeriod,
-  ]);
+  const payments = await deployContract("PolarisPayments", [deployer.address, addresses.USDC, cfg.treasury, cfg.minPeriod]);
   const registry = await deployContract("MerchantRegistry", [deployer.address]);
-  const vault = await deployContract("CollateralVault", [deployer.address, addresses.Stablecoin]);
-  const batch = await deployContract("BatchSettlement", [deployer.address, addresses.Stablecoin]);
-  await deployContract("PolarisSend", [addresses.Stablecoin]);
-  // Split the bill by link: no owner, no roles, no custody (contracts/PolarisSplit.sol).
-  await deployContract("PolarisSplit", [addresses.Stablecoin]);
+  const vault = await deployContract("CollateralVault", [deployer.address, addresses.USDC]);
+  const batch = await deployContract("BatchSettlement", [deployer.address, addresses.USDC]);
+  await deployContract("PolarisSend", [addresses.USDC]);
+  if (eurc) await deployContract("PolarisSend", [addresses.EURC], "PolarisSendEURC");
+  await deployContract("PolarisSplit", [addresses.USDC]);
   const checkout = await deployContract("PolarisCheckout", [
     deployer.address,
     addresses.PolarisLoanEngine,
@@ -169,58 +140,21 @@ async function deployPolaris(hre, cfg, log = () => {}) {
     addresses.ScoreManager,
   ]);
 
-  // -------------------------------------------------------------- CRE
-  log("Chainlink CRE");
-  let forwarder = cfg.forwarderAddress;
-  if (cfg.forwarderKind === "local") {
-    await deployContract("MockKeystoneForwarder", [], "MockKeystoneForwarder");
-    forwarder = addresses.MockKeystoneForwarder;
-  }
-  if (!forwarder) throw new Error("forwarderAddress is required");
-  const transmitter = cfg.simulationTransmitter ?? ZeroAddress;
-  const collections = await deployContract("CollectionsReceiver", [
-    forwarder,
-    addresses.PolarisLoanEngine,
-    addresses.PolarisPayments,
-    transmitter,
-  ]);
-  const underwriting = await deployContract("UnderwritingReceiver", [
-    forwarder,
-    addresses.ScoreManager,
-    transmitter,
-  ]);
-  const guardianThresholds = toGuardianThresholds(cfg.guardianThresholds ?? {});
-  const maxAttestationAge = Number(cfg.maxAttestationAge ?? GUARDIAN_DEFAULTS.maxAttestationAge);
-  const guardian = await deployContract("GuardianReceiver", [
-    forwarder,
-    addresses.PolarisLoanEngine,
-    transmitter,
-    guardianThresholds,
-    maxAttestationAge,
-  ]);
-  // The guardian reads Chainlink AUSD/USD on Monad mainnet. A local chain has
-  // no mainnet, so it gets a clearly labelled stand-in to point the workflow at.
-  let priceFeed = { ...AUSD_USD_FEED_MONAD_MAINNET, kind: "chainlink" };
-  if (cfg.forwarderKind === "local") {
-    await deployContract("MockPriceFeed", [8, "AUSD / USD (local mock, not Chainlink)", 99_980_000n], "MockAusdUsdFeed");
-    priceFeed = {
-      chainId: record.chainId,
-      chainSelectorName: null,
-      address: addresses.MockAusdUsdFeed,
-      decimals: 8,
-      description: "AUSD / USD (local mock, not Chainlink)",
-      kind: "mock",
-    };
-  }
+  // ------------------------------------------------------------ keeper
+  log("Keeper and credit guard");
+  await deployContract("CollectionsReceiver", [cfg.keeper, addresses.PolarisLoanEngine, addresses.PolarisPayments]);
+  await deployContract("UnderwritingReceiver", [cfg.keeper, addresses.ScoreManager]);
+  const thresholds = guardThresholds(cfg.guard ?? {});
+  await deployContract("CreditGuard", [deployer.address, addresses.PolarisLoanEngine, thresholds]);
 
   // ------------------------------------------------------------ wiring
   log("Roles");
   await send(scores, "setWriter", [addresses.PolarisLoanEngine, true]);
   await send(scores, "setUnderwriter", [addresses.UnderwritingReceiver, true]);
   await send(scores, "setCollateralVault", [addresses.CollateralVault]);
-  // A fresh Face ID account costs nothing, so no unsecured line opens without
-  // a DON report (ScoreManager.requireUnderwriting), and no report opens one
-  // without a history behind it (ScoreManager.isThinFile).
+  // A fresh passkey account costs nothing, so no unsecured line opens without
+  // a keeper review (ScoreManager.requireUnderwriting), and no review opens
+  // one without a history behind it (ScoreManager.isThinFile).
   await send(scores, "setRequireUnderwriting", [true]);
   await send(vault, "setLoanEngine", [addresses.PolarisLoanEngine]);
   await send(vault, "setSeizer", [addresses.PolarisLoanEngine, true]);
@@ -228,15 +162,15 @@ async function deployPolaris(hre, cfg, log = () => {}) {
   await send(engine, "setMerchantRegistry", [addresses.MerchantRegistry]);
   await send(engine, "setOriginator", [addresses.PolarisCheckout, true]);
   await send(payments, "setCheckout", [addresses.PolarisCheckout]);
-  await send(checkout, "setCreditGuardian", [addresses.GuardianReceiver]);
+  await send(checkout, "setCreditGuardian", [addresses.CreditGuard]);
   log("  ScoreManager: writer = LoanEngine, underwriter = UnderwritingReceiver, requireUnderwriting");
   log("  LoanEngine: originator = PolarisCheckout (only), vault, registry");
   log("  PolarisPayments: checkout = PolarisCheckout");
   log(
-    `  PolarisCheckout: credit guardian = GuardianReceiver (depeg < $${Number(guardianThresholds.minPrice) / 1e8} or > $${Number(guardianThresholds.maxPrice) / 1e8}, ` +
-      `cash < $${Number(guardianThresholds.minFreeCash) / 1e6}, bad debt > ${guardianThresholds.maxBadDebtBps / 100}% once $${Number(guardianThresholds.minOriginated) / 1e6} is lent, ` +
-      `price older than ${guardianThresholds.maxPriceAge}s; price stale after ${maxAttestationAge}s)`
+    `  PolarisCheckout: credit guard = CreditGuard (pause below $${Number(thresholds.minFreeCash) / 1e6} free cash, ` +
+      `bad debt > ${thresholds.maxBadDebtBps / 100}% once $${Number(thresholds.minOriginated) / 1e6} is lent)`
   );
+  log(`  receivers: keeper = ${cfg.keeper}`);
 
   if (cfg.relayer) {
     await send(payments, "setOperator", [cfg.relayer, true]);
@@ -245,50 +179,29 @@ async function deployPolaris(hre, cfg, log = () => {}) {
     log(`  relayer ${cfg.relayer}: PolarisPayments operator, MerchantRegistry operator, BatchSettlement settler`);
   }
 
-  if (cfg.forwarderKind === "production" && cfg.workflowOwner) {
-    // The workflow ids exist only once each workflow is deployed; pin them
-    // with scripts/lock-receivers.js (lock-receivers:monad) afterwards.
-    for (const [receiver, name] of [
-      [collections, WORKFLOW_NAMES.COLLECTIONS],
-      [underwriting, WORKFLOW_NAMES.UNDERWRITING],
-      [guardian, WORKFLOW_NAMES.GUARDIAN],
-    ]) {
-      await send(receiver, "setExpectedAuthor", [cfg.workflowOwner]);
-      await send(receiver, "setExpectedWorkflowName", [name]);
-    }
-    log(`  receivers accept only workflow owner ${cfg.workflowOwner} and the Polaris workflow names`);
-  }
-
   // --------------------------------------------------------- demo data
   log("Demo merchant");
   const merchant = cfg.demoMerchant.connect(ethers.provider);
   const regDeadline = BigInt((await ethers.provider.getBlock("latest")).timestamp + 3600);
   const regMessage = {
     merchant: merchant.address,
-    name: "Polaris Demo Studio",
+    name: "Halcyon Studio",
     payoutAddress: merchant.address,
-    metadataURI: "https://polarispay.app/demo/merchant.json",
+    metadataURI: "https://polaris.arc/demo/merchant.json",
     nonce: await registry.nonces(merchant.address),
     deadline: regDeadline,
   };
   const regSig = await merchant.signTypedData(await readDomain(registry), { Registration: TYPES.MerchantRegistry.Registration }, regMessage);
-  await send(registry, "registerFor", [
-    regMessage.merchant,
-    regMessage.name,
-    regMessage.payoutAddress,
-    regMessage.metadataURI,
-    regDeadline,
-    regSig,
-  ]);
+  await send(registry, "registerFor", [regMessage.merchant, regMessage.name, regMessage.payoutAddress, regMessage.metadataURI, regDeadline, regSig]);
   await send(registry, "setActive", [merchant.address, true]);
-  await send(registry, "setMaxOrderValue", [merchant.address, USD(1_000)]);
-  log(`  ${merchant.address} registered by its own signature, active, cap $1,000`);
+  const cap = cfg.merchantCap ?? USD(1_000);
+  await send(registry, "setMaxOrderValue", [merchant.address, cap]);
+  log(`  ${merchant.address} registered by its own signature, active, cap $${Number(cap) / 1e6}`);
 
   const monthly = BigInt(30 * 24 * 3600);
-  const planMonthly = await _createPlan(payments, merchant.address, USD(9.99), monthly, "Studio Pro, monthly");
-  const planFast = await _createPlan(payments, merchant.address, USD(1), BigInt(cfg.minPeriod), "Demo, every period");
+  const planMonthly = await createPlan(payments, merchant.address, USD(9.99), monthly, "Studio Pro, monthly", tally);
+  const planFast = await createPlan(payments, merchant.address, USD(1), BigInt(cfg.minPeriod), "Demo, every period", tally);
   log(`  subscription plans #${planMonthly} ($9.99 / 30 days) and #${planFast} ($1 / ${cfg.minPeriod}s)`);
-
   record.demo = {
     merchant: merchant.address,
     merchantName: regMessage.name,
@@ -298,19 +211,19 @@ async function deployPolaris(hre, cfg, log = () => {}) {
     ],
   };
 
-  // ------------------------------------------------------------- pool
+  // -------------------------------------------------------------- pool
   log("Credit pool");
-  if (cfg.tokenMode === "mock") {
-    await send(token, "mint", [deployer.address, cfg.poolSeed + (cfg.mintToDeployer ?? 0n)]);
-  }
-  const held = await token.balanceOf(deployer.address);
-  const seed = held < cfg.poolSeed ? held : cfg.poolSeed;
+  const held = await usdc.balanceOf(deployer.address);
+  // Keep 1 USDC of the deployer's balance for gas: on Arc the ERC-20 balance
+  // and the gas balance are the same money.
+  const spendable = held > USD(1) ? held - USD(1) : 0n;
+  const seed = spendable < cfg.poolSeed ? spendable : cfg.poolSeed;
   if (seed > 0n) {
-    await send(token, "approve", [addresses.PolarisLoanEngine, seed]);
+    await send(usdc, "approve", [addresses.PolarisLoanEngine, seed]);
     await send(engine, "fund", [seed]);
-    log(`  funded ${ethers.formatUnits(seed, 6)} AUSD`);
+    log(`  funded ${ethers.formatUnits(seed, 6)} USDC`);
   } else {
-    log("  NOT funded: the deployer holds no AUSD. Pay in 4 will refuse until the pool is funded (see README).");
+    log("  NOT funded: the deployer has no USDC to spare. Pay in 4 stays paused (CreditGuard: low cash) until the pool is funded.");
   }
   record.demo.poolSeeded = seed.toString();
   record.demo.poolTarget = cfg.poolSeed.toString();
@@ -325,109 +238,98 @@ async function deployPolaris(hre, cfg, log = () => {}) {
     feeBps: Number(await payments.feeBps()),
     interestRateBps: Number(await engine.INTEREST_RATE_BPS()),
     requireUnderwriting: await scores.requireUnderwriting(),
-    guardian: guardianRecordConfig(guardianThresholds, maxAttestationAge),
+    guard: { minFreeCash: thresholds.minFreeCash.toString(), maxBadDebtBps: thresholds.maxBadDebtBps, minOriginated: thresholds.minOriginated.toString() },
+    caps: {
+      sendMaxAmount: (await (await ethers.getContractAt("PolarisSend", addresses.PolarisSend)).MAX_AMOUNT()).toString(),
+      vaultMaxLockedPerUser: (await vault.maxLockedPerUser()).toString(),
+      merchantMaxOrderValue: cap.toString(),
+      registryDefaultMaxOrderValue: (await registry.DEFAULT_MAX_ORDER_VALUE()).toString(),
+      maxCreditLine: "1000000000",
+    },
   };
   record.roles = {
     owner: deployer.address,
+    keeper: cfg.keeper,
+    relayer: cfg.relayer ?? null,
     loanEngineOriginators: [addresses.PolarisCheckout],
     paymentsCheckout: addresses.PolarisCheckout,
     scoreWriters: [addresses.PolarisLoanEngine],
     scoreUnderwriters: [addresses.UnderwritingReceiver],
     vaultSeizers: [addresses.PolarisLoanEngine],
-    creditGuardian: addresses.GuardianReceiver,
-    relayer: cfg.relayer ?? null,
+    creditGuardian: addresses.CreditGuard,
   };
-  record.cre = {
-    forwarderKind: cfg.forwarderKind,
-    forwarder,
-    simulationTransmitter: transmitter,
-    workflowOwner: cfg.workflowOwner ?? null,
-    workflows: {
-      collections: {
-        name: WORKFLOW_NAMES.COLLECTIONS,
-        nameBytes10: workflowNameBytes10(WORKFLOW_NAMES.COLLECTIONS),
-        receiver: addresses.CollectionsReceiver,
-        report: `abi.encode(uint8 kind = ${REPORT_KIND.COLLECTIONS}, ${TASKS_TYPE} tasks)`,
-        actions: ACTION,
-        view: "checkTasks((uint8 action,uint256 id)[]) returns (bool[])",
-        retry: {
-          trigger: "EVM log",
-          contract: addresses.PolarisCheckout,
-          event: "Reauthorized(address indexed buyer,uint256 value,uint256 deadline)",
-          topic0: eventTopic("Reauthorized(address,uint256,uint256)"),
-          view: "dueTasksFor(address borrower) returns ((uint8 action,uint256 id)[])",
-        },
-      },
-      underwrite: {
-        name: WORKFLOW_NAMES.UNDERWRITING,
-        nameBytes10: workflowNameBytes10(WORKFLOW_NAMES.UNDERWRITING),
-        receiver: addresses.UnderwritingReceiver,
-        report: `abi.encode(uint8 kind = ${REPORT_KIND.UNDERWRITING}, ${UNDERWRITINGS_TYPE} items)`,
-      },
-      guardian: {
-        name: WORKFLOW_NAMES.GUARDIAN,
-        nameBytes10: workflowNameBytes10(WORKFLOW_NAMES.GUARDIAN),
-        receiver: addresses.GuardianReceiver,
-        report: `abi.encode(uint8 kind = ${REPORT_KIND.GUARDIAN}, ${ATTESTATION_TYPE} attestation)`,
-        reasons: GUARDIAN_REASON,
-        overrides: GUARDIAN_OVERRIDE,
-        priceDecimals: GUARDIAN_PRICE_DECIMALS,
-        priceFeed,
-        pool: addresses.PolarisLoanEngine,
-        view: GUARDIAN_VIEW,
-        feed: { description: "Polaris pool health, computed by CRE", decimals: GUARDIAN_PRICE_DECIMALS, address: addresses.GuardianReceiver },
-      },
+  record.keeper = {
+    address: cfg.keeper,
+    collections: {
+      receiver: addresses.CollectionsReceiver,
+      report: `abi.encode(uint8 kind = ${REPORT_KIND.COLLECTIONS}, ${TASKS_TYPE} tasks)`,
+      actions: ACTION,
+      entry: "submitReport(bytes report)",
+      view: "checkTasks((uint8 action,uint256 id)[]) returns (bool[])",
+      retry: { event: "PolarisCheckout.Reauthorized(address indexed buyer,uint256 value,uint256 deadline)", view: "dueTasksFor(address)" },
     },
+    underwriting: {
+      receiver: addresses.UnderwritingReceiver,
+      report: `abi.encode(uint8 kind = ${REPORT_KIND.UNDERWRITING}, ${UNDERWRITINGS_TYPE} items)`,
+      entry: "submitReport(bytes report)",
+    },
+    guard: { contract: addresses.CreditGuard, reasons: GUARD_REASON, overrides: GUARD_OVERRIDE, view: "creditStatus()" },
   };
-  record.eip712 = await _domains(ethers, addresses, token);
+  record.eip712 = await domains(ethers, addresses, usdc, eurc);
+  record.gas = { totalUsed: gasUsed.toString(), totalCostUsdc: ethers.formatUnits(gasCost, 18) };
   return record;
 }
 
-async function _createPlan(payments, merchant, price, period, name) {
+/** Circle's token on Arc: check its EIP-712 domain and decimals, and record it. */
+async function useCircleToken(ethers, deployer, address, symbol, record, addresses, log) {
+  const a = getAddress(address);
+  if ((await ethers.provider.getCode(a)) === "0x") throw new Error(`No ${symbol} code at ${a}`);
+  const token = await ethers.getContractAt("MockUSDC", a, deployer); // the same 2612/3009 surface
+  const d = await readDomain(token);
+  if (d.name !== symbol || d.version !== USDC_DOMAIN.version) throw new Error(`${symbol} EIP-712 domain changed: ${JSON.stringify(domainJson(d))}`);
+  if (Number(await token.decimals()) !== 6) throw new Error(`${symbol} decimals changed`);
+  record.contracts[symbol] = { address: a, kind: `Circle ${symbol} on Arc`, abi: "abi/IUSDC.json" };
+  addresses[symbol] = a;
+  log(`  ${symbol.padEnd(22)} ${a}  (Circle ${symbol}, domain "${d.name}" v${d.version}, 6 decimals: verified)`);
+  return token;
+}
+
+async function createPlan(payments, merchant, price, period, name, tally) {
   const receipt = await tx.send(payments, "createPlanFor", [merchant, price, period, name]);
-  const ev = receipt.logs.map((l) => { try { return payments.interface.parseLog(l); } catch { return null; } })
+  tally(receipt);
+  const ev = receipt.logs
+    .map((l) => {
+      try {
+        return payments.interface.parseLog(l);
+      } catch {
+        return null;
+      }
+    })
     .find((e) => e && e.name === "PlanCreated");
   return ev.args.planId;
 }
 
-async function _domains(ethers, addresses, token) {
-  const at = (name, label = name) => ethers.getContractAt(name, addresses[label]);
+async function domains(ethers, addresses, usdc, eurc) {
   const out = {};
   for (const name of Object.keys(DOMAIN_NAMES)) {
-    out[name] = { domain: domainJson(await readDomain(await at(name))), types: TYPES[name] };
+    const c = await ethers.getContractAt(name, addresses[name]);
+    out[name] = { domain: domainJson(await readDomain(c)), types: TYPES[name] };
   }
-  out.Stablecoin = { domain: domainJson(await readDomain(token)), types: TYPES.Stablecoin };
+  out.USDC = { domain: domainJson(await readDomain(usdc)), types: TYPES.Stablecoin };
+  if (eurc) out.EURC = { domain: domainJson(await readDomain(eurc)), types: TYPES.Stablecoin };
+  if (addresses.PolarisSendEURC) {
+    const c = await ethers.getContractAt("PolarisSend", addresses.PolarisSendEURC);
+    out.PolarisSendEURC = { domain: domainJson(await readDomain(c)), types: TYPES.PolarisSend };
+  }
   return out;
 }
 
-/** GuardianReceiver.currentInputs(), as the deployment record describes it to the workflow. */
-const GUARDIAN_VIEW =
-  "currentInputs() returns ((uint256 freeCash,uint256 totalOwed,uint256 badDebt,uint256 totalOriginated) state, " +
-  "(int256 minPrice,int256 maxPrice,uint256 minFreeCash,uint16 maxBadDebtBps,uint256 minOriginated,uint32 maxPriceAge) limits, " +
-  "uint256 acknowledgedBadDebt)";
-
-/** The record's `config.guardian`: the thresholds as decimal strings and numbers, and the staleness. */
-function guardianRecordConfig(t, maxAttestationAge) {
-  return {
-    minPrice: t.minPrice.toString(),
-    maxPrice: t.maxPrice.toString(),
-    minFreeCash: t.minFreeCash.toString(),
-    maxBadDebtBps: Number(t.maxBadDebtBps),
-    minOriginated: t.minOriginated.toString(),
-    maxPriceAge: Number(t.maxPriceAge),
-    maxAttestationAge: Number(maxAttestationAge),
-  };
-}
-
-/**
- * { sourceCommit } for the record: the commit HEAD is at, with
- * sourceDirty: true (and a warning) when contracts/ has uncommitted changes,
- * which no commit reproduces. {} outside a git checkout.
- */
+/** { sourceCommit } for the record: HEAD, with sourceDirty when contracts/ has uncommitted changes. {} outside git. */
 function sourceCommitOf(log = () => {}) {
   try {
-    const { commit, dirty } = headSource();
-    if (dirty) log("  WARNING: contracts/ has uncommitted changes: verify:monad cannot rebuild this bytecode from any commit");
+    const commit = execFileSync("git", ["rev-parse", "HEAD"], { cwd: __dirname, encoding: "utf8" }).trim();
+    const dirty = execFileSync("git", ["status", "--porcelain", "--", "../contracts"], { cwd: __dirname, encoding: "utf8" }).trim() !== "";
+    if (dirty) log("  WARNING: contracts/ has uncommitted changes: verification cannot rebuild this bytecode from any commit");
     return dirty ? { sourceCommit: commit, sourceDirty: true } : { sourceCommit: commit };
   } catch {
     return {};
@@ -442,9 +344,8 @@ function jsonSafe(v) {
   return v;
 }
 
-/** A throwaway wallet for local runs, where every key is a test key anyway. */
 function randomWallet() {
   return Wallet.createRandom();
 }
 
-module.exports = { deployPolaris, MONAD_TESTNET, USD, randomWallet, ZeroAddress, GUARDIAN_VIEW, guardianRecordConfig, jsonSafe, sourceCommitOf };
+module.exports = { deployPolaris, USD, randomWallet, jsonSafe, sourceCommitOf };

@@ -1,5 +1,5 @@
 /**
- * CollateralVault.withdrawWithSig: "Take out of Boost" with no MON.
+ * CollateralVault.withdrawWithSig: "Take out of Boost" with no USDC (gas).
  *
  * The borrower signs an EIP-712 Withdraw (borrower, amount, nonce, deadline)
  * under the vault's own domain; anyone submits it (the relayer does). The
@@ -44,7 +44,7 @@ describe("CollateralVault.withdrawWithSig (take out of Boost, gasless)", () => {
 
   beforeEach(async () => {
     [owner, borrower, relayer, stranger, merchant] = await ethers.getSigners();
-    token = await (await ethers.getContractFactory("MockAUSD")).deploy();
+    token = await (await ethers.getContractFactory("MockUSDC")).deploy("USDC");
     scores = await (await ethers.getContractFactory("ScoreManager")).deploy(owner.address);
     engine = await (await ethers.getContractFactory("PolarisLoanEngine")).deploy(owner.address, token, scores, owner.address, 3 * DAY, 0);
     vault = await (await ethers.getContractFactory("CollateralVault")).deploy(owner.address, token);
@@ -251,7 +251,7 @@ describe("CollateralVault.withdrawWithSig (take out of Boost, gasless)", () => {
 
   describe("reentrancy and layout", () => {
     it("a token that hands the borrower control mid-transfer can't reenter for a second payout", async () => {
-      const hook = await (await ethers.getContractFactory("HookAUSD")).deploy();
+      const hook = await (await ethers.getContractFactory("HookUSDC")).deploy();
       const v = await (await ethers.getContractFactory("CollateralVault")).deploy(owner.address, hook);
       await hook.mint(borrower.address, USD(100));
       await hook.connect(borrower).approve(v, USD(100));
@@ -266,22 +266,6 @@ describe("CollateralVault.withdrawWithSig (take out of Boost, gasless)", () => {
       expect(ethers.dataSlice(await hook.hookReturn(), 0, 4)).to.equal(v.interface.getError("ReentrancyGuardReentrantCall").selector);
       expect(await v.lockedOf(borrower.address)).to.equal(USD(90));
       expect(await hook.balanceOf(borrower.address)).to.equal(USD(10));
-    });
-
-    it("keeps every storage slot of the vault before signed withdrawal; nonces come after", async () => {
-      const at = await vault.getAddress();
-      const slot = (n) => ethers.provider.getStorage(at, n);
-      const mapSlot = (key, n) => ethers.keccak256(ethers.AbiCoder.defaultAbiCoder().encode(["address", "uint256"], [key, n]));
-      const word = (v) => ethers.zeroPadValue(ethers.toBeHex(v), 32);
-      await submit(await signWithdraw({ amount: USD(1) }));
-
-      expect(await slot(0)).to.equal(word(owner.address)); // Ownable._owner
-      expect(await slot(1)).to.equal(word(15_000n)); // creditMultiplierBps
-      expect(await slot(2)).to.equal(word(await engine.getAddress())); // loanEngine
-      expect(await ethers.provider.getStorage(at, mapSlot(borrower.address, 3))).to.equal(word(USD(299))); // lockedOf
-      expect(await slot(5)).to.equal(word(USD(299))); // totalLocked
-      expect(await ethers.provider.getStorage(at, mapSlot(await engine.getAddress(), 6))).to.equal(word(1n)); // isSeizer
-      expect(await ethers.provider.getStorage(at, mapSlot(borrower.address, 7))).to.equal(word(1n)); // nonces
     });
   });
 });

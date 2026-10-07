@@ -11,7 +11,7 @@ describe("PolarisLoanEngine", () => {
   beforeEach(async () => {
     [owner, borrower, merchant, keeper] = await ethers.getSigners();
 
-    usdc = await (await ethers.getContractFactory("MockUSDC")).deploy();
+    usdc = await (await ethers.getContractFactory("MockUSDC")).deploy("USDC");
     scores = await (await ethers.getContractFactory("ScoreManager")).deploy(owner.address);
     engine = await (
       await ethers.getContractFactory("PolarisLoanEngine")

@@ -17,7 +17,7 @@ describe("ScoreManager", () => {
 
   beforeEach(async () => {
     [owner, user, writer, outsider] = await ethers.getSigners();
-    usdc = await (await ethers.getContractFactory("MockUSDC")).deploy();
+    usdc = await (await ethers.getContractFactory("MockUSDC")).deploy("USDC");
     scores = await (await ethers.getContractFactory("ScoreManager")).deploy(owner.address);
     vault = await (
       await ethers.getContractFactory("CollateralVault")

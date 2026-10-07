@@ -47,8 +47,8 @@ const TYPES = {
       { name: "deadline", type: "uint256" },
     ],
   },
-  // Domain: the token's own. Real AUSD is name "Agora Dollar", version "1";
-  // MockAUSD uses the same name and version. Read it with eip712Domain().
+  // Domain: the token's own. USDC on Arc is name "USDC", version "2" (EURC:
+  // "EURC", "2"); MockUSDC matches. Read it with readDomain() (no ERC-5267).
   Stablecoin: {
     ReceiveWithAuthorization: AUTHORIZATION_FIELDS,
     TransferWithAuthorization: AUTHORIZATION_FIELDS,
@@ -115,7 +115,7 @@ const TYPES = {
   },
   // Domain: name "CollateralVault", version "1". Take collateral out through a
   // relayer (withdrawWithSig); nonce is CollateralVault.nonces(borrower).
-  // Absent from a vault that predates it (Monad testnet's of 28 Sep 2026).
+  // Absent from a vault that predates it (Arc testnet's of 28 Sep 2026).
   CollateralVault: {
     Withdraw: [
       { name: "borrower", type: "address" },
@@ -154,8 +154,8 @@ const DOMAIN_NAMES = {
   CollateralVault: { name: "CollateralVault", version: "1" },
 };
 
-/** The real AUSD domain name and version (docs/research/ausd.md section 4.2). */
-const AUSD_DOMAIN_NAME = { name: "Agora Dollar", version: "1" };
+/** USDC's EIP-712 domain name and version on Arc (EURC: name "EURC", version "2"). */
+const USDC_DOMAIN = { name: "USDC", version: "2" };
 
 /**
  * The typehash preimage for a single-struct type (none of ours nest; an
@@ -166,11 +166,17 @@ function typeString(primaryType, fields) {
   return `${primaryType}(${fields.map((f) => `${f.type} ${f.name}`).join(",")})`;
 }
 
-/** Read a contract's EIP-712 domain (ERC-5267), dropping fields it does not use. */
+/**
+ * Read a contract's EIP-712 domain, dropping fields it does not use. Polaris
+ * contracts answer ERC-5267 `eip712Domain()`. USDC and EURC on Arc (Circle
+ * FiatToken) do not: their domain is { name(), version(), chainId, address },
+ * checked here against the token's own DOMAIN_SEPARATOR().
+ */
 async function readDomain(contract) {
+  if (!contract.interface.getFunction("eip712Domain")) return readFiatTokenDomain(contract);
   const d = await contract.eip712Domain();
   // fields bit mask: 0x01 name, 0x02 version, 0x04 chainId, 0x08 verifyingContract, 0x10 salt.
-  // Real AUSD reports 0x0f; passing its zero salt through breaks signatures.
+  // A contract reporting 0x0f has a zero salt it does not use; passing it through breaks signatures.
   const fields = Number(d.fields);
   const domain = {};
   if (fields & 0x01) domain.name = d.name;
@@ -181,9 +187,27 @@ async function readDomain(contract) {
   return domain;
 }
 
+/** FiatToken-style domain: name(), version(), the chain id and the address, verified against DOMAIN_SEPARATOR(). */
+async function readFiatTokenDomain(token) {
+  const { TypedDataEncoder } = require("ethers");
+  const provider = token.runner?.provider ?? token.runner;
+  const [name, version, net, verifyingContract, separator] = await Promise.all([
+    token.name(),
+    token.version(),
+    provider.getNetwork(),
+    token.getAddress(),
+    token.DOMAIN_SEPARATOR(),
+  ]);
+  const domain = { name, version, chainId: net.chainId, verifyingContract };
+  if (TypedDataEncoder.hashDomain(domain) !== separator) {
+    throw new Error(`${name}'s DOMAIN_SEPARATOR does not match { name, version, chainId, address }`);
+  }
+  return domain;
+}
+
 /** JSON-safe form of a domain (bigint chain id as a number). */
 function domainJson(domain) {
   return { ...domain, chainId: domain.chainId === undefined ? undefined : Number(domain.chainId) };
 }
 
-module.exports = { TYPES, DOMAIN_NAMES, AUSD_DOMAIN_NAME, typeString, readDomain, domainJson };
+module.exports = { TYPES, DOMAIN_NAMES, USDC_DOMAIN, typeString, readDomain, readFiatTokenDomain, domainJson };

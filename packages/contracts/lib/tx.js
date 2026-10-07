@@ -1,16 +1,31 @@
 /**
- * Sending transactions with an estimated gas limit.
+ * Sending transactions with an estimated gas limit and Arc's fee floor.
  *
- * Monad charges gas on the gas LIMIT, not on gas used
- * (https://docs.monad.xyz/developer-essentials/gas-pricing), so a blanket
- * limit is paid in full every time. Every script here estimates first and adds
- * a fixed headroom (15% by default, plan section 5.3), and never sends without
- * a limit.
+ * Gas on Arc is paid in USDC (the native balance, 18 decimals). Every script
+ * here estimates first and adds a fixed headroom (15% by default) so a
+ * transaction never runs out of gas on a state change between estimate and
+ * inclusion, and prices `maxFeePerGas` at or above Arc's 20 gwei mempool
+ * floor (https://docs.arc.io/arc/references/evm-differences): a transaction
+ * priced under it may sit pending.
  */
 
 "use strict";
 
 const HEADROOM_BPS = 1_500n;
+
+/** Arc's mempool floor for maxFeePerGas: 20 gwei (of native, 18-decimal USDC). */
+const ARC_MIN_FEE = 20_000_000_000n;
+const ARC_CHAIN_IDS = new Set([5042n, 5042002n]);
+
+/** EIP-1559 fee overrides at or above Arc's floor; {} on other chains (the provider's own pricing). */
+async function feeOverrides(provider) {
+  if (!provider) return {};
+  const { chainId } = await provider.getNetwork();
+  if (!ARC_CHAIN_IDS.has(BigInt(chainId))) return {};
+  const fee = await provider.getFeeData();
+  const max = fee.maxFeePerGas && fee.maxFeePerGas > ARC_MIN_FEE ? fee.maxFeePerGas : ARC_MIN_FEE;
+  return { maxFeePerGas: max, maxPriorityFeePerGas: fee.maxPriorityFeePerGas ?? 0n };
+}
 
 function withHeadroom(estimate, headroomBps = HEADROOM_BPS) {
   return (BigInt(estimate) * (10_000n + BigInt(headroomBps))) / 10_000n;
@@ -24,7 +39,8 @@ async function send(contract, method, args = [], { headroomBps = HEADROOM_BPS, o
   const fn = contract.getFunction(method);
   const estimate = await fn.estimateGas(...args, overrides);
   const gasLimit = withHeadroom(estimate, headroomBps);
-  const tx = await fn(...args, { ...overrides, gasLimit });
+  const fees = await feeOverrides(contract.runner?.provider);
+  const tx = await fn(...args, { ...fees, ...overrides, gasLimit });
   const receipt = await tx.wait();
   if (log) log(`${method}: gas ${receipt.gasUsed} of limit ${gasLimit} (estimate ${estimate})`);
   return receipt;
@@ -39,9 +55,10 @@ async function deploy(factory, args = [], { headroomBps = HEADROOM_BPS } = {}) {
   const txRequest = await factory.getDeployTransaction(...args);
   const estimate = await runner.estimateGas(txRequest);
   const gasLimit = withHeadroom(estimate, headroomBps);
-  const contract = await factory.deploy(...args, { gasLimit });
+  const fees = await feeOverrides(runner?.provider);
+  const contract = await factory.deploy(...args, { ...fees, gasLimit });
   const receipt = await contract.deploymentTransaction().wait();
   return { contract, address: await contract.getAddress(), receipt, gasLimit, estimate };
 }
 
-module.exports = { HEADROOM_BPS, withHeadroom, send, deploy };
+module.exports = { HEADROOM_BPS, ARC_MIN_FEE, withHeadroom, feeOverrides, send, deploy };

@@ -11,28 +11,27 @@ const { time, loadFixture, impersonateAccount, setBalance } = require("@nomicfou
 
 const { signTyped, signPermit } = require("../helpers/sign");
 const { TYPES } = require("../../lib/eip712");
-const cre = require("../../lib/cre");
+const keeperLib = require("../../lib/keeper");
 
-const AUSD = (n) => ethers.parseUnits(String(n), 6);
+const USDC = (n) => ethers.parseUnits(String(n), 6);
 const DAY = 24 * 60 * 60;
 const WEEK = 7 * DAY;
 
 async function deployStack() {
-  const [owner, relayer, merchant, treasury, stranger, don] = await ethers.getSigners();
-  const ausd = await (await ethers.getContractFactory("MockAUSD")).deploy();
+  const [owner, relayer, merchant, treasury, stranger, keeper] = await ethers.getSigners();
+  const usdc = await (await ethers.getContractFactory("MockUSDC")).deploy("USDC");
   const scores = await (await ethers.getContractFactory("ScoreManager")).deploy(owner.address);
-  const engine = await (await ethers.getContractFactory("PolarisLoanEngine")).deploy(owner.address, ausd, scores, treasury.address, DAY, 60);
-  const payments = await (await ethers.getContractFactory("PolarisPayments")).deploy(owner.address, ausd, treasury.address, 60);
+  const engine = await (await ethers.getContractFactory("PolarisLoanEngine")).deploy(owner.address, usdc, scores, treasury.address, DAY, 60);
+  const payments = await (await ethers.getContractFactory("PolarisPayments")).deploy(owner.address, usdc, treasury.address, 60);
   const checkout = await (await ethers.getContractFactory("PolarisCheckout")).deploy(owner.address, engine, payments, scores);
-  const forwarder = await (await ethers.getContractFactory("MockKeystoneForwarder")).deploy();
-  const collections = await (await ethers.getContractFactory("CollectionsReceiver")).deploy(forwarder, engine, payments, don.address);
+  const collections = await (await ethers.getContractFactory("CollectionsReceiver")).deploy(keeper.address, engine, payments);
   await scores.setWriter(engine, true);
   await engine.setOriginator(checkout, true);
   await payments.setCheckout(checkout);
-  await ausd.mint(owner.address, AUSD(100_000));
-  await ausd.approve(engine, AUSD(100_000));
-  await engine.fund(AUSD(50_000));
-  return { ausd, scores, engine, payments, checkout, forwarder, collections, owner, relayer, merchant, stranger, don };
+  await usdc.mint(owner.address, USDC(100_000));
+  await usdc.approve(engine, USDC(100_000));
+  await engine.fund(USDC(50_000));
+  return { usdc, scores, engine, payments, checkout, collections, owner, relayer, merchant, stranger, keeper };
 }
 
 describe("PolarisCheckout.reauthorize (the instant collection retry)", () => {
@@ -49,13 +48,13 @@ describe("PolarisCheckout.reauthorize (the instant collection retry)", () => {
   /** A gasless buyer with an open plan, whose allowance then vanished. */
   async function buyerWhoLostTheAllowance({ plans = 1 } = {}) {
     const buyer = ethers.Wallet.createRandom().connect(ethers.provider);
-    await s.ausd.mint(buyer.address, AUSD(1_000));
+    await s.usdc.mint(buyer.address, USDC(1_000));
     const loans = [];
     for (let i = 0; i < plans; i++) {
       const intent = {
         buyer: buyer.address,
         merchant: s.merchant.address,
-        principal: AUSD(60),
+        principal: USDC(60),
         installments: 4,
         interval: BigInt(WEEK),
         orderId: `o-${i}-${Math.random()}`,
@@ -63,7 +62,7 @@ describe("PolarisCheckout.reauthorize (the instant collection retry)", () => {
         deadline: (await now()) + 600n,
       };
       const q = await s.checkout.quotePlan(buyer.address, intent.principal, 4, WEEK);
-      const p = await signPermit(s.ausd, buyer, await engineAddress(), q.permitValue);
+      const p = await signPermit(s.usdc, buyer, await engineAddress(), q.permitValue);
       const sig = (await signTyped(buyer, s.checkout, { PlanIntent: TYPES.PolarisCheckout.PlanIntent }, intent)).signature;
       await s.checkout.connect(s.relayer).openPlan(intent, sig, permitArg(p));
       loans.push(await s.engine.loanCount());
@@ -72,20 +71,13 @@ describe("PolarisCheckout.reauthorize (the instant collection retry)", () => {
     // the buyer never holds gas).
     await impersonateAccount(buyer.address);
     await setBalance(buyer.address, ethers.parseEther("1"));
-    await s.ausd.connect(await ethers.getSigner(buyer.address)).approve(await engineAddress(), 0);
+    await s.usdc.connect(await ethers.getSigner(buyer.address)).approve(await engineAddress(), 0);
     await setBalance(buyer.address, 0n);
     return { buyer, loans };
   }
 
   async function deliverCollections(tasks) {
-    const raw = cre.encodeRawReport({
-      body: cre.encodeCollectionsReport(tasks),
-      workflowName: cre.WORKFLOW_NAMES.COLLECTIONS,
-      workflowOwner: s.don.address,
-      executionId: ethers.hexlify(ethers.randomBytes(32)),
-      timestamp: Number(await now()),
-    });
-    return (await s.forwarder.connect(s.don).report(await s.collections.getAddress(), raw, "0x", [])).wait();
+    return (await s.collections.connect(s.keeper).submitReport(keeperLib.encodeCollectionsReport(tasks))).wait();
   }
 
   const parsed = (receipt, contract, name) =>
@@ -96,21 +88,21 @@ describe("PolarisCheckout.reauthorize (the instant collection retry)", () => {
   it("a skipped buyer re-signs, Reauthorized fires, and the retry report collects what fell due", async () => {
     const { buyer, loans: [loanId] } = await buyerWhoLostTheAllowance();
     await time.increase(WEEK);
-    const skipped = await deliverCollections([{ action: cre.ACTION.COLLECT_INSTALLMENT, id: loanId }]);
+    const skipped = await deliverCollections([{ action: keeperLib.ACTION.COLLECT_INSTALLMENT, id: loanId }]);
     const [skip] = parsed(skipped, s.collections, "TaskSkipped");
     expect(s.engine.interface.parseError(skip.args.reason).name).to.equal("InsufficientAllowance");
 
     const owed = await s.engine.activeDebtOf(buyer.address);
-    const p = await signPermit(s.ausd, buyer, await engineAddress(), owed, (await now()) + 900n);
+    const p = await signPermit(s.usdc, buyer, await engineAddress(), owed, (await now()) + 900n);
     const tx = s.checkout.connect(s.relayer).reauthorize(buyer.address, permitArg(p));
     await expect(tx).to.emit(s.checkout, "Reauthorized").withArgs(buyer.address, owed, p.deadline);
-    expect(await s.ausd.allowance(buyer.address, await engineAddress())).to.equal(owed);
+    expect(await s.usdc.allowance(buyer.address, await engineAddress())).to.equal(owed);
     const log = parsed(await (await tx).wait(), s.checkout, "Reauthorized")[0];
     expect(log.topic).to.equal(ethers.id("Reauthorized(address,uint256,uint256)"));
 
     // What the log trigger's handler reads, then writes.
     const tasks = (await s.collections.dueTasksFor(buyer.address)).map((t) => ({ action: Number(t.action), id: t.id }));
-    expect(tasks).to.deep.equal([{ action: cre.ACTION.COLLECT_INSTALLMENT, id: loanId }]);
+    expect(tasks).to.deep.equal([{ action: keeperLib.ACTION.COLLECT_INSTALLMENT, id: loanId }]);
     const due = await s.engine.installmentAmount(loanId);
     const collected = await deliverCollections(tasks);
     const [executed] = parsed(collected, s.collections, "TaskExecuted");
@@ -132,7 +124,7 @@ describe("PolarisCheckout.reauthorize (the instant collection retry)", () => {
   it("refuses an expired permit", async () => {
     const { buyer } = await buyerWhoLostTheAllowance();
     const owed = await s.engine.activeDebtOf(buyer.address);
-    const p = await signPermit(s.ausd, buyer, await engineAddress(), owed, (await now()) + 60n);
+    const p = await signPermit(s.usdc, buyer, await engineAddress(), owed, (await now()) + 60n);
     await time.increase(120);
     await expect(s.checkout.connect(s.relayer).reauthorize(buyer.address, permitArg(p))).to.be.revertedWithCustomError(s.checkout, "SignatureExpired");
   });
@@ -143,26 +135,26 @@ describe("PolarisCheckout.reauthorize (the instant collection retry)", () => {
     const deadline = (await now()) + 600n;
     // Someone else's key signs the buyer's permit.
     const forger = ethers.Wallet.createRandom();
-    const forged = await signTyped(forger, s.ausd, { Permit: TYPES.Stablecoin.Permit }, {
-      owner: buyer.address, spender: await engineAddress(), value: owed, nonce: await s.ausd.nonces(buyer.address), deadline,
+    const forged = await signTyped(forger, s.usdc, { Permit: TYPES.Stablecoin.Permit }, {
+      owner: buyer.address, spender: await engineAddress(), value: owed, nonce: await s.usdc.nonces(buyer.address), deadline,
     });
     await expect(s.checkout.connect(s.relayer).reauthorize(buyer.address, { value: owed, deadline, v: forged.v, r: forged.r, s: forged.s }))
       .to.be.revertedWithCustomError(s.checkout, "InvalidSignature");
     // The buyer's real permit, but for a different spender: it can't be pointed at the engine.
-    const elsewhere = await signPermit(s.ausd, buyer, s.stranger.address, owed, deadline);
+    const elsewhere = await signPermit(s.usdc, buyer, s.stranger.address, owed, deadline);
     await expect(s.checkout.connect(s.relayer).reauthorize(buyer.address, permitArg(elsewhere))).to.be.revertedWithCustomError(s.checkout, "InvalidSignature");
     // The buyer's permit, relayed with a larger value than signed.
-    const real = await signPermit(s.ausd, buyer, await engineAddress(), owed, deadline);
+    const real = await signPermit(s.usdc, buyer, await engineAddress(), owed, deadline);
     await expect(s.checkout.connect(s.relayer).reauthorize(buyer.address, permitArg(real, owed * 10n))).to.be.revertedWithCustomError(s.checkout, "InvalidSignature");
     // And a permit for another buyer's account.
     await expect(s.checkout.connect(s.relayer).reauthorize(s.stranger.address, permitArg(real))).to.be.revertedWithCustomError(s.checkout, "NothingOwed");
-    expect(await s.ausd.allowance(buyer.address, await engineAddress())).to.equal(0n);
+    expect(await s.usdc.allowance(buyer.address, await engineAddress())).to.equal(0n);
   });
 
   it("refuses a replay: a permit applies once", async () => {
     const { buyer } = await buyerWhoLostTheAllowance();
     const owed = await s.engine.activeDebtOf(buyer.address);
-    const p = await signPermit(s.ausd, buyer, await engineAddress(), owed, (await now()) + 600n);
+    const p = await signPermit(s.usdc, buyer, await engineAddress(), owed, (await now()) + 600n);
     await s.checkout.connect(s.relayer).reauthorize(buyer.address, permitArg(p));
     await expect(s.checkout.connect(s.stranger).reauthorize(buyer.address, permitArg(p))).to.be.revertedWithCustomError(s.checkout, "InvalidSignature");
   });
@@ -172,10 +164,10 @@ describe("PolarisCheckout.reauthorize (the instant collection retry)", () => {
   it("a permit a stranger lands on the token first still fires the retry, once: the allowance it set is in force", async () => {
     const { buyer } = await buyerWhoLostTheAllowance();
     const owed = await s.engine.activeDebtOf(buyer.address);
-    const p = await signPermit(s.ausd, buyer, await engineAddress(), owed, (await now()) + 600n);
-    await s.ausd.connect(s.stranger).permit(buyer.address, await engineAddress(), owed, p.deadline, p.v, p.r, p.s);
-    expect(await s.ausd.allowance(buyer.address, await engineAddress())).to.equal(owed);
-    const nonce = await s.ausd.nonces(buyer.address);
+    const p = await signPermit(s.usdc, buyer, await engineAddress(), owed, (await now()) + 600n);
+    await s.usdc.connect(s.stranger).permit(buyer.address, await engineAddress(), owed, p.deadline, p.v, p.r, p.s);
+    expect(await s.usdc.allowance(buyer.address, await engineAddress())).to.equal(owed);
+    const nonce = await s.usdc.nonces(buyer.address);
     await expect(s.checkout.connect(s.relayer).reauthorize(buyer.address, permitArg(p)))
       .to.emit(s.checkout, "Reauthorized")
       .withArgs(buyer.address, owed, p.deadline);
@@ -187,12 +179,12 @@ describe("PolarisCheckout.reauthorize (the instant collection retry)", () => {
   it("an older permit that landed is not the one in force once the allowance moved on", async () => {
     const { buyer } = await buyerWhoLostTheAllowance();
     const owed = await s.engine.activeDebtOf(buyer.address);
-    const p = await signPermit(s.ausd, buyer, await engineAddress(), owed + 5n, (await now()) + 600n);
-    await s.ausd.connect(s.stranger).permit(buyer.address, await engineAddress(), owed + 5n, p.deadline, p.v, p.r, p.s);
+    const p = await signPermit(s.usdc, buyer, await engineAddress(), owed + 5n, (await now()) + 600n);
+    await s.usdc.connect(s.stranger).permit(buyer.address, await engineAddress(), owed + 5n, p.deadline, p.v, p.r, p.s);
     // The buyer's own wallet approves another amount afterwards (no permit, so the nonce stays).
     await impersonateAccount(buyer.address);
     await setBalance(buyer.address, ethers.parseEther("1"));
-    await s.ausd.connect(await ethers.getSigner(buyer.address)).approve(await engineAddress(), owed);
+    await s.usdc.connect(await ethers.getSigner(buyer.address)).approve(await engineAddress(), owed);
     await setBalance(buyer.address, 0n);
     await expect(s.checkout.connect(s.relayer).reauthorize(buyer.address, permitArg(p))).to.be.revertedWithCustomError(s.checkout, "InvalidSignature");
   });
@@ -203,12 +195,12 @@ describe("PolarisCheckout.reauthorize (the instant collection retry)", () => {
   // and allowance_lost plans marked re-signed.
   it("refuses a buyer whose allowance still covers what they owe, so openPlan's permit can't fire a retry; openPlan still opens", async () => {
     const buyer = ethers.Wallet.createRandom().connect(ethers.provider);
-    await s.ausd.mint(buyer.address, AUSD(1_000));
+    await s.usdc.mint(buyer.address, USDC(1_000));
     const open = async (i) => {
       const intent = {
         buyer: buyer.address,
         merchant: s.merchant.address,
-        principal: AUSD(60),
+        principal: USDC(60),
         installments: 4,
         interval: BigInt(WEEK),
         orderId: `copy-${i}`,
@@ -216,14 +208,14 @@ describe("PolarisCheckout.reauthorize (the instant collection retry)", () => {
         deadline: (await now()) + 600n,
       };
       const q = await s.checkout.quotePlan(buyer.address, intent.principal, 4, WEEK);
-      const p = await signPermit(s.ausd, buyer, await engineAddress(), q.permitValue);
+      const p = await signPermit(s.usdc, buyer, await engineAddress(), q.permitValue);
       const sig = (await signTyped(buyer, s.checkout, { PlanIntent: TYPES.PolarisCheckout.PlanIntent }, intent)).signature;
       return { intent, sig, permit: permitArg(p) };
     };
     const first = await open(1);
     await s.checkout.connect(s.relayer).openPlan(first.intent, first.sig, first.permit);
     const owed = await s.engine.activeDebtOf(buyer.address);
-    const allowance = await s.ausd.allowance(buyer.address, await engineAddress());
+    const allowance = await s.usdc.allowance(buyer.address, await engineAddress());
     expect(allowance >= owed).to.equal(true);
 
     // The second plan's permit (activeDebt + the new plan), copied from the mempool.
@@ -237,13 +229,13 @@ describe("PolarisCheckout.reauthorize (the instant collection retry)", () => {
   it("refuses a permit that would not cover everything the buyer owes, and a buyer who owes nothing", async () => {
     const { buyer } = await buyerWhoLostTheAllowance({ plans: 2 });
     const owed = await s.engine.activeDebtOf(buyer.address);
-    const short = await signPermit(s.ausd, buyer, await engineAddress(), owed - 1n, (await now()) + 600n);
+    const short = await signPermit(s.usdc, buyer, await engineAddress(), owed - 1n, (await now()) + 600n);
     await expect(s.checkout.connect(s.relayer).reauthorize(buyer.address, permitArg(short)))
       .to.be.revertedWithCustomError(s.checkout, "PermitBelowDebt")
       .withArgs(owed - 1n, owed);
 
     const fresh = ethers.Wallet.createRandom();
-    const p = await signPermit(s.ausd, fresh, await engineAddress(), AUSD(10), (await now()) + 600n);
+    const p = await signPermit(s.usdc, fresh, await engineAddress(), USDC(10), (await now()) + 600n);
     await expect(s.checkout.connect(s.relayer).reauthorize(fresh.address, permitArg(p)))
       .to.be.revertedWithCustomError(s.checkout, "NothingOwed")
       .withArgs(fresh.address);
@@ -254,7 +246,7 @@ describe("PolarisCheckout.reauthorize (the instant collection retry)", () => {
     const { buyer } = await buyerWhoLostTheAllowance();
     await s.checkout.pause();
     const owed = await s.engine.activeDebtOf(buyer.address);
-    const p = await signPermit(s.ausd, buyer, await engineAddress(), owed, (await now()) + 600n);
+    const p = await signPermit(s.usdc, buyer, await engineAddress(), owed, (await now()) + 600n);
     await expect(s.checkout.connect(s.relayer).reauthorize(buyer.address, permitArg(p))).to.emit(s.checkout, "Reauthorized");
   });
 

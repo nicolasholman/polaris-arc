@@ -4,21 +4,23 @@ pragma solidity ^0.8.24;
 import {IERC1271} from "@openzeppelin/contracts/interfaces/IERC1271.sol";
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
-import {MockAUSD} from "../MockAUSD.sol";
+import {MockUSDC} from "../MockUSDC.sol";
 import {ScoreManager} from "../ScoreManager.sol";
 
-// Test doubles for the PolarisCheckout and CRE receiver suites. Never deployed
+// Test doubles for the PolarisCheckout and keeper receiver suites. Never deployed
 // anywhere but the Hardhat network.
 
 /**
- * @title HookAUSD
- * @notice MockAUSD that, the first time it pays `hookRecipient`, calls
+ * @title HookUSDC
+ * @notice MockUSDC that, the first time it pays `hookRecipient`, calls
  *         `hookTarget` with `hookData`, the way an ERC-777 style token hands a
  *         recipient control mid-transfer. The suite points it back into
  *         PolarisCheckout to prove a merchant paid from the pool cannot reenter
  *         the checkout.
  */
-contract HookAUSD is MockAUSD {
+contract HookUSDC is MockUSDC {
+    constructor() MockUSDC("USDC") {}
+
     address public hookRecipient;
     address public hookTarget;
     bytes public hookData;

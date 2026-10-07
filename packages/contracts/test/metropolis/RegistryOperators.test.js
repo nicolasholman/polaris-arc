@@ -1,7 +1,7 @@
 /**
  * MerchantRegistry operators: the platform registers merchants who hold no gas.
  *
- * Merchants sign up with Privy embedded wallets that never hold MON, so they
+ * Merchants sign up with Privy embedded wallets that never hold USDC (gas), so they
  * cannot send `register` themselves. An operator sends it for them, carrying
  * the merchant's signature. What these tests prove is that this is a delivery
  * mechanism and not a privilege: the entry an operator creates is exactly the
@@ -16,7 +16,7 @@ const { time } = require("@nomicfoundation/hardhat-network-helpers");
 
 const { MAX_UINT, signTyped } = require("../helpers/sign");
 
-const AUSD = (n) => BigInt(Math.round(n * 1e6));
+const USDC = (n) => BigInt(Math.round(n * 1e6));
 const DAY = 24 * 60 * 60;
 
 const REGISTRATION_TYPES = {
@@ -48,7 +48,7 @@ describe("merchant registry operators", () => {
     await registry.setOperator(operator.address, true);
   });
 
-  /// A Privy-style embedded wallet: an address with no MON, never funded.
+  /// A Privy-style embedded wallet: an address with no USDC (gas), never funded.
   function gaslessWallet() {
     return ethers.Wallet.createRandom().connect(ethers.provider);
   }
@@ -105,7 +105,7 @@ describe("merchant registry operators", () => {
     expect(m.registeredAt).to.be.greaterThan(0n);
     expect(await registry.merchantCount()).to.equal(1n);
     expect(await registry.merchantAt(0)).to.equal(shop.address);
-    // The merchant never needed a unit of MON.
+    // The merchant never needed a unit of USDC (gas).
     expect(await ethers.provider.getBalance(shop.address)).to.equal(0n);
   });
 
@@ -117,7 +117,7 @@ describe("merchant registry operators", () => {
     const viaOperator = await registry.merchantOf(shop.address);
     const selfRegistered = await registry.merchantOf(merchant.address);
     expect(viaOperator.active).to.equal(false);
-    expect(viaOperator.maxOrderValue).to.equal(AUSD(500));
+    expect(viaOperator.maxOrderValue).to.equal(USDC(500));
     expect(viaOperator.maxOrderValue).to.equal(await registry.DEFAULT_MAX_ORDER_VALUE());
     // Identical to what the merchant would have given themselves.
     expect(viaOperator.active).to.equal(selfRegistered.active);
@@ -291,10 +291,10 @@ describe("merchant registry operators", () => {
       registry.connect(operator).setActive(shop.address, true)
     ).to.be.revertedWithCustomError(registry, "OwnableUnauthorizedAccount");
     await expect(
-      registry.connect(operator).setMaxOrderValue(shop.address, AUSD(1_000_000))
+      registry.connect(operator).setMaxOrderValue(shop.address, USDC(1_000_000))
     ).to.be.revertedWithCustomError(registry, "OwnableUnauthorizedAccount");
     await expect(
-      registry.connect(operator).recordSettlement(shop.address, AUSD(1))
+      registry.connect(operator).recordSettlement(shop.address, USDC(1))
     ).to.be.revertedWithCustomError(registry, "OwnableUnauthorizedAccount");
   });
 
@@ -320,7 +320,7 @@ describe("merchant registry operators", () => {
         .updatePayoutAddressWithSig(shop.address, operator.address, MAX_UINT, forged.signature)
     ).to.be.revertedWithCustomError(registry, "InvalidSignature");
 
-    // The merchant signs; anyone relays; the merchant still holds no MON.
+    // The merchant signs; anyone relays; the merchant still holds no USDC (gas).
     const sig = await signPayoutUpdate(shop, newPayout);
     await expect(
       registry.connect(stranger).updatePayoutAddressWithSig(shop.address, operator.address, MAX_UINT, sig)
@@ -329,7 +329,7 @@ describe("merchant registry operators", () => {
       registry.connect(stranger).updatePayoutAddressWithSig(shop.address, newPayout, MAX_UINT, sig)
     )
       .to.emit(registry, "MerchantUpdated")
-      .withArgs(shop.address, newPayout, AUSD(500));
+      .withArgs(shop.address, newPayout, USDC(500));
     expect((await registry.merchantOf(shop.address)).payoutAddress).to.equal(newPayout);
     expect(await ethers.provider.getBalance(shop.address)).to.equal(0n);
 
@@ -371,7 +371,7 @@ describe("merchant registry operators", () => {
     const held = await signPayoutUpdate(merchant, abandoned.address);
     await expect(registry.connect(merchant).updatePayoutAddress(safe.address))
       .to.emit(registry, "MerchantUpdated")
-      .withArgs(merchant.address, safe.address, AUSD(500));
+      .withArgs(merchant.address, safe.address, USDC(500));
     expect(await registry.nonces(merchant.address)).to.equal(1n);
 
     // Whoever held the signature back can no longer roll payouts back.
@@ -426,13 +426,13 @@ describe("merchant registry operators", () => {
 
   it("an operator-registered merchant is gated by the engine exactly like a self-registered one", async () => {
     const [, , , , , borrower] = await ethers.getSigners();
-    const ausd = await (await ethers.getContractFactory("MockAUSD")).deploy();
+    const usdc = await (await ethers.getContractFactory("MockUSDC")).deploy("USDC");
     const scores = await (await ethers.getContractFactory("ScoreManager")).deploy(owner.address);
     const engine = await (
       await ethers.getContractFactory("PolarisLoanEngine")
     ).deploy(
       owner.address,
-      await ausd.getAddress(),
+      await usdc.getAddress(),
       await scores.getAddress(),
       owner.address,
       0,
@@ -441,29 +441,29 @@ describe("merchant registry operators", () => {
     await scores.setWriter(await engine.getAddress(), true);
     await engine.setOriginator(owner.address, true);
     await engine.setMerchantRegistry(await registry.getAddress());
-    await ausd.mint(owner.address, AUSD(10_000));
-    await ausd.approve(await engine.getAddress(), AUSD(10_000));
-    await engine.fund(AUSD(10_000));
-    await ausd.mint(borrower.address, AUSD(1_000));
-    await ausd.connect(borrower).approve(await engine.getAddress(), AUSD(1_000));
+    await usdc.mint(owner.address, USDC(10_000));
+    await usdc.approve(await engine.getAddress(), USDC(10_000));
+    await engine.fund(USDC(10_000));
+    await usdc.mint(borrower.address, USDC(1_000));
+    await usdc.connect(borrower).approve(await engine.getAddress(), USDC(1_000));
 
     const shop = gaslessWallet();
     await onboard(shop, "Shop", shop.address);
 
     // Registered, not yet activated: no plan can open against it.
     await expect(
-      engine.createLoan(borrower.address, shop.address, AUSD(100), 4, 14 * DAY)
+      engine.createLoan(borrower.address, shop.address, USDC(100), 4, 14 * DAY)
     ).to.be.revertedWithCustomError(engine, "MerchantNotEligible");
 
     await registry.setActive(shop.address, true);
-    await engine.createLoan(borrower.address, shop.address, AUSD(100), 4, 14 * DAY);
-    // Paid up front, into a wallet that has still never held MON.
-    expect(await ausd.balanceOf(shop.address)).to.equal(AUSD(100));
+    await engine.createLoan(borrower.address, shop.address, USDC(100), 4, 14 * DAY);
+    // Paid up front, into a wallet that has still never held USDC (gas).
+    expect(await usdc.balanceOf(shop.address)).to.equal(USDC(100));
     expect(await ethers.provider.getBalance(shop.address)).to.equal(0n);
 
     // And the default cap holds.
     await expect(
-      engine.createLoan(borrower.address, shop.address, AUSD(501), 4, 14 * DAY)
+      engine.createLoan(borrower.address, shop.address, USDC(501), 4, 14 * DAY)
     ).to.be.revertedWithCustomError(engine, "MerchantNotEligible");
   });
 });

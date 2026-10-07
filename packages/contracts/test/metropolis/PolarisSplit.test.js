@@ -16,7 +16,7 @@ const { time } = require("@nomicfoundation/hardhat-network-helpers");
 
 const { domainOf, signTyped, signReceive } = require("../helpers/sign");
 
-const AUSD = (n) => ethers.parseUnits(String(n), 6);
+const USDC = (n) => ethers.parseUnits(String(n), 6);
 const DAY = 24 * 60 * 60;
 const MIN_LIFETIME = 5 * 60;
 const MAX_EXPIRY = 60 * DAY;
@@ -65,14 +65,14 @@ async function inSeconds(seconds) {
 }
 
 describe("PolarisSplit: split the bill by link", () => {
-  let ausd, split, splitAddr, maya, sam, priya, jon, relayer, attacker;
+  let usdc, split, splitAddr, maya, sam, priya, jon, relayer, attacker;
 
   beforeEach(async () => {
     [, maya, sam, priya, jon, relayer, attacker] = await ethers.getSigners();
-    ausd = await (await ethers.getContractFactory("MockAUSD")).deploy();
-    split = await (await ethers.getContractFactory("PolarisSplit")).deploy(await ausd.getAddress());
+    usdc = await (await ethers.getContractFactory("MockUSDC")).deploy("USDC");
+    split = await (await ethers.getContractFactory("PolarisSplit")).deploy(await usdc.getAddress());
     splitAddr = await split.getAddress();
-    for (const friend of [sam, priya, jon, attacker]) await ausd.mint(friend.address, AUSD(1_000));
+    for (const friend of [sam, priya, jon, attacker]) await usdc.mint(friend.address, USDC(1_000));
   });
 
   // ---------------------------------------------------------------
@@ -83,8 +83,8 @@ describe("PolarisSplit: split the bill by link", () => {
     const c = {
       organiser: organiser.address,
       salt: fields.salt ?? ethers.hexlify(ethers.randomBytes(32)),
-      amounts: fields.amounts ?? [AUSD(30), AUSD(30), AUSD(30)],
-      memoHash: fields.memoHash ?? memoHashOf({ description: "Dinner at Lucia", organiserName: "Maya", billTotal: AUSD(120), labels: ["Sam", "Priya", "Jon"] }),
+      amounts: fields.amounts ?? [USDC(30), USDC(30), USDC(30)],
+      memoHash: fields.memoHash ?? memoHashOf({ description: "Dinner at Lucia", organiserName: "Maya", billTotal: USDC(120), labels: ["Sam", "Priya", "Jon"] }),
       expiresAt: fields.expiresAt ?? (await inSeconds(14 * DAY)),
       deadline: fields.deadline ?? (await inSeconds(APP_WINDOW)),
     };
@@ -101,7 +101,7 @@ describe("PolarisSplit: split the bill by link", () => {
 
   /** A friend's authorization for one share, as the app signs it. */
   async function signShare(friend, splitId, index, value, opts = {}) {
-    return signReceive(opts.token ?? ausd, friend, opts.to ?? splitAddr, value, opts.nonce ?? shareNonce(splitId, index), {
+    return signReceive(opts.token ?? usdc, friend, opts.to ?? splitAddr, value, opts.nonce ?? shareNonce(splitId, index), {
       validBefore: opts.validBefore ?? (await inSeconds(APP_WINDOW)),
     });
   }
@@ -130,51 +130,51 @@ describe("PolarisSplit: split the bill by link", () => {
       expect(view.organiser).to.equal(maya.address);
       expect(view.shareCount).to.equal(3);
       expect(view.paidCount).to.equal(0);
-      expect(view.total).to.equal(AUSD(90));
+      expect(view.total).to.equal(USDC(90));
       expect(view.closed).to.equal(false);
       expect(view.memoHash).to.equal(s.memoHash);
 
       await expect(pay(sam, s, 0))
         .to.emit(split, "SharePaid")
-        .withArgs(s.splitId, 0, sam.address, AUSD(30), 1, 3);
-      expect(await ausd.balanceOf(maya.address)).to.equal(AUSD(30));
+        .withArgs(s.splitId, 0, sam.address, USDC(30), 1, 3);
+      expect(await usdc.balanceOf(maya.address)).to.equal(USDC(30));
       await pay(priya, s, 1);
       await pay(jon, s, 2);
 
-      expect(await ausd.balanceOf(maya.address)).to.equal(AUSD(90));
-      expect(await ausd.balanceOf(sam.address)).to.equal(AUSD(970));
+      expect(await usdc.balanceOf(maya.address)).to.equal(USDC(90));
+      expect(await usdc.balanceOf(sam.address)).to.equal(USDC(970));
       // No custody: nothing stays behind.
-      expect(await ausd.balanceOf(splitAddr)).to.equal(0n);
+      expect(await usdc.balanceOf(splitAddr)).to.equal(0n);
 
       const done = await split.splitOf(s.splitId);
       expect(done.paidCount).to.equal(3);
-      expect(done.paidTotal).to.equal(AUSD(90));
+      expect(done.paidTotal).to.equal(USDC(90));
       const [amounts, payers] = await split.sharesOf(s.splitId);
-      expect(amounts).to.deep.equal([AUSD(30), AUSD(30), AUSD(30)]);
+      expect(amounts).to.deep.equal([USDC(30), USDC(30), USDC(30)]);
       expect(payers).to.deep.equal([sam.address, priya.address, jon.address]);
     });
 
     it("nobody but the relayer holds gas: a brand-new organiser and a brand-new friend only sign", async () => {
       const organiser = ethers.Wallet.createRandom();
       const friend = ethers.Wallet.createRandom();
-      await ausd.mint(friend.address, AUSD(25));
-      const s = await openSplit(organiser, { amounts: [AUSD(25)] });
+      await usdc.mint(friend.address, USDC(25));
+      const s = await openSplit(organiser, { amounts: [USDC(25)] });
       await pay(friend, s, 0);
 
       for (const who of [organiser, friend]) {
         expect(await ethers.provider.getBalance(who.address)).to.equal(0n);
         expect(await ethers.provider.getTransactionCount(who.address)).to.equal(0);
       }
-      expect(await ausd.allowance(friend.address, splitAddr)).to.equal(0n);
-      expect(await ausd.balanceOf(organiser.address)).to.equal(AUSD(25));
+      expect(await usdc.allowance(friend.address, splitAddr)).to.equal(0n);
+      expect(await usdc.balanceOf(organiser.address)).to.equal(USDC(25));
     });
 
     it("named amounts: each share is its own amount, paid in any order, by anyone holding its signature", async () => {
-      const s = await openSplit(maya, { amounts: [AUSD(12.5), AUSD(40), AUSD("7.25")] });
+      const s = await openSplit(maya, { amounts: [USDC(12.5), USDC(40), USDC("7.25")] });
       await pay(jon, s, 2);
       await pay(sam, s, 0);
-      expect((await split.splitOf(s.splitId)).paidTotal).to.equal(AUSD("19.75"));
-      expect(await ausd.balanceOf(maya.address)).to.equal(AUSD("19.75"));
+      expect((await split.splitOf(s.splitId)).paidTotal).to.equal(USDC("19.75"));
+      expect(await usdc.balanceOf(maya.address)).to.equal(USDC("19.75"));
       expect(await split.paidBy(s.splitId, 1)).to.equal(ethers.ZeroAddress);
     });
 
@@ -185,7 +185,7 @@ describe("PolarisSplit: split the bill by link", () => {
       expect(expected).to.equal(splitIdOf(maya.address, salt));
       await expect(split.connect(relayer).createSplit(c, signature))
         .to.emit(split, "SplitCreated")
-        .withArgs(expected, maya.address, AUSD(90), c.amounts, c.expiresAt, c.memoHash);
+        .withArgs(expected, maya.address, USDC(90), c.amounts, c.expiresAt, c.memoHash);
     });
 
     it("a smart-account organiser opens and closes a split with ERC-1271", async () => {
@@ -194,7 +194,7 @@ describe("PolarisSplit: split the bill by link", () => {
       const s = await openSplit(organiser, { signer: maya });
       expect((await split.splitOf(s.splitId)).organiser).to.equal(organiser.address);
       await pay(sam, s, 0);
-      expect(await ausd.balanceOf(organiser.address)).to.equal(AUSD(30));
+      expect(await usdc.balanceOf(organiser.address)).to.equal(USDC(30));
       const { signature, deadline } = await signClose(maya, s.splitId);
       await expect(split.connect(relayer).closeSplit(s.splitId, deadline, signature)).to.emit(split, "SplitClosed");
     });
@@ -206,27 +206,27 @@ describe("PolarisSplit: split the bill by link", () => {
       await pay(sam, s, 0);
       await expect(pay(sam, s, 0)).to.be.revertedWithCustomError(split, "ShareAlreadyPaid").withArgs(0);
       await expect(pay(priya, s, 0)).to.be.revertedWithCustomError(split, "ShareAlreadyPaid").withArgs(0);
-      expect(await ausd.balanceOf(maya.address)).to.equal(AUSD(30));
+      expect(await usdc.balanceOf(maya.address)).to.equal(USDC(30));
     });
 
     it("replay: a used authorization is refused before the token, and the token refuses it too", async () => {
       const s = await openSplit();
-      const a = await signShare(sam, s.splitId, 0, AUSD(30));
+      const a = await signShare(sam, s.splitId, 0, USDC(30));
       await submitShare(s.splitId, 0, sam.address, a);
       await expect(submitShare(s.splitId, 0, sam.address, a)).to.be.revertedWithCustomError(split, "ShareAlreadyPaid");
       // Straight to the token it fails too: only the payee may submit a receive authorization.
       await expect(
-        ausd.connect(relayer).receiveWithAuthorization(sam.address, splitAddr, AUSD(30), a.validAfter, a.validBefore, a.nonce, a.v, a.r, a.s)
-      ).to.be.revertedWithCustomError(ausd, "CallerMustBePayee");
-      expect(await ausd.authorizationState(sam.address, a.nonce)).to.equal(true);
+        usdc.connect(relayer).receiveWithAuthorization(sam.address, splitAddr, USDC(30), a.validAfter, a.validBefore, a.nonce, a.v, a.r, a.s)
+      ).to.be.revertedWithCustomError(usdc, "CallerMustBePayee");
+      expect(await usdc.authorizationState(sam.address, a.nonce)).to.equal(true);
     });
 
     it("replay: a friend's signature for one share can't pay another share, or another split", async () => {
       const s = await openSplit();
       const other = await openSplit();
-      const a = await signShare(sam, s.splitId, 0, AUSD(30));
-      await expect(submitShare(s.splitId, 1, sam.address, a)).to.be.revertedWithCustomError(ausd, "InvalidAuthorizationSignature");
-      await expect(submitShare(other.splitId, 0, sam.address, a)).to.be.revertedWithCustomError(ausd, "InvalidAuthorizationSignature");
+      const a = await signShare(sam, s.splitId, 0, USDC(30));
+      await expect(submitShare(s.splitId, 1, sam.address, a)).to.be.revertedWithCustomError(usdc, "InvalidAuthorizationSignature");
+      await expect(submitShare(other.splitId, 0, sam.address, a)).to.be.revertedWithCustomError(usdc, "InvalidAuthorizationSignature");
       // The refusals burned nothing: it still pays the share it was signed for.
       await submitShare(s.splitId, 0, sam.address, a);
       expect(await split.paidBy(s.splitId, 0)).to.equal(sam.address);
@@ -234,38 +234,38 @@ describe("PolarisSplit: split the bill by link", () => {
 
     it("overpay: an authorization for more (or less) than the share is refused by the token", async () => {
       const s = await openSplit();
-      for (const value of [AUSD(31), AUSD(29)]) {
+      for (const value of [USDC(31), USDC(29)]) {
         const a = await signShare(sam, s.splitId, 0, value);
-        await expect(submitShare(s.splitId, 0, sam.address, a)).to.be.revertedWithCustomError(ausd, "InvalidAuthorizationSignature");
+        await expect(submitShare(s.splitId, 0, sam.address, a)).to.be.revertedWithCustomError(usdc, "InvalidAuthorizationSignature");
       }
-      expect(await ausd.balanceOf(sam.address)).to.equal(AUSD(1_000));
+      expect(await usdc.balanceOf(sam.address)).to.equal(USDC(1_000));
       expect((await split.splitOf(s.splitId)).paidCount).to.equal(0);
     });
 
     it("overpay: once every share is paid, nothing more can be paid into the split", async () => {
-      const s = await openSplit(maya, { amounts: [AUSD(10), AUSD(10)] });
+      const s = await openSplit(maya, { amounts: [USDC(10), USDC(10)] });
       await pay(sam, s, 0);
       await pay(priya, s, 1);
       await expect(pay(jon, s, 0)).to.be.revertedWithCustomError(split, "ShareAlreadyPaid");
-      await expect(submitShare(s.splitId, 2, jon.address, await signShare(jon, s.splitId, 2, AUSD(10))))
+      await expect(submitShare(s.splitId, 2, jon.address, await signShare(jon, s.splitId, 2, USDC(10))))
         .to.be.revertedWithCustomError(split, "ShareOutOfRange")
         .withArgs(2, 2);
-      expect(await ausd.balanceOf(maya.address)).to.equal(AUSD(20));
+      expect(await usdc.balanceOf(maya.address)).to.equal(USDC(20));
     });
 
     it("wrong signer: an authorization signed by someone else can't pay in the payer's name", async () => {
       const s = await openSplit();
       // The attacker signs, and names sam as the payer: the token recovers the attacker, not sam.
-      const a = await signShare(attacker, s.splitId, 0, AUSD(30));
-      await expect(submitShare(s.splitId, 0, sam.address, a)).to.be.revertedWithCustomError(ausd, "InvalidAuthorizationSignature");
-      expect(await ausd.balanceOf(sam.address)).to.equal(AUSD(1_000));
+      const a = await signShare(attacker, s.splitId, 0, USDC(30));
+      await expect(submitShare(s.splitId, 0, sam.address, a)).to.be.revertedWithCustomError(usdc, "InvalidAuthorizationSignature");
+      expect(await usdc.balanceOf(sam.address)).to.equal(USDC(1_000));
     });
 
     it("a relayer can't spend a friend's share authorization anywhere but the split", async () => {
       const s = await openSplit();
       // Signed payable to the relayer's own address instead: the split's call names itself as payee.
-      const a = await signShare(sam, s.splitId, 0, AUSD(30), { to: relayer.address });
-      await expect(submitShare(s.splitId, 0, sam.address, a)).to.be.revertedWithCustomError(ausd, "InvalidAuthorizationSignature");
+      const a = await signShare(sam, s.splitId, 0, USDC(30), { to: relayer.address });
+      await expect(submitShare(s.splitId, 0, sam.address, a)).to.be.revertedWithCustomError(usdc, "InvalidAuthorizationSignature");
     });
 
     it("anyone can pay a share for a friend, and the chain records who did", async () => {
@@ -275,30 +275,30 @@ describe("PolarisSplit: split the bill by link", () => {
     });
 
     it("a token that delivers less than was signed can't mark a share paid", async () => {
-      const fot = await (await ethers.getContractFactory("FeeOnTransferAUSD")).deploy();
+      const fot = await (await ethers.getContractFactory("FeeOnTransferUSDC")).deploy();
       const fotSplit = await (await ethers.getContractFactory("PolarisSplit")).deploy(await fot.getAddress());
-      await fot.mint(sam.address, AUSD(100));
-      const { c, signature } = await signCreate(maya, { amounts: [AUSD(30)] }, fotSplit);
+      await fot.mint(sam.address, USDC(100));
+      const { c, signature } = await signCreate(maya, { amounts: [USDC(30)] }, fotSplit);
       await fotSplit.connect(relayer).createSplit(c, signature);
       const splitId = splitIdOf(maya.address, c.salt);
-      const a = await signShare(sam, splitId, 0, AUSD(30), { token: fot, to: await fotSplit.getAddress() });
+      const a = await signShare(sam, splitId, 0, USDC(30), { token: fot, to: await fotSplit.getAddress() });
       await expect(submitShare(splitId, 0, sam.address, a, fotSplit))
         .to.be.revertedWithCustomError(fotSplit, "UnexpectedAmount")
-        .withArgs(AUSD(30), AUSD("29.7"));
+        .withArgs(USDC(30), USDC("29.7"));
     });
 
     it("a token that hands the organiser control mid-transfer can't reenter to pay again", async () => {
-      const hook = await (await ethers.getContractFactory("HookAUSD")).deploy();
+      const hook = await (await ethers.getContractFactory("HookUSDC")).deploy();
       const hookSplit = await (await ethers.getContractFactory("PolarisSplit")).deploy(await hook.getAddress());
-      await hook.mint(sam.address, AUSD(100));
-      const { c, signature } = await signCreate(maya, { amounts: [AUSD(30), AUSD(30)] }, hookSplit);
+      await hook.mint(sam.address, USDC(100));
+      const { c, signature } = await signCreate(maya, { amounts: [USDC(30), USDC(30)] }, hookSplit);
       await hookSplit.connect(relayer).createSplit(c, signature);
       const splitId = splitIdOf(maya.address, c.salt);
-      const second = await signShare(sam, splitId, 1, AUSD(30), { token: hook, to: await hookSplit.getAddress() });
+      const second = await signShare(sam, splitId, 1, USDC(30), { token: hook, to: await hookSplit.getAddress() });
       const reenter = hookSplit.interface.encodeFunctionData("payShare", [splitId, 1, sam.address, second.validAfter, second.validBefore, second.v, second.r, second.s]);
       await hook.setHook(maya.address, await hookSplit.getAddress(), reenter);
 
-      const first = await signShare(sam, splitId, 0, AUSD(30), { token: hook, to: await hookSplit.getAddress() });
+      const first = await signShare(sam, splitId, 0, USDC(30), { token: hook, to: await hookSplit.getAddress() });
       await submitShare(splitId, 0, sam.address, first, hookSplit);
       expect(await hook.hookCalled()).to.equal(true);
       expect(await hook.hookOk()).to.equal(false);
@@ -308,9 +308,9 @@ describe("PolarisSplit: split the bill by link", () => {
     it("an unknown split or a zero payer is refused", async () => {
       const s = await openSplit();
       const ghost = ethers.hexlify(ethers.randomBytes(32));
-      const a = await signShare(sam, ghost, 0, AUSD(30));
+      const a = await signShare(sam, ghost, 0, USDC(30));
       await expect(submitShare(ghost, 0, sam.address, a)).to.be.revertedWithCustomError(split, "SplitNotFound");
-      const b = await signShare(sam, s.splitId, 0, AUSD(30));
+      const b = await signShare(sam, s.splitId, 0, USDC(30));
       await expect(submitShare(s.splitId, 0, ethers.ZeroAddress, b)).to.be.revertedWithCustomError(split, "ZeroAddress");
     });
   });
@@ -320,7 +320,7 @@ describe("PolarisSplit: split the bill by link", () => {
       const s = await openSplit();
       await pay(sam, s, 0);
       // Priya signed before the close; her authorization must not land after it.
-      const pending = await signShare(priya, s.splitId, 1, AUSD(30));
+      const pending = await signShare(priya, s.splitId, 1, USDC(30));
       const { signature, deadline } = await signClose(maya, s.splitId);
       await expect(split.connect(relayer).closeSplit(s.splitId, deadline, signature))
         .to.emit(split, "SplitClosed")
@@ -328,9 +328,9 @@ describe("PolarisSplit: split the bill by link", () => {
       await expect(submitShare(s.splitId, 1, priya.address, pending)).to.be.revertedWithCustomError(split, "SplitIsClosed");
 
       // Nothing moves on a close: the paid share stays with the organiser, the unpaid ones never left.
-      expect(await ausd.balanceOf(maya.address)).to.equal(AUSD(30));
-      expect(await ausd.balanceOf(priya.address)).to.equal(AUSD(1_000));
-      expect(await ausd.balanceOf(splitAddr)).to.equal(0n);
+      expect(await usdc.balanceOf(maya.address)).to.equal(USDC(30));
+      expect(await usdc.balanceOf(priya.address)).to.equal(USDC(1_000));
+      expect(await usdc.balanceOf(splitAddr)).to.equal(0n);
       expect((await split.splitOf(s.splitId)).closed).to.equal(true);
     });
 
@@ -376,23 +376,23 @@ describe("PolarisSplit: split the bill by link", () => {
     it("a split is payable until its expiry and not from it", async () => {
       const s = await openSplit(maya, { expiresAt: await inSeconds(DAY) });
       await time.increaseTo(s.expiresAt - 10n);
-      const a = await signShare(sam, s.splitId, 0, AUSD(30));
+      const a = await signShare(sam, s.splitId, 0, USDC(30));
       await submitShare(s.splitId, 0, sam.address, a);
-      const b = await signShare(priya, s.splitId, 1, AUSD(30));
+      const b = await signShare(priya, s.splitId, 1, USDC(30));
       await time.setNextBlockTimestamp(s.expiresAt);
       await expect(submitShare(s.splitId, 1, priya.address, b)).to.be.revertedWithCustomError(split, "SplitExpired");
     });
 
     it("a friend's authorization past its validBefore is refused by the token", async () => {
       const s = await openSplit();
-      const a = await signShare(sam, s.splitId, 0, AUSD(30), { validBefore: await inSeconds(60) });
+      const a = await signShare(sam, s.splitId, 0, USDC(30), { validBefore: await inSeconds(60) });
       await time.increase(120);
-      await expect(submitShare(s.splitId, 0, sam.address, a)).to.be.revertedWithCustomError(ausd, "AuthorizationExpired");
+      await expect(submitShare(s.splitId, 0, sam.address, a)).to.be.revertedWithCustomError(usdc, "AuthorizationExpired");
     });
 
     it("a friend's authorization valid for more than an hour is refused, so a relayer can't sit on it", async () => {
       const s = await openSplit();
-      const a = await signShare(sam, s.splitId, 0, AUSD(30), { validBefore: await inSeconds(MAX_SIGNATURE_WINDOW + 60) });
+      const a = await signShare(sam, s.splitId, 0, USDC(30), { validBefore: await inSeconds(MAX_SIGNATURE_WINDOW + 60) });
       await expect(submitShare(s.splitId, 0, sam.address, a)).to.be.revertedWithCustomError(split, "SignatureWindowTooLong");
     });
 
@@ -427,8 +427,8 @@ describe("PolarisSplit: split the bill by link", () => {
     it("a relayer can't change the amounts, the words, the expiry or the salt the organiser signed", async () => {
       const { c, signature } = await signCreate(maya);
       const tampered = [
-        { ...c, amounts: [AUSD(300), AUSD(30), AUSD(30)] },
-        { ...c, amounts: [AUSD(30), AUSD(30)] },
+        { ...c, amounts: [USDC(300), USDC(30), USDC(30)] },
+        { ...c, amounts: [USDC(30), USDC(30)] },
         { ...c, memoHash: ethers.ZeroHash },
         { ...c, expiresAt: c.expiresAt + 1n },
         { ...c, salt: ethers.ZeroHash },
@@ -454,7 +454,7 @@ describe("PolarisSplit: split the bill by link", () => {
     });
 
     it("a signed create for one deployment is refused by another", async () => {
-      const other = await (await ethers.getContractFactory("PolarisSplit")).deploy(await ausd.getAddress());
+      const other = await (await ethers.getContractFactory("PolarisSplit")).deploy(await usdc.getAddress());
       const { c, signature } = await signCreate(maya, {}, other);
       await expect(split.connect(relayer).createSplit(c, signature)).to.be.revertedWithCustomError(split, "InvalidSignature");
     });
@@ -465,10 +465,10 @@ describe("PolarisSplit: split the bill by link", () => {
         await expect(split.connect(relayer).createSplit(c, signature)).to.be.revertedWithCustomError(split, error);
       };
       await refused([], "NoShares");
-      await refused(Array(51).fill(AUSD(1)), "TooManyShares");
-      await refused([AUSD(1), 0n], "InvalidAmount");
+      await refused(Array(51).fill(USDC(1)), "TooManyShares");
+      await refused([USDC(1), 0n], "InvalidAmount");
       await refused([UINT128_MAX, 1n], "InvalidAmount");
-      const fifty = await signCreate(maya, { amounts: Array(50).fill(AUSD(1)) });
+      const fifty = await signCreate(maya, { amounts: Array(50).fill(USDC(1)) });
       await split.connect(relayer).createSplit(fifty.c, fifty.signature);
       expect((await split.splitOf(splitIdOf(maya.address, fifty.c.salt))).shareCount).to.equal(50);
     });
