@@ -25,6 +25,7 @@ const addresses: RelayerAddresses = {
   vault: "0x000000000000000000000000000000000000Ca01",
   sendEurc: "0x0000000000000000000000000000000000005E02",
   messageTransmitter: "0xE737e5cEBEEBa77EFE34D4aa090756590b1CE275",
+  gatewayMinter: "0x0022222ABE238Cc2C7Bb1f21003F0a260052475B",
   memo: "0x5294E9927c3306DcBaDb03fe70b92e01cCede505",
 };
 for (const k of Object.keys(addresses) as (keyof RelayerAddresses)[]) addresses[k] = getAddress(addresses[k] as Address);

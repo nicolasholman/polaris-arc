@@ -246,7 +246,8 @@ export type RelayKind =
   | "payShare"
   | "closeSplit"
   /** The relayer finishes a buyer's CCTP V2 transfer into Arc (MessageTransmitterV2.receiveMessage). */
-  | "cctpMint";
+  | "cctpMint"
+  | "gatewayMint";
 
 export type RelayRecord = {
   /** A digest of the signed request: the same signatures relay once. */

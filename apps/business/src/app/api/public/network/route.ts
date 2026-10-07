@@ -3,6 +3,7 @@ import { requireChain } from "@/server/chain/client";
 import { getConfig } from "@/server/env";
 import { ok, methodNotAllowed } from "@/server/http";
 import { cctpSourcesFor } from "@/server/cctp";
+import { gatewayFor } from "@/server/gateway";
 import { arcRates } from "@/server/rates";
 import { polarisDomain } from "@/server/relayer/typed-data";
 
@@ -65,6 +66,12 @@ export const GET = withPublic(async () => {
       : null,
     // Pay from any chain (CCTP V2): where a buyer can burn USDC to arrive on Arc. Null on a local node.
     cctp: sources ? { sources, fastTransfer: true, mintPath: "/api/public/cctp/mint" } : null,
+    // Circle Gateway: a unified USDC balance on any of these chains, spent on Arc in under a second
+    // (/api/public/gateway for balances, /intent to sign, /mint to spend).
+    gateway: (() => {
+      const g = gatewayFor(chain);
+      return g ? { wallet: g.wallet, minter: g.minter, sources: g.sources, intentPath: "/api/public/gateway/intent", mintPath: "/api/public/gateway/mint", balancesPath: "/api/public/gateway" } : null;
+    })(),
     // Pay a Polaris order from another chain in one call: CCTP moves the USDC, Chainlink CCIP carries
     // the order to PolarisCCIPReceiver. Only sources whose PolarisCCIPSender is deployed are listed.
     ccip: chain.ccip?.receiver

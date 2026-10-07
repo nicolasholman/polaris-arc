@@ -72,10 +72,12 @@ export type RelayerContract =
   | "stablecoin"
   | "vault"
   | "messageTransmitter"
+  | "gatewayMinter"
   | "memo";
 
 /** Circle's contracts on Arc the relayer may call: CCTP V2's MessageTransmitterV2, and Arc's Memo. */
 const MESSAGE_TRANSMITTER_ABI = parseAbi(["function receiveMessage(bytes message, bytes attestation) returns (bool)"]);
+const GATEWAY_MINTER_ABI = parseAbi(["function gatewayMint(bytes attestation, bytes signature)"]);
 const MEMO_ABI = parseAbi(["function memo(address target, bytes data, bytes32 memoId, bytes memoData)"]);
 
 export type AllowedCall = {
@@ -147,6 +149,13 @@ export const RELAYER_CALLS: readonly AllowedCall[] = [
     signedBy: "owner",
   },
   {
+    contract: "gatewayMinter",
+    functionName: "gatewayMint",
+    rule: "Spend Gateway balance: GatewayMinter.gatewayMint",
+    why: "Spend a buyer's Circle Gateway unified balance on Arc: Circle's attestation of the burn intent the buyer signed mints USDC to the recipient it names (never the caller)",
+    signedBy: "owner",
+  },
+  {
     contract: "memo",
     functionName: "memo",
     rule: "Order reference: Arc Memo around checkout",
@@ -166,6 +175,7 @@ export const CONTRACT_ABIS: Record<RelayerContract, Abi> = {
   stablecoin: iusdcAbi as unknown as Abi,
   vault: collateralVaultAbi as unknown as Abi,
   messageTransmitter: MESSAGE_TRANSMITTER_ABI as unknown as Abi,
+  gatewayMinter: GATEWAY_MINTER_ABI as unknown as Abi,
   memo: MEMO_ABI as unknown as Abi,
 };
 
@@ -179,11 +189,12 @@ export const CONTRACT_ABIS: Record<RelayerContract, Abi> = {
  * the simulation reverts before anything is signed), and the relay refuses
  * it first anyway (relay.ts `withdrawCollateral`, server/vault.ts).
  */
-export type RelayerAddresses = Record<Exclude<RelayerContract, "split" | "vault" | "sendEurc" | "messageTransmitter" | "memo">, Address> & {
+export type RelayerAddresses = Record<Exclude<RelayerContract, "split" | "vault" | "sendEurc" | "messageTransmitter" | "gatewayMinter" | "memo">, Address> & {
   split?: Address | null;
   vault?: Address | null;
   sendEurc?: Address | null;
   messageTransmitter?: Address | null;
+  gatewayMinter?: Address | null;
   memo?: Address | null;
 };
 
