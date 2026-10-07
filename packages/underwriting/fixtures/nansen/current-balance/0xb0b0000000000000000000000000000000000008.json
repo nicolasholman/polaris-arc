@@ -1,0 +1,37 @@
+{
+  "fixture": {
+    "label": "FIXTURE: synthesized in the provider's documented response shape. Not live data, not a recording.",
+    "provider": "nansen",
+    "request": "POST /api/v1/profiler/address/current-balance",
+    "shape": "Current balance rows, Nansen OpenAPI 1.0.0 (docs/research/data.md §2.5.6)",
+    "persona": "exchange-wallet",
+    "recorded": false,
+    "synthesizedFor": "2026-09-26T00:00:00Z",
+    "notes": "token_amount is a float, as documented; the collector prefers Zerion's exact integers and uses this only as the fallback."
+  },
+  "status": 200,
+  "headers": {
+    "x-nansen-credits-cost": "1",
+    "x-nansen-credits-used": "1",
+    "x-nansen-credits-remaining": "96"
+  },
+  "body": {
+    "pagination": {
+      "page": 1,
+      "per_page": 100,
+      "is_last_page": true
+    },
+    "data": [
+      {
+        "chain": "ethereum",
+        "address": "0xb0b0000000000000000000000000000000000008",
+        "token_address": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+        "token_symbol": "USDC",
+        "token_name": "USD Coin",
+        "token_amount": 1250.5,
+        "price_usd": 1,
+        "value_usd": 1250.5
+      }
+    ]
+  }
+}

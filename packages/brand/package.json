@@ -1,0 +1,17 @@
+{
+  "name": "@polaris/brand",
+  "version": "0.1.0",
+  "private": true,
+  "description": "The Polaris mark as a React component, SVGs and rendered icons.",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.tsx",
+    "./assets/*": "./assets/*"
+  },
+  "peerDependencies": {
+    "react": ">=18"
+  },
+  "devDependencies": {
+    "@types/react": "^19"
+  }
+}

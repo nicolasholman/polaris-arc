@@ -1,0 +1,4 @@
+{
+  "comment": "Every API route Halcyon serves. scripts/assert-api-routes.mjs fails `next build` if the build has any other, and test/api-routes.test.ts checks src/app/api against it.",
+  "routes": ["/api/checkout", "/api/health", "/api/orders/[id]", "/api/orders/[id]/log", "/api/webhooks/polaris"]
+}

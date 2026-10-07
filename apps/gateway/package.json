@@ -1,0 +1,23 @@
+{
+  "name": "@polarispay/gateway",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "description": "The Polaris gateway: serves the Nansen-powered underwriting API (score, limit, Pay in 4 decision and plain-language reasons) on port 3510.",
+  "engines": {
+    "node": ">=22.6.0"
+  },
+  "scripts": {
+    "start": "node --experimental-strip-types --disable-warning=ExperimentalWarning --conditions=source --env-file-if-exists=.env src/server.ts",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "node --experimental-strip-types --disable-warning=ExperimentalWarning --conditions=source --test \"test/*.test.ts\""
+  },
+  "dependencies": {
+    "@polarispay/underwriting": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.1",
+    "typescript": "^5.9.3"
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "name": "@polaris/receipts",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Receipts only the buyer can read: keys derived from the same Face ID (Mera PRF) output as the wallet key, RFC 9180 HPKE sealing to the buyer's inbox key, and the texts a buyer signs to register it and to read their receipts. Browser and Node 22.",
+  "license": "MIT",
+  "exports": {
+    ".": "./src/index.ts",
+    "./package.json": "./package.json"
+  },
+  "engines": {
+    "node": ">=22.6.0"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@hpke/core": "1.9.0",
+    "@hpke/dhkem-x25519": "1.8.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.1",
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.7"
+  }
+}

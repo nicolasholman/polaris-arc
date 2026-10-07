@@ -1,0 +1,92 @@
+{
+  "fixture": {
+    "label": "FIXTURE: synthesized in the provider's documented response shape. Not live data, not a recording.",
+    "provider": "zerion",
+    "request": "GET /v1/wallets/0xb0b0000000000000000000000000000000000004/transactions/",
+    "shape": "Wallet transactions response, Zerion OpenAPI (docs/research/data.md §3.3)",
+    "persona": "sybil",
+    "recorded": false,
+    "synthesizedFor": "2026-09-26T00:00:00Z",
+    "notes": "The full history. The fixture transport applies filter[chain_ids], filter[operation_types], filter[min_mined_at], filter[max_mined_at], filter[trash] and page[size] to these rows, newest first, as the API does."
+  },
+  "status": 200,
+  "headers": {
+    "ratelimit-org-second-limit": "3",
+    "ratelimit-org-day-limit": "2000"
+  },
+  "body": {
+    "links": {
+      "self": "https://api.zerion.io/v1/wallets/0xb0b0000000000000000000000000000000000004/transactions/"
+    },
+    "data": [
+      {
+        "type": "transactions",
+        "id": "0x0f545533dfeecefc1c2423546d4366b065bc0b5391769d6611ab458218524afb-0",
+        "attributes": {
+          "operation_type": "receive",
+          "hash": "0x0f545533dfeecefc1c2423546d4366b065bc0b5391769d6611ab458218524afb",
+          "mined_at_block": 18000000,
+          "mined_at": "2026-08-17T00:00:00Z",
+          "sent_from": "0xc000000000000000000000000000000000000001",
+          "sent_to": "0xb0b0000000000000000000000000000000000004",
+          "status": "confirmed",
+          "nonce": 0,
+          "fee": null,
+          "transfers": [
+            {
+              "fungible_info": {
+                "name": "Ethereum",
+                "symbol": "ETH",
+                "icon": null,
+                "flags": {
+                  "verified": true
+                },
+                "implementations": [
+                  {
+                    "chain_id": "ethereum",
+                    "address": null,
+                    "decimals": 18
+                  }
+                ]
+              },
+              "direction": "in",
+              "quantity": {
+                "int": "10000000000000000",
+                "decimals": 18,
+                "float": 0.01,
+                "numeric": "0.01"
+              },
+              "value": 31.204,
+              "price": 3120.4,
+              "sender": "0xc000000000000000000000000000000000000001",
+              "recipient": "0xb0b0000000000000000000000000000000000004"
+            }
+          ],
+          "approvals": [],
+          "application_metadata": null,
+          "flags": {
+            "is_trash": false
+          },
+          "acts": [
+            {
+              "id": "0x0f545533dfeecefc1c2423546d4366b065bc0b5391769d6611ab458218524afb-act-0",
+              "type": "receive",
+              "application_metadata": null
+            }
+          ]
+        },
+        "relationships": {
+          "chain": {
+            "links": {
+              "related": "https://api.zerion.io/v1/chains/ethereum"
+            },
+            "data": {
+              "type": "chains",
+              "id": "ethereum"
+            }
+          }
+        }
+      }
+    ]
+  }
+}

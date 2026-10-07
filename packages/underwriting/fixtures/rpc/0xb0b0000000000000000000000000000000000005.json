@@ -1,0 +1,16 @@
+{
+  "fixture": {
+    "label": "FIXTURE: synthesized in the provider's documented response shape. Not live data, not a recording.",
+    "provider": "rpc",
+    "request": "eth_getTransactionCount on Ethereum, Base and Monad",
+    "shape": "JSON-RPC results; the transport wraps each in {jsonrpc, id, result}",
+    "persona": "tainted",
+    "recorded": false,
+    "synthesizedFor": "2026-09-26T00:00:00Z"
+  },
+  "calls": {
+    "ethereum-rpc.publicnode.com:eth_getTransactionCount": "0x320",
+    "mainnet.base.org:eth_getTransactionCount": "0x0",
+    "rpc.monad.xyz:eth_getTransactionCount": "0x0"
+  }
+}

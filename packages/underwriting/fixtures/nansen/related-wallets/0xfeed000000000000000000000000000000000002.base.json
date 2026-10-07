@@ -1,0 +1,83 @@
+{
+  "fixture": {
+    "label": "FIXTURE: synthesized in the provider's documented response shape. Not live data, not a recording.",
+    "provider": "nansen",
+    "request": "POST /api/v1/profiler/address/related-wallets",
+    "shape": "ProfilerRelatedWallet rows, Nansen OpenAPI 1.0.0 (docs/research/data.md §2.5.2)",
+    "persona": "modest",
+    "recorded": false,
+    "synthesizedFor": "2026-09-26T00:00:00Z",
+    "notes": "The relation vocabulary is UNVERIFIED (data.md §9 item 2); the collector counts every relation."
+  },
+  "status": 200,
+  "headers": {
+    "x-nansen-credits-cost": "1",
+    "x-nansen-credits-used": "1",
+    "x-nansen-credits-remaining": "96"
+  },
+  "body": {
+    "pagination": {
+      "page": 1,
+      "per_page": 100,
+      "is_last_page": true
+    },
+    "data": [
+      {
+        "address": "0xb0b0000000000000000000000000000000000002",
+        "relation": "First Funder",
+        "transaction_hash": "0xe606c600cc473192fae0ce48c3e1814ee6f8be6094770574c0307ab6bd0c1b49",
+        "block_timestamp": "2026-08-17T00:00:00Z",
+        "order": 1,
+        "chain": "base"
+      },
+      {
+        "address": "0x5b00000000000000000000000000000000000001",
+        "relation": "Funded",
+        "transaction_hash": "0x013eb5530ec04da508ae8e375446c981230b815251756df1c28aa18da52a2954",
+        "block_timestamp": "2026-08-16T00:01:37Z",
+        "order": 2,
+        "chain": "base"
+      },
+      {
+        "address": "0x5b00000000000000000000000000000000000002",
+        "relation": "Funded",
+        "transaction_hash": "0x628cdf69efe5ba83ff9a287ee2d970e21b712f21454d2207e2095bddaa26e40d",
+        "block_timestamp": "2026-08-15T00:03:14Z",
+        "order": 3,
+        "chain": "base"
+      },
+      {
+        "address": "0x5b00000000000000000000000000000000000003",
+        "relation": "Funded",
+        "transaction_hash": "0xe80da9a774d1bbc677b40cec5da0a85784e949f6c9ca7dbb976737c4e4fa774d",
+        "block_timestamp": "2026-08-14T00:04:51Z",
+        "order": 4,
+        "chain": "base"
+      },
+      {
+        "address": "0x5b00000000000000000000000000000000000004",
+        "relation": "Funded",
+        "transaction_hash": "0x0e3c8ec2613895785e6b06e7fd5af154cbef3dd09ed0debfd45bc305eb091925",
+        "block_timestamp": "2026-08-13T00:06:28Z",
+        "order": 5,
+        "chain": "base"
+      },
+      {
+        "address": "0x5b00000000000000000000000000000000000005",
+        "relation": "Funded",
+        "transaction_hash": "0xf79463248c843242e626fd294e0f7a2c2752786c7059fce9f24a9f72c63020a1",
+        "block_timestamp": "2026-08-12T00:08:05Z",
+        "order": 6,
+        "chain": "base"
+      },
+      {
+        "address": "0x5b00000000000000000000000000000000000006",
+        "relation": "Funded",
+        "transaction_hash": "0x1f107743c9965363e9c5969e62f5b90f2c077263e4b22d38ef45077707316c0a",
+        "block_timestamp": "2026-08-11T00:09:42Z",
+        "order": 7,
+        "chain": "base"
+      }
+    ]
+  }
+}

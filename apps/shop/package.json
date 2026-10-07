@@ -1,0 +1,39 @@
+{
+  "name": "@polaris/shop",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Halcyon, a demo store that takes payment through Polaris: Pay now, Pay in 4 on Polaris credit, subscriptions, and direct wallet payment.",
+  "scripts": {
+    "dev": "pnpm --filter polarispay-sdk build && next dev -H 127.0.0.1 -p 3600",
+    "build": "pnpm --filter polarispay-sdk build && next build && node scripts/assert-api-routes.mjs",
+    "start": "next start -p 3600",
+    "lint": "pnpm --filter polarispay-sdk build && eslint .",
+    "typecheck": "pnpm --filter polarispay-sdk build && tsc --noEmit",
+    "test": "pnpm --filter polarispay-sdk build && vitest run"
+  },
+  "dependencies": {
+    "@fontsource-variable/hedvig-letters-serif": "5.3.0",
+    "@fontsource-variable/jetbrains-mono": "5.3.0",
+    "@fontsource-variable/schibsted-grotesk": "5.3.0",
+    "ethers": "^6.17.0",
+    "motion": "13.4.4",
+    "next": "16.3.6",
+    "polarispay-sdk": "workspace:*",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "server-only": "0.0.1",
+    "viem": "2.56.9"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "4.3.3",
+    "@types/node": "^22.20.1",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "eslint": "^9.39.5",
+    "eslint-config-next": "16.3.6",
+    "tailwindcss": "4.3.3",
+    "typescript": "^5.9.3",
+    "vitest": "5.0.2"
+  }
+}

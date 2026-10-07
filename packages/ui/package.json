@@ -1,0 +1,41 @@
+{
+  "name": "@polaris/ui",
+  "version": "0.1.0",
+  "private": true,
+  "description": "The Polaris component library: tokens, themes, primitives, composites, hand-built SVG charts and sheet/drawer/dialog presentation, shared by the consumer app and the merchant dashboard.",
+  "type": "module",
+  "sideEffects": [
+    "**/*.css"
+  ],
+  "exports": {
+    ".": "./src/index.ts",
+    "./styles.css": {
+      "style": "./styles.css",
+      "default": "./styles.css"
+    },
+    "./gallery": "./src/gallery/Gallery.tsx",
+    "./fonts/*": "./fonts/*"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "node --experimental-strip-types --disable-warning=ExperimentalWarning --test test/*.test.ts"
+  },
+  "dependencies": {
+    "@polaris/brand": "workspace:*",
+    "clsx": "2.1.1",
+    "lucide-react": "1.48.0",
+    "motion": "13.4.4",
+    "tailwind-merge": "3.7.0"
+  },
+  "peerDependencies": {
+    "react": ">=19",
+    "react-dom": ">=19"
+  },
+  "devDependencies": {
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "typescript": "^5.9.3"
+  }
+}

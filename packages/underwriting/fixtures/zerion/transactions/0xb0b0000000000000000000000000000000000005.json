@@ -1,0 +1,197 @@
+{
+  "fixture": {
+    "label": "FIXTURE: synthesized in the provider's documented response shape. Not live data, not a recording.",
+    "provider": "zerion",
+    "request": "GET /v1/wallets/0xb0b0000000000000000000000000000000000005/transactions/",
+    "shape": "Wallet transactions response, Zerion OpenAPI (docs/research/data.md §3.3)",
+    "persona": "tainted",
+    "recorded": false,
+    "synthesizedFor": "2026-09-26T00:00:00Z",
+    "notes": "The full history. The fixture transport applies filter[chain_ids], filter[operation_types], filter[min_mined_at], filter[max_mined_at], filter[trash] and page[size] to these rows, newest first, as the API does."
+  },
+  "status": 200,
+  "headers": {
+    "ratelimit-org-second-limit": "3",
+    "ratelimit-org-day-limit": "2000"
+  },
+  "body": {
+    "links": {
+      "self": "https://api.zerion.io/v1/wallets/0xb0b0000000000000000000000000000000000005/transactions/"
+    },
+    "data": [
+      {
+        "type": "transactions",
+        "id": "0xe3d2bb356b38b06fa953d45ecbfe8b4bd7c928a306281c44710a639b4f5bbab0-0",
+        "attributes": {
+          "operation_type": "trade",
+          "hash": "0xe3d2bb356b38b06fa953d45ecbfe8b4bd7c928a306281c44710a639b4f5bbab0",
+          "mined_at_block": 18001337,
+          "mined_at": "2024-05-29T01:00:07Z",
+          "sent_from": "0xb0b0000000000000000000000000000000000005",
+          "sent_to": "0xc000000000000000000000000000000000000002",
+          "status": "confirmed",
+          "nonce": 1,
+          "fee": {
+            "fungible_info": {
+              "name": "Ethereum",
+              "symbol": "ETH",
+              "icon": null,
+              "flags": {
+                "verified": true
+              },
+              "implementations": [
+                {
+                  "chain_id": "ethereum",
+                  "address": null,
+                  "decimals": 18
+                }
+              ]
+            },
+            "quantity": {
+              "int": "412000000000000",
+              "decimals": 18,
+              "float": 0.000412,
+              "numeric": "0.000412"
+            },
+            "price": 3120.4,
+            "value": 1.29
+          },
+          "transfers": [
+            {
+              "fungible_info": {
+                "name": "USD Coin",
+                "symbol": "USDC",
+                "icon": null,
+                "flags": {
+                  "verified": true
+                },
+                "implementations": [
+                  {
+                    "chain_id": "ethereum",
+                    "address": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+                    "decimals": 6
+                  }
+                ]
+              },
+              "direction": "out",
+              "quantity": {
+                "int": "9000000000",
+                "decimals": 6,
+                "float": 9000,
+                "numeric": "9000"
+              },
+              "value": 9000,
+              "price": 1,
+              "sender": "0xb0b0000000000000000000000000000000000005",
+              "recipient": "0xc000000000000000000000000000000000000002"
+            }
+          ],
+          "approvals": [],
+          "application_metadata": {
+            "name": "Uniswap V3",
+            "contract_address": "0xda00000000000000000000000000000000000002",
+            "method": {
+              "id": "0x3593564c",
+              "name": "execute"
+            }
+          },
+          "flags": {
+            "is_trash": false
+          },
+          "acts": [
+            {
+              "id": "0xe3d2bb356b38b06fa953d45ecbfe8b4bd7c928a306281c44710a639b4f5bbab0-act-0",
+              "type": "trade",
+              "application_metadata": null
+            }
+          ]
+        },
+        "relationships": {
+          "chain": {
+            "links": {
+              "related": "https://api.zerion.io/v1/chains/ethereum"
+            },
+            "data": {
+              "type": "chains",
+              "id": "ethereum"
+            }
+          },
+          "dapp": {
+            "data": {
+              "type": "dapps",
+              "id": "uniswap-v3"
+            }
+          }
+        }
+      },
+      {
+        "type": "transactions",
+        "id": "0x2533e1260ab2d885114826693b51d9fe1353dfab911cc85be5a58069009ea0f6-0",
+        "attributes": {
+          "operation_type": "receive",
+          "hash": "0x2533e1260ab2d885114826693b51d9fe1353dfab911cc85be5a58069009ea0f6",
+          "mined_at_block": 18000000,
+          "mined_at": "2024-04-09T00:00:00Z",
+          "sent_from": "0xc000000000000000000000000000000000000001",
+          "sent_to": "0xb0b0000000000000000000000000000000000005",
+          "status": "confirmed",
+          "nonce": 0,
+          "fee": null,
+          "transfers": [
+            {
+              "fungible_info": {
+                "name": "Ethereum",
+                "symbol": "ETH",
+                "icon": null,
+                "flags": {
+                  "verified": true
+                },
+                "implementations": [
+                  {
+                    "chain_id": "ethereum",
+                    "address": null,
+                    "decimals": 18
+                  }
+                ]
+              },
+              "direction": "in",
+              "quantity": {
+                "int": "10000000000000000000",
+                "decimals": 18,
+                "float": 10,
+                "numeric": "10"
+              },
+              "value": 31204,
+              "price": 3120.4,
+              "sender": "0xc000000000000000000000000000000000000001",
+              "recipient": "0xb0b0000000000000000000000000000000000005"
+            }
+          ],
+          "approvals": [],
+          "application_metadata": null,
+          "flags": {
+            "is_trash": false
+          },
+          "acts": [
+            {
+              "id": "0x2533e1260ab2d885114826693b51d9fe1353dfab911cc85be5a58069009ea0f6-act-0",
+              "type": "receive",
+              "application_metadata": null
+            }
+          ]
+        },
+        "relationships": {
+          "chain": {
+            "links": {
+              "related": "https://api.zerion.io/v1/chains/ethereum"
+            },
+            "data": {
+              "type": "chains",
+              "id": "ethereum"
+            }
+          }
+        }
+      }
+    ]
+  }
+}

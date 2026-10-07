@@ -1,0 +1,99 @@
+@import "tailwindcss";
+/* The shared library: tokens, the dark and light themes, Satoshi. */
+@import "@polaris/ui/styles.css";
+
+/*
+  Polaris, the app. Dark (docs/design/system.md, refs A and B): every screen
+  is composed from @polaris/ui, so this file only sets the ground, the
+  frame and a few app-level details.
+*/
+
+:root {
+  color-scheme: dark;
+}
+
+html {
+  background: var(--ui-canvas);
+  -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  min-height: 100dvh;
+  background: var(--ui-canvas);
+  color: var(--ui-text);
+  font-family: var(--font-satoshi);
+  font-size: 16px;
+  line-height: 1.35;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  caret-color: var(--ui-lime);
+}
+
+::selection {
+  background: var(--ui-lime);
+  color: var(--ui-on-lime);
+}
+
+button,
+[role="button"],
+a {
+  touch-action: manipulation;
+}
+
+#scroller {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(255 255 255 / 0.14) transparent;
+}
+
+/* Visible only when focused (the skip link). */
+.sr-only-focusable:not(:focus):not(:focus-within) {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* ── Onboarding art: the glass renders drift while their Lottie loads ──── */
+
+@keyframes glass-float {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) rotate(var(--r, 0deg));
+  }
+  50% {
+    transform: translate3d(0, var(--lift, -14px), 0) rotate(calc(var(--r, 0deg) + var(--turn, 6deg)));
+  }
+}
+
+.glass-float {
+  animation: glass-float var(--dur, 6s) cubic-bezier(0.45, 0, 0.55, 1) infinite;
+  animation-delay: var(--delay, 0s);
+  will-change: transform;
+}
+
+@keyframes glass-in {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 24px, 0) scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.glass-in {
+  animation: glass-in 900ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: var(--in, 0s);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .glass-float,
+  .glass-in {
+    animation: none;
+  }
+}

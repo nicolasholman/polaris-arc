@@ -1,0 +1,9 @@
+packages:
+  - "packages/*"
+  # The Envio indexer installs on its own (`pnpm install --ignore-workspace`
+  # inside packages/indexer): Envio Cloud uploads only that folder. Its GraphQL
+  # client is an ordinary workspace package the dashboard and webhooks import.
+  - "!packages/indexer"
+  - "packages/indexer/client"
+  - "apps/*"
+  - "services/*"

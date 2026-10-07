@@ -1,0 +1,73 @@
+# Polaris for Business on Fly.io: one Machine, one volume. docs/deploy.md
+# has every step. Deploy from the repository root (the build context is the
+# whole pnpm workspace):
+#
+#   fly deploy . --config apps/business/fly.toml --dockerfile apps/business/Dockerfile --ha=false
+#
+# Change `app` to the name you created (`fly apps create <name>`), and the
+# region to one near you. Fill in the public build arguments below; the
+# runtime settings (secrets, POLARIS_CHECKOUT_ORIGIN, POLARIS_PUBLIC_URL, the
+# relayer) are set with `fly secrets import` (docs/deploy.md), never here.
+
+app = "polaris-business"
+primary_region = "iad"
+kill_signal = "SIGTERM"
+kill_timeout = 30
+
+[build]
+  # Relative to this file.
+  dockerfile = "Dockerfile"
+
+  # Compiled into the dashboard's browser bundle, so they are build arguments.
+  # All of them are public by design (they are in every page the browser
+  # loads); fill in yours before `fly deploy`, or pass --build-arg KEY=value.
+  [build.args]
+    NEXT_PUBLIC_PRIVY_APP_ID = ""
+    NEXT_PUBLIC_PRIVY_CLIENT_ID = ""
+    NEXT_PUBLIC_PRIVY_PAYOUT_SIGNER_ID = ""
+    NEXT_PUBLIC_DEMO_SHOP_URL = ""
+
+[env]
+  # The Monad testnet deployment record the image carries
+  # (packages/contracts/deployments/monad-testnet.json).
+  POLARIS_DEPLOYMENT = "monad-testnet"
+  # Fly's proxy appends the client's address to X-Forwarded-For: one proxy.
+  POLARIS_TRUSTED_PROXIES = "1"
+  # The store on the volume, and the background loops (chain sync, webhook
+  # retries, payouts, underwriting) in this process. The image sets both too.
+  POLARIS_DB_URL = "sqlite:/data/polaris.db"
+  POLARIS_WORKERS = "1"
+
+# The SQLite store. Create it once: fly volumes create polaris_data --size 1 --region iad --yes
+[[mounts]]
+  source = "polaris_data"
+  destination = "/data"
+
+[http_service]
+  internal_port = 3100
+  force_https = true
+  # Exactly one Machine, always on: the relayer's nonces, the rate limits and
+  # the background loops live in this process, and the volume is attached to
+  # one Machine. Never scale this app past one.
+  auto_stop_machines = "off"
+  auto_start_machines = false
+  min_machines_running = 1
+
+  [http_service.concurrency]
+    type = "requests"
+    soft_limit = 200
+    hard_limit = 250
+
+  # Readiness (src/server/readiness.ts): the store opens and its volume is
+  # writable, a chain is configured, the background loops run. No network
+  # call, so a slow RPC never takes the dashboard out of rotation.
+  [[http_service.checks]]
+    grace_period = "30s"
+    interval = "15s"
+    method = "GET"
+    path = "/api/health/ready"
+    timeout = "5s"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "1gb"

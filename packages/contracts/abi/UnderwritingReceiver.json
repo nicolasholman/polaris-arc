@@ -1,0 +1,632 @@
+[
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "forwarder",
+        "type": "address"
+      },
+      {
+        "internalType": "contract ScoreManager",
+        "name": "_scoreManager",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_simulationTransmitter",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "constructor"
+  },
+  {
+    "inputs": [],
+    "name": "ForwarderCheckDisabled",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "index",
+        "type": "uint256"
+      }
+    ],
+    "name": "InsufficientGasForItem",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "received",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "expected",
+        "type": "address"
+      }
+    ],
+    "name": "InvalidAuthor",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "InvalidForwarderAddress",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "sender",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "expected",
+        "type": "address"
+      }
+    ],
+    "name": "InvalidSender",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "user",
+        "type": "address"
+      }
+    ],
+    "name": "InvalidUser",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "received",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "expected",
+        "type": "bytes32"
+      }
+    ],
+    "name": "InvalidWorkflowId",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes10",
+        "name": "received",
+        "type": "bytes10"
+      },
+      {
+        "internalType": "bytes10",
+        "name": "expected",
+        "type": "bytes10"
+      }
+    ],
+    "name": "InvalidWorkflowName",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "origin",
+        "type": "address"
+      }
+    ],
+    "name": "NotSimulationTransmitter",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "owner",
+        "type": "address"
+      }
+    ],
+    "name": "OwnableInvalidOwner",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "account",
+        "type": "address"
+      }
+    ],
+    "name": "OwnableUnauthorizedAccount",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint8",
+        "name": "kind",
+        "type": "uint8"
+      }
+    ],
+    "name": "UnknownReportKind",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "user",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "account",
+        "type": "address"
+      }
+    ],
+    "name": "UserIsLinkedHistory",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "wallet",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "user",
+        "type": "address"
+      }
+    ],
+    "name": "WalletAlreadyLinked",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "wallet",
+        "type": "address"
+      }
+    ],
+    "name": "WalletAlreadyUnderwritten",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "WorkflowNameRequiresAuthorValidation",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "ZeroAddress",
+    "type": "error"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "previousAuthor",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "newAuthor",
+        "type": "address"
+      }
+    ],
+    "name": "ExpectedAuthorUpdated",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "previousId",
+        "type": "bytes32"
+      },
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "newId",
+        "type": "bytes32"
+      }
+    ],
+    "name": "ExpectedWorkflowIdUpdated",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "bytes10",
+        "name": "previousName",
+        "type": "bytes10"
+      },
+      {
+        "indexed": true,
+        "internalType": "bytes10",
+        "name": "newName",
+        "type": "bytes10"
+      }
+    ],
+    "name": "ExpectedWorkflowNameUpdated",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "previousForwarder",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "newForwarder",
+        "type": "address"
+      }
+    ],
+    "name": "ForwarderAddressUpdated",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "previousOwner",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "newOwner",
+        "type": "address"
+      }
+    ],
+    "name": "OwnershipTransferred",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "string",
+        "name": "message",
+        "type": "string"
+      }
+    ],
+    "name": "SecurityWarning",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "transmitter",
+        "type": "address"
+      }
+    ],
+    "name": "SimulationTransmitterSet",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "user",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "linkedWallet",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint16",
+        "name": "score",
+        "type": "uint16"
+      }
+    ],
+    "name": "UnderwritingApplied",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "user",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "linkedWallet",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "bytes",
+        "name": "reason",
+        "type": "bytes"
+      }
+    ],
+    "name": "UnderwritingRefused",
+    "type": "event"
+  },
+  {
+    "inputs": [],
+    "name": "REPORT_KIND",
+    "outputs": [
+      {
+        "internalType": "uint8",
+        "name": "",
+        "type": "uint8"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getExpectedAuthor",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getExpectedWorkflowId",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getExpectedWorkflowName",
+    "outputs": [
+      {
+        "internalType": "bytes10",
+        "name": "",
+        "type": "bytes10"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getForwarderAddress",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "name": "linkedUserOf",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes",
+        "name": "metadata",
+        "type": "bytes"
+      },
+      {
+        "internalType": "bytes",
+        "name": "report",
+        "type": "bytes"
+      }
+    ],
+    "name": "onReport",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "owner",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "renounceOwnership",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "scoreManager",
+    "outputs": [
+      {
+        "internalType": "contract ScoreManager",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_author",
+        "type": "address"
+      }
+    ],
+    "name": "setExpectedAuthor",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "_id",
+        "type": "bytes32"
+      }
+    ],
+    "name": "setExpectedWorkflowId",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "string",
+        "name": "_name",
+        "type": "string"
+      }
+    ],
+    "name": "setExpectedWorkflowName",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_forwarder",
+        "type": "address"
+      }
+    ],
+    "name": "setForwarderAddress",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "transmitter",
+        "type": "address"
+      }
+    ],
+    "name": "setSimulationTransmitter",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "simulationTransmitter",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes4",
+        "name": "interfaceId",
+        "type": "bytes4"
+      }
+    ],
+    "name": "supportsInterface",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "newOwner",
+        "type": "address"
+      }
+    ],
+    "name": "transferOwnership",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  }
+]

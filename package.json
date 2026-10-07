@@ -1,0 +1,25 @@
+{
+  "name": "polaris",
+  "version": "0.1.0",
+  "private": true,
+  "license": "MIT",
+  "description": "Polaris: Stripe for every app on Monad. Payment links, pay-in-4 credit and subscriptions, settled in AUSD.",
+  "engines": {
+    "node": ">=22.6.0"
+  },
+  "packageManager": "pnpm@10.29.2",
+  "scripts": {
+    "demo:local": "node scripts/demo-local.mjs",
+    "demo:e2e": "node scripts/demo-e2e.cjs",
+    "demo:e2e:chainlink": "node scripts/demo-e2e-chainlink.cjs",
+    "demo:e2e:split": "node scripts/demo-e2e-split.cjs",
+    "dev:demo": "pnpm --parallel --filter @polaris/business --filter @polaris/shop dev",
+    "contracts:compile": "pnpm --filter @polarispay/contracts compile",
+    "contracts:test": "pnpm --filter @polarispay/contracts test",
+    "deploy:check": "node scripts/deploy-check.mjs",
+    "docs:check": "node scripts/check-docs-links.mjs",
+    "indexer:local": "bash packages/indexer/scripts/wsl.sh local",
+    "docs:diffstat": "node scripts/submission-diffstat.mjs",
+    "test:scripts": "node --test scripts/deploy-check.test.mjs \"scripts/test/*.test.mjs\""
+  }
+}

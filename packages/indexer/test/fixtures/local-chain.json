@@ -1,0 +1,2887 @@
+{
+ "note": "Recorded by scripts/record-fixture.mjs from a local Hardhat chain. Do not edit.",
+ "chainId": 31337,
+ "graceSeconds": 120,
+ "contracts": {
+  "ScoreManager": "0xe7f1725e7734ce288f8367e1bb143e90bb3f0512",
+  "PolarisLoanEngine": "0x9fe46736679d2d9a65f0992f2272de9f3c7fa6e0",
+  "PolarisPayments": "0xcf7ed3acca5a467e9e704c703e8d87f634fb0fc9",
+  "MerchantRegistry": "0xdc64a140aa3e981100a9beca4e685f962f0cf6c9",
+  "CollateralVault": "0x5fc8d32690cc91d4c39d9d3abcbd16989f875707",
+  "BatchSettlement": "0x0165878a594ca255338adfa4d48449f69242eb8f",
+  "PolarisSend": "0xa513e6e4b8f2a923d98304ec87f64353c4d5c853",
+  "PolarisCheckout": "0x8a791620dd6260079bf849dc5567adc3f2fdc318",
+  "CollectionsReceiver": "0xb7f8bc63bbcad18155201308c8f3540b07f84f5e",
+  "UnderwritingReceiver": "0xa51c1fc2f0d1a1b8494ed1fe312d7c3a78ed91c0",
+  "MockKeystoneForwarder": "0x610178da211fef7d417bc0e6fed39f05609ad788",
+  "Stablecoin": "0x5fbdb2315678afecb367f032d93f642f64180aa3"
+ },
+ "events": [
+  {
+   "contract": "ScoreManager",
+   "event": "OwnershipTransferred",
+   "srcAddress": "0xe7f1725e7734ce288f8367e1bb143e90bb3f0512",
+   "blockNumber": 2,
+   "timestamp": 1791230325,
+   "logIndex": 0,
+   "txHash": "0xd68327868ad53e173ea97e2e33c5e33efc3b164deff97b2e89a3b5790cd12b2a",
+   "txFrom": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+   "txTo": null,
+   "params": {
+    "previousOwner": "0x0000000000000000000000000000000000000000",
+    "newOwner": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266"
+   }
+  },
+  {
+   "contract": "PolarisLoanEngine",
+   "event": "OwnershipTransferred",
+   "srcAddress": "0x9fe46736679d2d9a65f0992f2272de9f3c7fa6e0",
+   "blockNumber": 3,
+   "timestamp": 1791230326,
+   "logIndex": 0,
+   "txHash": "0xf8509f21d703b751ed033862d48248eb3041c806cec73c78f63b5347e63f50bc",
+   "txFrom": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+   "txTo": null,
+   "params": {
+    "previousOwner": "0x0000000000000000000000000000000000000000",
+    "newOwner": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266"
+   }
+  },
+  {
+   "contract": "PolarisPayments",
+   "event": "OwnershipTransferred",
+   "srcAddress": "0xcf7ed3acca5a467e9e704c703e8d87f634fb0fc9",
+   "blockNumber": 4,
+   "timestamp": 1791230327,
+   "logIndex": 0,
+   "txHash": "0x4d1f67504beebbc3a419e4a68514c33ba2471a6f65689d7b67ac0f10b90a7dc2",
+   "txFrom": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+   "txTo": null,
+   "params": {
+    "previousOwner": "0x0000000000000000000000000000000000000000",
+    "newOwner": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266"
+   }
+  },
+  {
+   "contract": "MerchantRegistry",
+   "event": "OwnershipTransferred",
+   "srcAddress": "0xdc64a140aa3e981100a9beca4e685f962f0cf6c9",
+   "blockNumber": 5,
+   "timestamp": 1791230328,
+   "logIndex": 0,
+   "txHash": "0x781c9ccc78cdf6c0f5129c3fde8c22baaa95953ef5b6ae80030e05c14d26655f",
+   "txFrom": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+   "txTo": null,
+   "params": {
+    "previousOwner": "0x0000000000000000000000000000000000000000",
+    "newOwner": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266"
+   }
+  },
+  {
+   "contract": "CollateralVault",
+   "event": "OwnershipTransferred",
+   "srcAddress": "0x5fc8d32690cc91d4c39d9d3abcbd16989f875707",
+   "blockNumber": 6,
+   "timestamp": 1791230329,
+   "logIndex": 0,
+   "txHash": "0xaaa0c762482baed505387519d616043e226098e0e627fe59fc1c5f658a382345",
+   "txFrom": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+   "txTo": null,
+   "params": {
+    "previousOwner": "0x0000000000000000000000000000000000000000",
+    "newOwner": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266"
+   }
+  },
+  {
+   "contract": "BatchSettlement",
+   "event": "OwnershipTransferred",
+   "srcAddress": "0x0165878a594ca255338adfa4d48449f69242eb8f",
+   "blockNumber": 7,
+   "timestamp": 1791230330,
+   "logIndex": 0,
+   "txHash": "0x12ccefe2e742085c51a2a97fd074bc85d5525995f8b17fbdbd934b593195f760",
+   "txFrom": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+   "txTo": null,
+   "params": {
+    "previousOwner": "0x0000000000000000000000000000000000000000",
+    "newOwner": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266"
+   }
+  },
+  {
+   "contract": "PolarisCheckout",
+   "event": "OwnershipTransferred",
+   "srcAddress": "0x8a791620dd6260079bf849dc5567adc3f2fdc318",
+   "blockNumber": 10,
+   "timestamp": 1791230333,
+   "logIndex": 0,
+   "txHash": "0xd74a2df6ae39de98c8781c1c5896b7e424ca994b55c55b61766847dd06ab043c",
+   "txFrom": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+   "txTo": null,
+   "params": {
+    "previousOwner": "0x0000000000000000000000000000000000000000",
+    "newOwner": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266"
+   }
+  },
+  {
+   "contract": "CollectionsReceiver",
+   "event": "OwnershipTransferred",
+   "srcAddress": "0xb7f8bc63bbcad18155201308c8f3540b07f84f5e",
+   "blockNumber": 12,
+   "timestamp": 1791230335,
+   "logIndex": 0,
+   "txHash": "0x330e05e177b93701ef27307e9b6587cce19241840bf904dd776458bacd543c1f",
+   "txFrom": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+   "txTo": null,
+   "params": {
+    "previousOwner": "0x0000000000000000000000000000000000000000",
+    "newOwner": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266"
+   }
+  },
+  {
+   "contract": "CollectionsReceiver",
+   "event": "ForwarderAddressUpdated",
+   "srcAddress": "0xb7f8bc63bbcad18155201308c8f3540b07f84f5e",
+   "blockNumber": 12,
+   "timestamp": 1791230335,
+   "logIndex": 1,
+   "txHash": "0x330e05e177b93701ef27307e9b6587cce19241840bf904dd776458bacd543c1f",
+   "txFrom": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+   "txTo": null,
+   "params": {
+    "previousForwarder": "0x0000000000000000000000000000000000000000",
+    "newForwarder": "0x610178da211fef7d417bc0e6fed39f05609ad788"
+   }
+  },
+  {
+   "contract": "CollectionsReceiver",
+   "event": "SimulationTransmitterSet",
+   "srcAddress": "0xb7f8bc63bbcad18155201308c8f3540b07f84f5e",
+   "blockNumber": 12,
+   "timestamp": 1791230335,
+   "logIndex": 2,
+   "txHash": "0x330e05e177b93701ef27307e9b6587cce19241840bf904dd776458bacd543c1f",
+   "txFrom": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+   "txTo": null,
+   "params": {
+    "transmitter": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266"
+   }
+  },
+  {
+   "contract": "UnderwritingReceiver",
+   "event": "OwnershipTransferred",
+   "srcAddress": "0xa51c1fc2f0d1a1b8494ed1fe312d7c3a78ed91c0",
+   "blockNumber": 13,
+   "timestamp": 1791230336,
+   "logIndex": 0,
+   "txHash": "0x97626a7a4d487a80cbee2909d576ff827ef00669c65574c5131029ad972d0e66",
+   "txFrom": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+   "txTo": null,
+   "params": {
+    "previousOwner": "0x0000000000000000000000000000000000000000",
+    "newOwner": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266"
+   }
+  },
+  {
+   "contract": "UnderwritingReceiver",
+   "event": "ForwarderAddressUpdated",
+   "srcAddress": "0xa51c1fc2f0d1a1b8494ed1fe312d7c3a78ed91c0",
+   "blockNumber": 13,
+   "timestamp": 1791230336,
+   "logIndex": 1,
+   "txHash": "0x97626a7a4d487a80cbee2909d576ff827ef00669c65574c5131029ad972d0e66",
+   "txFrom": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+   "txTo": null,
+   "params": {
+    "previousForwarder": "0x0000000000000000000000000000000000000000",
+    "newForwarder": "0x610178da211fef7d417bc0e6fed39f05609ad788"
+   }
+  },
+  {
+   "contract": "UnderwritingReceiver",
+   "event": "SimulationTransmitterSet",
+   "srcAddress": "0xa51c1fc2f0d1a1b8494ed1fe312d7c3a78ed91c0",
+   "blockNumber": 13,
+   "timestamp": 1791230336,
+   "logIndex": 2,
+   "txHash": "0x97626a7a4d487a80cbee2909d576ff827ef00669c65574c5131029ad972d0e66",
+   "txFrom": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+   "txTo": null,
+   "params": {
+    "transmitter": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266"
+   }
+  },
+  {
+   "contract": "ScoreManager",
+   "event": "WriterSet",
+   "srcAddress": "0xe7f1725e7734ce288f8367e1bb143e90bb3f0512",
+   "blockNumber": 16,
+   "timestamp": 1791230339,
+   "logIndex": 0,
+   "txHash": "0xcb26fdad5783d5963a80590e64d47550209d9ed208e2582389b40ceefc75a085",
+   "txFrom": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+   "txTo": "0xe7f1725e7734ce288f8367e1bb143e90bb3f0512",
+   "params": {
+    "writer": "0x9fe46736679d2d9a65f0992f2272de9f3c7fa6e0",
+    "allowed": true
+   }
+  },
+  {
+   "contract": "ScoreManager",
+   "event": "UnderwriterSet",
+   "srcAddress": "0xe7f1725e7734ce288f8367e1bb143e90bb3f0512",
+   "blockNumber": 17,
+   "timestamp": 1791230340,
+   "logIndex": 0,
+   "txHash": "0x13cabdf171ea28cbae4375e5f68cc0912507dc8ddbe23cdb6b3efe8eb8e67118",
+   "txFrom": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+   "txTo": "0xe7f1725e7734ce288f8367e1bb143e90bb3f0512",
+   "params": {
+    "underwriter": "0xa51c1fc2f0d1a1b8494ed1fe312d7c3a78ed91c0",
+    "allowed": true
+   }
+  },
+  {
+   "contract": "ScoreManager",
+   "event": "CollateralVaultSet",
+   "srcAddress": "0xe7f1725e7734ce288f8367e1bb143e90bb3f0512",
+   "blockNumber": 18,
+   "timestamp": 1791230341,
+   "logIndex": 0,
+   "txHash": "0xcbb7cf8fb4429bb8768871f79f4ad3b2492ff863b0b8c0f70b7af13b8916f1d2",
+   "txFrom": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+   "txTo": "0xe7f1725e7734ce288f8367e1bb143e90bb3f0512",
+   "params": {
+    "vault": "0x5fc8d32690cc91d4c39d9d3abcbd16989f875707"
+   }
+  },
+  {
+   "contract": "ScoreManager",
+   "event": "RequireUnderwritingSet",
+   "srcAddress": "0xe7f1725e7734ce288f8367e1bb143e90bb3f0512",
+   "blockNumber": 19,
+   "timestamp": 1791230342,
+   "logIndex": 0,
+   "txHash": "0x979c3c23a1c426bb90a696fe7047bd1ec16f4ff434296f8ca91103c31b70e0e6",
+   "txFrom": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+   "txTo": "0xe7f1725e7734ce288f8367e1bb143e90bb3f0512",
+   "params": {
+    "required": true
+   }
+  },
+  {
+   "contract": "CollateralVault",
+   "event": "LoanEngineSet",
+   "srcAddress": "0x5fc8d32690cc91d4c39d9d3abcbd16989f875707",
+   "blockNumber": 20,
+   "timestamp": 1791230343,
+   "logIndex": 0,
+   "txHash": "0x988d908b0acb61d4986fa663341afb65a15825bafe4328366f94f9b267fe6548",
+   "txFrom": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+   "txTo": "0x5fc8d32690cc91d4c39d9d3abcbd16989f875707",
+   "params": {
+    "engine": "0x9fe46736679d2d9a65f0992f2272de9f3c7fa6e0"
+   }
+  },
+  {
+   "contract": "CollateralVault",
+   "event": "SeizerSet",
+   "srcAddress": "0x5fc8d32690cc91d4c39d9d3abcbd16989f875707",
+   "blockNumber": 21,
+   "timestamp": 1791230344,
+   "logIndex": 0,
+   "txHash": "0x45dfa7cacd7e8f3de39fb7152afad069c150d3162850650b185facd93a4c8628",
+   "txFrom": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+   "txTo": "0x5fc8d32690cc91d4c39d9d3abcbd16989f875707",
+   "params": {
+    "seizer": "0x9fe46736679d2d9a65f0992f2272de9f3c7fa6e0",
+    "allowed": true
+   }
+  },
+  {
+   "contract": "PolarisLoanEngine",
+   "event": "CollateralVaultSet",
+   "srcAddress": "0x9fe46736679d2d9a65f0992f2272de9f3c7fa6e0",
+   "blockNumber": 22,
+   "timestamp": 1791230345,
+   "logIndex": 0,
+   "txHash": "0x38acdb44e228e5785ababdf69bc334a8231e3ccd4d918a4f752505c7df15a447",
+   "txFrom": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+   "txTo": "0x9fe46736679d2d9a65f0992f2272de9f3c7fa6e0",
+   "params": {
+    "vault": "0x5fc8d32690cc91d4c39d9d3abcbd16989f875707"
+   }
+  },
+  {
+   "contract": "PolarisLoanEngine",
+   "event": "MerchantRegistrySet",
+   "srcAddress": "0x9fe46736679d2d9a65f0992f2272de9f3c7fa6e0",
+   "blockNumber": 23,
+   "timestamp": 1791230346,
+   "logIndex": 0,
+   "txHash": "0x6cceb726b03a795137ac26e667d129910c14b35cc1c2b86f2f80c799ce9af5b1",
+   "txFrom": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+   "txTo": "0x9fe46736679d2d9a65f0992f2272de9f3c7fa6e0",
+   "params": {
+    "registry": "0xdc64a140aa3e981100a9beca4e685f962f0cf6c9"
+   }
+  },
+  {
+   "contract": "PolarisLoanEngine",
+   "event": "OriginatorSet",
+   "srcAddress": "0x9fe46736679d2d9a65f0992f2272de9f3c7fa6e0",
+   "blockNumber": 24,
+   "timestamp": 1791230347,
+   "logIndex": 0,
+   "txHash": "0x10c17bc6cb4f1e176dcd96927dc7499cc35c85db5b498d96857f5f0f8aaaa0ee",
+   "txFrom": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+   "txTo": "0x9fe46736679d2d9a65f0992f2272de9f3c7fa6e0",
+   "params": {
+    "originator": "0x8a791620dd6260079bf849dc5567adc3f2fdc318",
+    "allowed": true
+   }
+  },
+  {
+   "contract": "PolarisPayments",
+   "event": "CheckoutSet",
+   "srcAddress": "0xcf7ed3acca5a467e9e704c703e8d87f634fb0fc9",
+   "blockNumber": 25,
+   "timestamp": 1791230348,
+   "logIndex": 0,
+   "txHash": "0x7eb5a5ff875508cbde63a56143327506eebfba658fc42edd5ed0b5b4557fbf14",
+   "txFrom": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+   "txTo": "0xcf7ed3acca5a467e9e704c703e8d87f634fb0fc9",
+   "params": {
+    "checkout": "0x8a791620dd6260079bf849dc5567adc3f2fdc318"
+   }
+  },
+  {
+   "contract": "PolarisCheckout",
+   "event": "CreditGuardianSet",
+   "srcAddress": "0x8a791620dd6260079bf849dc5567adc3f2fdc318",
+   "blockNumber": 26,
+   "timestamp": 1791230349,
+   "logIndex": 0,
+   "txHash": "0x89e904b367d28170f8437682e84299d398cf5441b8b4df32bd9db58038927bc2",
+   "txFrom": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+   "txTo": "0x8a791620dd6260079bf849dc5567adc3f2fdc318",
+   "params": {
+    "guardian": "0x0dcd1bf9a1b36ce34237eeafef220932846bcd82"
+   }
+  },
+  {
+   "contract": "MerchantRegistry",
+   "event": "MerchantRegistered",
+   "srcAddress": "0xdc64a140aa3e981100a9beca4e685f962f0cf6c9",
+   "blockNumber": 27,
+   "timestamp": 1791230350,
+   "logIndex": 0,
+   "txHash": "0x7596d50816bf9b0af461f8629a4279524c207ec420ca83cd5ad2e16f23483bb7",
+   "txFrom": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+   "txTo": "0xdc64a140aa3e981100a9beca4e685f962f0cf6c9",
+   "params": {
+    "merchant": "0x61ff15a7e6922aa13d01156c6d05e86628d2cbf1",
+    "name": "Polaris Demo Studio",
+    "payoutAddress": "0x61ff15a7e6922aa13d01156c6d05e86628d2cbf1"
+   }
+  },
+  {
+   "contract": "MerchantRegistry",
+   "event": "MerchantRegisteredBy",
+   "srcAddress": "0xdc64a140aa3e981100a9beca4e685f962f0cf6c9",
+   "blockNumber": 27,
+   "timestamp": 1791230350,
+   "logIndex": 1,
+   "txHash": "0x7596d50816bf9b0af461f8629a4279524c207ec420ca83cd5ad2e16f23483bb7",
+   "txFrom": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+   "txTo": "0xdc64a140aa3e981100a9beca4e685f962f0cf6c9",
+   "params": {
+    "merchant": "0x61ff15a7e6922aa13d01156c6d05e86628d2cbf1",
+    "operator": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266"
+   }
+  },
+  {
+   "contract": "MerchantRegistry",
+   "event": "MerchantActivated",
+   "srcAddress": "0xdc64a140aa3e981100a9beca4e685f962f0cf6c9",
+   "blockNumber": 28,
+   "timestamp": 1791230351,
+   "logIndex": 0,
+   "txHash": "0x1ff70ebfb1a20e1c6260b64b252d0a80f5d0418c97441ab11b900bc12f351cdc",
+   "txFrom": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+   "txTo": "0xdc64a140aa3e981100a9beca4e685f962f0cf6c9",
+   "params": {
+    "merchant": "0x61ff15a7e6922aa13d01156c6d05e86628d2cbf1",
+    "active": true
+   }
+  },
+  {
+   "contract": "MerchantRegistry",
+   "event": "MerchantUpdated",
+   "srcAddress": "0xdc64a140aa3e981100a9beca4e685f962f0cf6c9",
+   "blockNumber": 29,
+   "timestamp": 1791230352,
+   "logIndex": 0,
+   "txHash": "0xe68d0cbecdd6965e0f432f5790f5cd695a5c3005749f18a109a91b99d3c05b81",
+   "txFrom": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+   "txTo": "0xdc64a140aa3e981100a9beca4e685f962f0cf6c9",
+   "params": {
+    "merchant": "0x61ff15a7e6922aa13d01156c6d05e86628d2cbf1",
+    "payoutAddress": "0x61ff15a7e6922aa13d01156c6d05e86628d2cbf1",
+    "maxOrderValue": "1000000000"
+   }
+  },
+  {
+   "contract": "PolarisPayments",
+   "event": "PlanCreated",
+   "srcAddress": "0xcf7ed3acca5a467e9e704c703e8d87f634fb0fc9",
+   "blockNumber": 30,
+   "timestamp": 1791230353,
+   "logIndex": 0,
+   "txHash": "0x7b4dbaa87f926dee9d6070a8e6d2d6d11291cb0d111c14323ae3b80758f3b2ac",
+   "txFrom": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+   "txTo": "0xcf7ed3acca5a467e9e704c703e8d87f634fb0fc9",
+   "params": {
+    "planId": "1",
+    "merchant": "0x61ff15a7e6922aa13d01156c6d05e86628d2cbf1",
+    "price": "9990000",
+    "period": "2592000"
+   }
+  },
+  {
+   "contract": "PolarisPayments",
+   "event": "PlanCreated",
+   "srcAddress": "0xcf7ed3acca5a467e9e704c703e8d87f634fb0fc9",
+   "blockNumber": 31,
+   "timestamp": 1791230354,
+   "logIndex": 0,
+   "txHash": "0xfbdd95948f8ba7f4b29f19c0aac66e43e945c0aae3b544752ddc1a5ed2cce476",
+   "txFrom": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+   "txTo": "0xcf7ed3acca5a467e9e704c703e8d87f634fb0fc9",
+   "params": {
+    "planId": "2",
+    "merchant": "0x61ff15a7e6922aa13d01156c6d05e86628d2cbf1",
+    "price": "1000000",
+    "period": "60"
+   }
+  },
+  {
+   "contract": "Stablecoin",
+   "event": "Transfer",
+   "srcAddress": "0x5fbdb2315678afecb367f032d93f642f64180aa3",
+   "blockNumber": 32,
+   "timestamp": 1791230355,
+   "logIndex": 0,
+   "txHash": "0x6bde2147a474d8caaa5fc0a56ec16a314d9be35af99e69bdba61c0bbd3ebd38d",
+   "txFrom": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+   "txTo": "0x5fbdb2315678afecb367f032d93f642f64180aa3",
+   "params": {
+    "from": "0x0000000000000000000000000000000000000000",
+    "to": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+    "value": "1100000000000"
+   }
+  },
+  {
+   "contract": "Stablecoin",
+   "event": "Approval",
+   "srcAddress": "0x5fbdb2315678afecb367f032d93f642f64180aa3",
+   "blockNumber": 33,
+   "timestamp": 1791230356,
+   "logIndex": 0,
+   "txHash": "0x6e030c1db240a83c29511bf7c69e17d0f5517690f4c959ac42e0161923bc294f",
+   "txFrom": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+   "txTo": "0x5fbdb2315678afecb367f032d93f642f64180aa3",
+   "params": {
+    "owner": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+    "spender": "0x9fe46736679d2d9a65f0992f2272de9f3c7fa6e0",
+    "value": "100000000000"
+   }
+  },
+  {
+   "contract": "Stablecoin",
+   "event": "Transfer",
+   "srcAddress": "0x5fbdb2315678afecb367f032d93f642f64180aa3",
+   "blockNumber": 34,
+   "timestamp": 1791230357,
+   "logIndex": 0,
+   "txHash": "0x1a86a94cd540a941154a9d125ae1df865efe5ea968849daf564c6b84a09d89e8",
+   "txFrom": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+   "txTo": "0x9fe46736679d2d9a65f0992f2272de9f3c7fa6e0",
+   "params": {
+    "from": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+    "to": "0x9fe46736679d2d9a65f0992f2272de9f3c7fa6e0",
+    "value": "100000000000"
+   }
+  },
+  {
+   "contract": "Stablecoin",
+   "event": "Transfer",
+   "srcAddress": "0x5fbdb2315678afecb367f032d93f642f64180aa3",
+   "blockNumber": 35,
+   "timestamp": 1791230358,
+   "logIndex": 0,
+   "txHash": "0x1534dec761661f71646cf9b6f52898644ac8a00031715909301d038c5e369eb1",
+   "txFrom": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+   "txTo": "0x5fbdb2315678afecb367f032d93f642f64180aa3",
+   "params": {
+    "from": "0x0000000000000000000000000000000000000000",
+    "to": "0x6e601385ef85c16d16ce3a443f2df66e546df6e2",
+    "value": "1000000000"
+   }
+  },
+  {
+   "contract": "Stablecoin",
+   "event": "Transfer",
+   "srcAddress": "0x5fbdb2315678afecb367f032d93f642f64180aa3",
+   "blockNumber": 36,
+   "timestamp": 1791230359,
+   "logIndex": 0,
+   "txHash": "0x70f305163ca2b39536a61b6f48921443fdd2e94d0b461742f0778d1f1b84fce1",
+   "txFrom": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+   "txTo": "0x5fbdb2315678afecb367f032d93f642f64180aa3",
+   "params": {
+    "from": "0x0000000000000000000000000000000000000000",
+    "to": "0x58bc9517b931bd3a5126f97588f41ea14ec8bdfc",
+    "value": "500000000"
+   }
+  },
+  {
+   "contract": "ScoreManager",
+   "event": "Underwritten",
+   "srcAddress": "0xe7f1725e7734ce288f8367e1bb143e90bb3f0512",
+   "blockNumber": 37,
+   "timestamp": 1791230360,
+   "logIndex": 0,
+   "txHash": "0x8060a1d0223f216bd77cf65c6ac717ae6facc67836ed33e794894bf9f45fe205",
+   "txFrom": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+   "txTo": "0x610178da211fef7d417bc0e6fed39f05609ad788",
+   "params": {
+    "user": "0x6e601385ef85c16d16ce3a443f2df66e546df6e2",
+    "score": "664",
+    "declined": false,
+    "observedAt": "1791230359"
+   }
+  },
+  {
+   "contract": "ScoreManager",
+   "event": "ScoreChanged",
+   "srcAddress": "0xe7f1725e7734ce288f8367e1bb143e90bb3f0512",
+   "blockNumber": 37,
+   "timestamp": 1791230360,
+   "logIndex": 1,
+   "txHash": "0x8060a1d0223f216bd77cf65c6ac717ae6facc67836ed33e794894bf9f45fe205",
+   "txFrom": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+   "txTo": "0x610178da211fef7d417bc0e6fed39f05609ad788",
+   "params": {
+    "user": "0x6e601385ef85c16d16ce3a443f2df66e546df6e2",
+    "oldScore": "600",
+    "newScore": "664",
+    "reason": "underwritten"
+   }
+  },
+  {
+   "contract": "UnderwritingReceiver",
+   "event": "UnderwritingApplied",
+   "srcAddress": "0xa51c1fc2f0d1a1b8494ed1fe312d7c3a78ed91c0",
+   "blockNumber": 37,
+   "timestamp": 1791230360,
+   "logIndex": 2,
+   "txHash": "0x8060a1d0223f216bd77cf65c6ac717ae6facc67836ed33e794894bf9f45fe205",
+   "txFrom": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+   "txTo": "0x610178da211fef7d417bc0e6fed39f05609ad788",
+   "params": {
+    "user": "0x6e601385ef85c16d16ce3a443f2df66e546df6e2",
+    "linkedWallet": "0x9e6a17e9155e5e20a411c2396b0136caca70928b",
+    "score": "664"
+   }
+  },
+  {
+   "contract": "MockKeystoneForwarder",
+   "event": "ReportProcessed",
+   "srcAddress": "0x610178da211fef7d417bc0e6fed39f05609ad788",
+   "blockNumber": 37,
+   "timestamp": 1791230360,
+   "logIndex": 3,
+   "txHash": "0x8060a1d0223f216bd77cf65c6ac717ae6facc67836ed33e794894bf9f45fe205",
+   "txFrom": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+   "txTo": "0x610178da211fef7d417bc0e6fed39f05609ad788",
+   "params": {
+    "receiver": "0xa51c1fc2f0d1a1b8494ed1fe312d7c3a78ed91c0",
+    "workflowExecutionId": "0x59ffd3c922fe1a5b9c2ea0de70c2be4e30a843755bcd3b8c6ecb8c9ebd22238d",
+    "reportId": "0x0001",
+    "result": true
+   }
+  },
+  {
+   "contract": "Stablecoin",
+   "event": "AuthorizationUsed",
+   "srcAddress": "0x5fbdb2315678afecb367f032d93f642f64180aa3",
+   "blockNumber": 38,
+   "timestamp": 1791230361,
+   "logIndex": 0,
+   "txHash": "0x70a92ff4265bed87b1c76119a5542992c8ff9f00d9624b4128c7a959f22d5af8",
+   "txFrom": "0x70997970c51812dc3a010c7d01b50e0d17dc79c8",
+   "txTo": "0x8a791620dd6260079bf849dc5567adc3f2fdc318",
+   "params": {
+    "authorizer": "0x6e601385ef85c16d16ce3a443f2df66e546df6e2",
+    "nonce": "0x53ef977c9492c1ed7e1bb01c42c3359614b5ac15f5e63e3d0378bd7ff5bc7189"
+   }
+  },
+  {
+   "contract": "Stablecoin",
+   "event": "Transfer",
+   "srcAddress": "0x5fbdb2315678afecb367f032d93f642f64180aa3",
+   "blockNumber": 38,
+   "timestamp": 1791230361,
+   "logIndex": 1,
+   "txHash": "0x70a92ff4265bed87b1c76119a5542992c8ff9f00d9624b4128c7a959f22d5af8",
+   "txFrom": "0x70997970c51812dc3a010c7d01b50e0d17dc79c8",
+   "txTo": "0x8a791620dd6260079bf849dc5567adc3f2fdc318",
+   "params": {
+    "from": "0x6e601385ef85c16d16ce3a443f2df66e546df6e2",
+    "to": "0xcf7ed3acca5a467e9e704c703e8d87f634fb0fc9",
+    "value": "25000000"
+   }
+  },
+  {
+   "contract": "Stablecoin",
+   "event": "Transfer",
+   "srcAddress": "0x5fbdb2315678afecb367f032d93f642f64180aa3",
+   "blockNumber": 38,
+   "timestamp": 1791230361,
+   "logIndex": 2,
+   "txHash": "0x70a92ff4265bed87b1c76119a5542992c8ff9f00d9624b4128c7a959f22d5af8",
+   "txFrom": "0x70997970c51812dc3a010c7d01b50e0d17dc79c8",
+   "txTo": "0x8a791620dd6260079bf849dc5567adc3f2fdc318",
+   "params": {
+    "from": "0xcf7ed3acca5a467e9e704c703e8d87f634fb0fc9",
+    "to": "0x61ff15a7e6922aa13d01156c6d05e86628d2cbf1",
+    "value": "24875000"
+   }
+  },
+  {
+   "contract": "Stablecoin",
+   "event": "Transfer",
+   "srcAddress": "0x5fbdb2315678afecb367f032d93f642f64180aa3",
+   "blockNumber": 38,
+   "timestamp": 1791230361,
+   "logIndex": 3,
+   "txHash": "0x70a92ff4265bed87b1c76119a5542992c8ff9f00d9624b4128c7a959f22d5af8",
+   "txFrom": "0x70997970c51812dc3a010c7d01b50e0d17dc79c8",
+   "txTo": "0x8a791620dd6260079bf849dc5567adc3f2fdc318",
+   "params": {
+    "from": "0xcf7ed3acca5a467e9e704c703e8d87f634fb0fc9",
+    "to": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+    "value": "125000"
+   }
+  },
+  {
+   "contract": "PolarisPayments",
+   "event": "PaymentMade",
+   "srcAddress": "0xcf7ed3acca5a467e9e704c703e8d87f634fb0fc9",
+   "blockNumber": 38,
+   "timestamp": 1791230361,
+   "logIndex": 4,
+   "txHash": "0x70a92ff4265bed87b1c76119a5542992c8ff9f00d9624b4128c7a959f22d5af8",
+   "txFrom": "0x70997970c51812dc3a010c7d01b50e0d17dc79c8",
+   "txTo": "0x8a791620dd6260079bf849dc5567adc3f2fdc318",
+   "params": {
+    "paymentId": "0x53ef977c9492c1ed7e1bb01c42c3359614b5ac15f5e63e3d0378bd7ff5bc7189",
+    "payer": "0x6e601385ef85c16d16ce3a443f2df66e546df6e2",
+    "merchant": "0x61ff15a7e6922aa13d01156c6d05e86628d2cbf1",
+    "amount": "25000000",
+    "fee": "125000",
+    "orderId": "order-now-0xc0fbdec9d75e"
+   }
+  },
+  {
+   "contract": "PolarisCheckout",
+   "event": "CheckoutPaid",
+   "srcAddress": "0x8a791620dd6260079bf849dc5567adc3f2fdc318",
+   "blockNumber": 38,
+   "timestamp": 1791230361,
+   "logIndex": 5,
+   "txHash": "0x70a92ff4265bed87b1c76119a5542992c8ff9f00d9624b4128c7a959f22d5af8",
+   "txFrom": "0x70997970c51812dc3a010c7d01b50e0d17dc79c8",
+   "txTo": "0x8a791620dd6260079bf849dc5567adc3f2fdc318",
+   "params": {
+    "orderKey": "0x53ef977c9492c1ed7e1bb01c42c3359614b5ac15f5e63e3d0378bd7ff5bc7189",
+    "merchant": "0x61ff15a7e6922aa13d01156c6d05e86628d2cbf1",
+    "buyer": "0x6e601385ef85c16d16ce3a443f2df66e546df6e2",
+    "orderId": "order-now-0xc0fbdec9d75e",
+    "amount": "25000000",
+    "fee": "125000"
+   }
+  },
+  {
+   "contract": "Stablecoin",
+   "event": "Approval",
+   "srcAddress": "0x5fbdb2315678afecb367f032d93f642f64180aa3",
+   "blockNumber": 39,
+   "timestamp": 1791230362,
+   "logIndex": 0,
+   "txHash": "0x561764dcc90ce97cb9dd35efaea3add975a91ed2f1d1de2a4f66b07503baf006",
+   "txFrom": "0x70997970c51812dc3a010c7d01b50e0d17dc79c8",
+   "txTo": "0x8a791620dd6260079bf849dc5567adc3f2fdc318",
+   "params": {
+    "owner": "0x6e601385ef85c16d16ce3a443f2df66e546df6e2",
+    "spender": "0x9fe46736679d2d9a65f0992f2272de9f3c7fa6e0",
+    "value": "201534246"
+   }
+  },
+  {
+   "contract": "Stablecoin",
+   "event": "Transfer",
+   "srcAddress": "0x5fbdb2315678afecb367f032d93f642f64180aa3",
+   "blockNumber": 39,
+   "timestamp": 1791230362,
+   "logIndex": 1,
+   "txHash": "0x561764dcc90ce97cb9dd35efaea3add975a91ed2f1d1de2a4f66b07503baf006",
+   "txFrom": "0x70997970c51812dc3a010c7d01b50e0d17dc79c8",
+   "txTo": "0x8a791620dd6260079bf849dc5567adc3f2fdc318",
+   "params": {
+    "from": "0x9fe46736679d2d9a65f0992f2272de9f3c7fa6e0",
+    "to": "0x61ff15a7e6922aa13d01156c6d05e86628d2cbf1",
+    "value": "200000000"
+   }
+  },
+  {
+   "contract": "PolarisLoanEngine",
+   "event": "LoanCreated",
+   "srcAddress": "0x9fe46736679d2d9a65f0992f2272de9f3c7fa6e0",
+   "blockNumber": 39,
+   "timestamp": 1791230362,
+   "logIndex": 2,
+   "txHash": "0x561764dcc90ce97cb9dd35efaea3add975a91ed2f1d1de2a4f66b07503baf006",
+   "txFrom": "0x70997970c51812dc3a010c7d01b50e0d17dc79c8",
+   "txTo": "0x8a791620dd6260079bf849dc5567adc3f2fdc318",
+   "params": {
+    "loanId": "1",
+    "borrower": "0x6e601385ef85c16d16ce3a443f2df66e546df6e2",
+    "merchant": "0x61ff15a7e6922aa13d01156c6d05e86628d2cbf1",
+    "principal": "200000000",
+    "totalOwed": "201534246",
+    "installments": "4"
+   }
+  },
+  {
+   "contract": "PolarisCheckout",
+   "event": "PlanOpened",
+   "srcAddress": "0x8a791620dd6260079bf849dc5567adc3f2fdc318",
+   "blockNumber": 39,
+   "timestamp": 1791230362,
+   "logIndex": 3,
+   "txHash": "0x561764dcc90ce97cb9dd35efaea3add975a91ed2f1d1de2a4f66b07503baf006",
+   "txFrom": "0x70997970c51812dc3a010c7d01b50e0d17dc79c8",
+   "txTo": "0x8a791620dd6260079bf849dc5567adc3f2fdc318",
+   "params": {
+    "orderKey": "0x7f98d0b168bb0900f05b5c3903d5838d24d6abffb51d40e6b18973c897124aaa",
+    "merchant": "0x61ff15a7e6922aa13d01156c6d05e86628d2cbf1",
+    "buyer": "0x6e601385ef85c16d16ce3a443f2df66e546df6e2",
+    "loanId": "1",
+    "orderId": "order-plan-0x6bbe04b9012c",
+    "principal": "200000000",
+    "totalOwed": "201534246",
+    "installments": "4",
+    "interval": "604800",
+    "firstDueAt": "1791835162"
+   }
+  },
+  {
+   "contract": "Stablecoin",
+   "event": "Transfer",
+   "srcAddress": "0x5fbdb2315678afecb367f032d93f642f64180aa3",
+   "blockNumber": 41,
+   "timestamp": 1791835164,
+   "logIndex": 0,
+   "txHash": "0x528af1534bef98c4dc78ae2e023708de35533b943cf880367e98b80889e3e045",
+   "txFrom": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+   "txTo": "0x610178da211fef7d417bc0e6fed39f05609ad788",
+   "params": {
+    "from": "0x6e601385ef85c16d16ce3a443f2df66e546df6e2",
+    "to": "0x9fe46736679d2d9a65f0992f2272de9f3c7fa6e0",
+    "value": "50383562"
+   }
+  },
+  {
+   "contract": "PolarisLoanEngine",
+   "event": "InstallmentPaid",
+   "srcAddress": "0x9fe46736679d2d9a65f0992f2272de9f3c7fa6e0",
+   "blockNumber": 41,
+   "timestamp": 1791835164,
+   "logIndex": 1,
+   "txHash": "0x528af1534bef98c4dc78ae2e023708de35533b943cf880367e98b80889e3e045",
+   "txFrom": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+   "txTo": "0x610178da211fef7d417bc0e6fed39f05609ad788",
+   "params": {
+    "loanId": "1",
+    "borrower": "0x6e601385ef85c16d16ce3a443f2df66e546df6e2",
+    "installmentIndex": "0",
+    "amount": "50383562",
+    "onTime": true
+   }
+  },
+  {
+   "contract": "ScoreManager",
+   "event": "ScoreChanged",
+   "srcAddress": "0xe7f1725e7734ce288f8367e1bb143e90bb3f0512",
+   "blockNumber": 41,
+   "timestamp": 1791835164,
+   "logIndex": 2,
+   "txHash": "0x528af1534bef98c4dc78ae2e023708de35533b943cf880367e98b80889e3e045",
+   "txFrom": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+   "txTo": "0x610178da211fef7d417bc0e6fed39f05609ad788",
+   "params": {
+    "user": "0x6e601385ef85c16d16ce3a443f2df66e546df6e2",
+    "oldScore": "664",
+    "newScore": "676",
+    "reason": "on-time payment"
+   }
+  },
+  {
+   "contract": "PolarisLoanEngine",
+   "event": "InstallmentCollected",
+   "srcAddress": "0x9fe46736679d2d9a65f0992f2272de9f3c7fa6e0",
+   "blockNumber": 41,
+   "timestamp": 1791835164,
+   "logIndex": 3,
+   "txHash": "0x528af1534bef98c4dc78ae2e023708de35533b943cf880367e98b80889e3e045",
+   "txFrom": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+   "txTo": "0x610178da211fef7d417bc0e6fed39f05609ad788",
+   "params": {
+    "loanId": "1",
+    "caller": "0xb7f8bc63bbcad18155201308c8f3540b07f84f5e",
+    "amount": "50383562"
+   }
+  },
+  {
+   "contract": "CollectionsReceiver",
+   "event": "TaskExecuted",
+   "srcAddress": "0xb7f8bc63bbcad18155201308c8f3540b07f84f5e",
+   "blockNumber": 41,
+   "timestamp": 1791835164,
+   "logIndex": 4,
+   "txHash": "0x528af1534bef98c4dc78ae2e023708de35533b943cf880367e98b80889e3e045",
+   "txFrom": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+   "txTo": "0x610178da211fef7d417bc0e6fed39f05609ad788",
+   "params": {
+    "action": "1",
+    "id": "1",
+    "amount": "50383562"
+   }
+  },
+  {
+   "contract": "CollectionsReceiver",
+   "event": "CollectionsRun",
+   "srcAddress": "0xb7f8bc63bbcad18155201308c8f3540b07f84f5e",
+   "blockNumber": 41,
+   "timestamp": 1791835164,
+   "logIndex": 5,
+   "txHash": "0x528af1534bef98c4dc78ae2e023708de35533b943cf880367e98b80889e3e045",
+   "txFrom": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+   "txTo": "0x610178da211fef7d417bc0e6fed39f05609ad788",
+   "params": {
+    "tasks": "1",
+    "executed": "1",
+    "skipped": "0"
+   }
+  },
+  {
+   "contract": "MockKeystoneForwarder",
+   "event": "ReportProcessed",
+   "srcAddress": "0x610178da211fef7d417bc0e6fed39f05609ad788",
+   "blockNumber": 41,
+   "timestamp": 1791835164,
+   "logIndex": 6,
+   "txHash": "0x528af1534bef98c4dc78ae2e023708de35533b943cf880367e98b80889e3e045",
+   "txFrom": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+   "txTo": "0x610178da211fef7d417bc0e6fed39f05609ad788",
+   "params": {
+    "receiver": "0xb7f8bc63bbcad18155201308c8f3540b07f84f5e",
+    "workflowExecutionId": "0x0675108d0030f203017afc6dd676c8d64126fb6e75fb1b4a970dfd1cf3a0be26",
+    "reportId": "0x0001",
+    "result": true
+   }
+  },
+  {
+   "contract": "Stablecoin",
+   "event": "Transfer",
+   "srcAddress": "0x5fbdb2315678afecb367f032d93f642f64180aa3",
+   "blockNumber": 42,
+   "timestamp": 1791835165,
+   "logIndex": 0,
+   "txHash": "0xd5ac9f9d7ec93ebc2b636bcab654671d08dda4009f8586bd7458d98992f39aca",
+   "txFrom": "0x70997970c51812dc3a010c7d01b50e0d17dc79c8",
+   "txTo": "0x9fe46736679d2d9a65f0992f2272de9f3c7fa6e0",
+   "params": {
+    "from": "0x6e601385ef85c16d16ce3a443f2df66e546df6e2",
+    "to": "0x9fe46736679d2d9a65f0992f2272de9f3c7fa6e0",
+    "value": "151150684"
+   }
+  },
+  {
+   "contract": "PolarisLoanEngine",
+   "event": "InstallmentPaid",
+   "srcAddress": "0x9fe46736679d2d9a65f0992f2272de9f3c7fa6e0",
+   "blockNumber": 42,
+   "timestamp": 1791835165,
+   "logIndex": 1,
+   "txHash": "0xd5ac9f9d7ec93ebc2b636bcab654671d08dda4009f8586bd7458d98992f39aca",
+   "txFrom": "0x70997970c51812dc3a010c7d01b50e0d17dc79c8",
+   "txTo": "0x9fe46736679d2d9a65f0992f2272de9f3c7fa6e0",
+   "params": {
+    "loanId": "1",
+    "borrower": "0x6e601385ef85c16d16ce3a443f2df66e546df6e2",
+    "installmentIndex": "1",
+    "amount": "151150684",
+    "onTime": true
+   }
+  },
+  {
+   "contract": "PolarisLoanEngine",
+   "event": "OnTimeBonusWithheld",
+   "srcAddress": "0x9fe46736679d2d9a65f0992f2272de9f3c7fa6e0",
+   "blockNumber": 42,
+   "timestamp": 1791835165,
+   "logIndex": 2,
+   "txHash": "0xd5ac9f9d7ec93ebc2b636bcab654671d08dda4009f8586bd7458d98992f39aca",
+   "txFrom": "0x70997970c51812dc3a010c7d01b50e0d17dc79c8",
+   "txTo": "0x9fe46736679d2d9a65f0992f2272de9f3c7fa6e0",
+   "params": {
+    "loanId": "1",
+    "borrower": "0x6e601385ef85c16d16ce3a443f2df66e546df6e2"
+   }
+  },
+  {
+   "contract": "PolarisLoanEngine",
+   "event": "LoanFullyRepaid",
+   "srcAddress": "0x9fe46736679d2d9a65f0992f2272de9f3c7fa6e0",
+   "blockNumber": 42,
+   "timestamp": 1791835165,
+   "logIndex": 3,
+   "txHash": "0xd5ac9f9d7ec93ebc2b636bcab654671d08dda4009f8586bd7458d98992f39aca",
+   "txFrom": "0x70997970c51812dc3a010c7d01b50e0d17dc79c8",
+   "txTo": "0x9fe46736679d2d9a65f0992f2272de9f3c7fa6e0",
+   "params": {
+    "loanId": "1",
+    "borrower": "0x6e601385ef85c16d16ce3a443f2df66e546df6e2"
+   }
+  },
+  {
+   "contract": "MockKeystoneForwarder",
+   "event": "ReportProcessed",
+   "srcAddress": "0x610178da211fef7d417bc0e6fed39f05609ad788",
+   "blockNumber": 44,
+   "timestamp": 1791835167,
+   "logIndex": 1,
+   "txHash": "0x0cd04dad23d1e961965eccdd64fd446022b2d423317520d9c640a96a04295a34",
+   "txFrom": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+   "txTo": "0x610178da211fef7d417bc0e6fed39f05609ad788",
+   "params": {
+    "receiver": "0x0dcd1bf9a1b36ce34237eeafef220932846bcd82",
+    "workflowExecutionId": "0xdd97ef482d2cd70ba91db48db1e3391f76ef341a6807f172e8daf81e07ce7885",
+    "reportId": "0x0001",
+    "result": true
+   }
+  },
+  {
+   "contract": "MockKeystoneForwarder",
+   "event": "ReportProcessed",
+   "srcAddress": "0x610178da211fef7d417bc0e6fed39f05609ad788",
+   "blockNumber": 46,
+   "timestamp": 1791835169,
+   "logIndex": 1,
+   "txHash": "0x19c892dc5f9cacedb0f0c0a833373825e0cd252935009c2ae31e9a4711e510a9",
+   "txFrom": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+   "txTo": "0x610178da211fef7d417bc0e6fed39f05609ad788",
+   "params": {
+    "receiver": "0x0dcd1bf9a1b36ce34237eeafef220932846bcd82",
+    "workflowExecutionId": "0x339a4c67cc15bf03c2d31c1a2444585f94def13e400cebde635d1564bef1fd39",
+    "reportId": "0x0001",
+    "result": true
+   }
+  },
+  {
+   "contract": "Stablecoin",
+   "event": "AuthorizationUsed",
+   "srcAddress": "0x5fbdb2315678afecb367f032d93f642f64180aa3",
+   "blockNumber": 47,
+   "timestamp": 1791835170,
+   "logIndex": 0,
+   "txHash": "0xa4e8319bbb507bf11747339cfe33b452fd40fcfa28c26b88b12d40ce9843d51a",
+   "txFrom": "0x70997970c51812dc3a010c7d01b50e0d17dc79c8",
+   "txTo": "0x8a791620dd6260079bf849dc5567adc3f2fdc318",
+   "params": {
+    "authorizer": "0x6e601385ef85c16d16ce3a443f2df66e546df6e2",
+    "nonce": "0x1742ab0aae7c105b12c8fe6a8d7123237be04f496a57a0db1f02133037d5829d"
+   }
+  },
+  {
+   "contract": "Stablecoin",
+   "event": "Transfer",
+   "srcAddress": "0x5fbdb2315678afecb367f032d93f642f64180aa3",
+   "blockNumber": 47,
+   "timestamp": 1791835170,
+   "logIndex": 1,
+   "txHash": "0xa4e8319bbb507bf11747339cfe33b452fd40fcfa28c26b88b12d40ce9843d51a",
+   "txFrom": "0x70997970c51812dc3a010c7d01b50e0d17dc79c8",
+   "txTo": "0x8a791620dd6260079bf849dc5567adc3f2fdc318",
+   "params": {
+    "from": "0x6e601385ef85c16d16ce3a443f2df66e546df6e2",
+    "to": "0xcf7ed3acca5a467e9e704c703e8d87f634fb0fc9",
+    "value": "5000000"
+   }
+  },
+  {
+   "contract": "Stablecoin",
+   "event": "Transfer",
+   "srcAddress": "0x5fbdb2315678afecb367f032d93f642f64180aa3",
+   "blockNumber": 47,
+   "timestamp": 1791835170,
+   "logIndex": 2,
+   "txHash": "0xa4e8319bbb507bf11747339cfe33b452fd40fcfa28c26b88b12d40ce9843d51a",
+   "txFrom": "0x70997970c51812dc3a010c7d01b50e0d17dc79c8",
+   "txTo": "0x8a791620dd6260079bf849dc5567adc3f2fdc318",
+   "params": {
+    "from": "0xcf7ed3acca5a467e9e704c703e8d87f634fb0fc9",
+    "to": "0x61ff15a7e6922aa13d01156c6d05e86628d2cbf1",
+    "value": "4975000"
+   }
+  },
+  {
+   "contract": "Stablecoin",
+   "event": "Transfer",
+   "srcAddress": "0x5fbdb2315678afecb367f032d93f642f64180aa3",
+   "blockNumber": 47,
+   "timestamp": 1791835170,
+   "logIndex": 3,
+   "txHash": "0xa4e8319bbb507bf11747339cfe33b452fd40fcfa28c26b88b12d40ce9843d51a",
+   "txFrom": "0x70997970c51812dc3a010c7d01b50e0d17dc79c8",
+   "txTo": "0x8a791620dd6260079bf849dc5567adc3f2fdc318",
+   "params": {
+    "from": "0xcf7ed3acca5a467e9e704c703e8d87f634fb0fc9",
+    "to": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+    "value": "25000"
+   }
+  },
+  {
+   "contract": "PolarisPayments",
+   "event": "PaymentMade",
+   "srcAddress": "0xcf7ed3acca5a467e9e704c703e8d87f634fb0fc9",
+   "blockNumber": 47,
+   "timestamp": 1791835170,
+   "logIndex": 4,
+   "txHash": "0xa4e8319bbb507bf11747339cfe33b452fd40fcfa28c26b88b12d40ce9843d51a",
+   "txFrom": "0x70997970c51812dc3a010c7d01b50e0d17dc79c8",
+   "txTo": "0x8a791620dd6260079bf849dc5567adc3f2fdc318",
+   "params": {
+    "paymentId": "0x1742ab0aae7c105b12c8fe6a8d7123237be04f496a57a0db1f02133037d5829d",
+    "payer": "0x6e601385ef85c16d16ce3a443f2df66e546df6e2",
+    "merchant": "0x61ff15a7e6922aa13d01156c6d05e86628d2cbf1",
+    "amount": "5000000",
+    "fee": "25000",
+    "orderId": "order-now-paused-0x06ca771876d6"
+   }
+  },
+  {
+   "contract": "PolarisCheckout",
+   "event": "CheckoutPaid",
+   "srcAddress": "0x8a791620dd6260079bf849dc5567adc3f2fdc318",
+   "blockNumber": 47,
+   "timestamp": 1791835170,
+   "logIndex": 5,
+   "txHash": "0xa4e8319bbb507bf11747339cfe33b452fd40fcfa28c26b88b12d40ce9843d51a",
+   "txFrom": "0x70997970c51812dc3a010c7d01b50e0d17dc79c8",
+   "txTo": "0x8a791620dd6260079bf849dc5567adc3f2fdc318",
+   "params": {
+    "orderKey": "0x1742ab0aae7c105b12c8fe6a8d7123237be04f496a57a0db1f02133037d5829d",
+    "merchant": "0x61ff15a7e6922aa13d01156c6d05e86628d2cbf1",
+    "buyer": "0x6e601385ef85c16d16ce3a443f2df66e546df6e2",
+    "orderId": "order-now-paused-0x06ca771876d6",
+    "amount": "5000000",
+    "fee": "25000"
+   }
+  },
+  {
+   "contract": "MockKeystoneForwarder",
+   "event": "ReportProcessed",
+   "srcAddress": "0x610178da211fef7d417bc0e6fed39f05609ad788",
+   "blockNumber": 49,
+   "timestamp": 1791835172,
+   "logIndex": 1,
+   "txHash": "0x911b2e38e0753ae5b2a915c54626afcaded306a6b277c15d40c136c13b59d6b8",
+   "txFrom": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+   "txTo": "0x610178da211fef7d417bc0e6fed39f05609ad788",
+   "params": {
+    "receiver": "0x0dcd1bf9a1b36ce34237eeafef220932846bcd82",
+    "workflowExecutionId": "0xe39294fbc3bc4cd777d9ef77a2904d23a2156ae7ffc85bf429a86bf2e91468bc",
+    "reportId": "0x0001",
+    "result": true
+   }
+  },
+  {
+   "contract": "Stablecoin",
+   "event": "Approval",
+   "srcAddress": "0x5fbdb2315678afecb367f032d93f642f64180aa3",
+   "blockNumber": 50,
+   "timestamp": 1791835173,
+   "logIndex": 0,
+   "txHash": "0x12b40ce68d74b2d641af0f5124f57bf4087f9e9ad9c75052eef2dd1027e2db6e",
+   "txFrom": "0x70997970c51812dc3a010c7d01b50e0d17dc79c8",
+   "txTo": "0x8a791620dd6260079bf849dc5567adc3f2fdc318",
+   "params": {
+    "owner": "0x6e601385ef85c16d16ce3a443f2df66e546df6e2",
+    "spender": "0x9fe46736679d2d9a65f0992f2272de9f3c7fa6e0",
+    "value": "100767123"
+   }
+  },
+  {
+   "contract": "Stablecoin",
+   "event": "Transfer",
+   "srcAddress": "0x5fbdb2315678afecb367f032d93f642f64180aa3",
+   "blockNumber": 50,
+   "timestamp": 1791835173,
+   "logIndex": 1,
+   "txHash": "0x12b40ce68d74b2d641af0f5124f57bf4087f9e9ad9c75052eef2dd1027e2db6e",
+   "txFrom": "0x70997970c51812dc3a010c7d01b50e0d17dc79c8",
+   "txTo": "0x8a791620dd6260079bf849dc5567adc3f2fdc318",
+   "params": {
+    "from": "0x9fe46736679d2d9a65f0992f2272de9f3c7fa6e0",
+    "to": "0x61ff15a7e6922aa13d01156c6d05e86628d2cbf1",
+    "value": "100000000"
+   }
+  },
+  {
+   "contract": "PolarisLoanEngine",
+   "event": "LoanCreated",
+   "srcAddress": "0x9fe46736679d2d9a65f0992f2272de9f3c7fa6e0",
+   "blockNumber": 50,
+   "timestamp": 1791835173,
+   "logIndex": 2,
+   "txHash": "0x12b40ce68d74b2d641af0f5124f57bf4087f9e9ad9c75052eef2dd1027e2db6e",
+   "txFrom": "0x70997970c51812dc3a010c7d01b50e0d17dc79c8",
+   "txTo": "0x8a791620dd6260079bf849dc5567adc3f2fdc318",
+   "params": {
+    "loanId": "2",
+    "borrower": "0x6e601385ef85c16d16ce3a443f2df66e546df6e2",
+    "merchant": "0x61ff15a7e6922aa13d01156c6d05e86628d2cbf1",
+    "principal": "100000000",
+    "totalOwed": "100767123",
+    "installments": "4"
+   }
+  },
+  {
+   "contract": "PolarisCheckout",
+   "event": "PlanOpened",
+   "srcAddress": "0x8a791620dd6260079bf849dc5567adc3f2fdc318",
+   "blockNumber": 50,
+   "timestamp": 1791835173,
+   "logIndex": 3,
+   "txHash": "0x12b40ce68d74b2d641af0f5124f57bf4087f9e9ad9c75052eef2dd1027e2db6e",
+   "txFrom": "0x70997970c51812dc3a010c7d01b50e0d17dc79c8",
+   "txTo": "0x8a791620dd6260079bf849dc5567adc3f2fdc318",
+   "params": {
+    "orderKey": "0xde5654708a7c58b8d6aa6f2bc24d2f81708a2d84d09215f614a912e9fcdb838f",
+    "merchant": "0x61ff15a7e6922aa13d01156c6d05e86628d2cbf1",
+    "buyer": "0x6e601385ef85c16d16ce3a443f2df66e546df6e2",
+    "loanId": "2",
+    "orderId": "order-plan2-0x78f489f5f8c8",
+    "principal": "100000000",
+    "totalOwed": "100767123",
+    "installments": "4",
+    "interval": "604800",
+    "firstDueAt": "1792439973"
+   }
+  },
+  {
+   "contract": "Stablecoin",
+   "event": "Approval",
+   "srcAddress": "0x5fbdb2315678afecb367f032d93f642f64180aa3",
+   "blockNumber": 51,
+   "timestamp": 1791835174,
+   "logIndex": 0,
+   "txHash": "0xbc7354c2a7c48c8c0f45e9fbffe652fb9c7c40967e58485706ca1b400e56a95a",
+   "txFrom": "0x70997970c51812dc3a010c7d01b50e0d17dc79c8",
+   "txTo": "0x5fbdb2315678afecb367f032d93f642f64180aa3",
+   "params": {
+    "owner": "0x6e601385ef85c16d16ce3a443f2df66e546df6e2",
+    "spender": "0x9fe46736679d2d9a65f0992f2272de9f3c7fa6e0",
+    "value": "0"
+   }
+  },
+  {
+   "contract": "CollectionsReceiver",
+   "event": "TaskSkipped",
+   "srcAddress": "0xb7f8bc63bbcad18155201308c8f3540b07f84f5e",
+   "blockNumber": 53,
+   "timestamp": 1792439976,
+   "logIndex": 0,
+   "txHash": "0xaed256637a6cf1cb853df17261ac9a47328dbbae60ccf1b7a1428d27562e6df7",
+   "txFrom": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+   "txTo": "0x610178da211fef7d417bc0e6fed39f05609ad788",
+   "params": {
+    "action": "1",
+    "id": "2",
+    "reason": "0x2a1b2dd800000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001806565"
+   }
+  },
+  {
+   "contract": "CollectionsReceiver",
+   "event": "CollectionsRun",
+   "srcAddress": "0xb7f8bc63bbcad18155201308c8f3540b07f84f5e",
+   "blockNumber": 53,
+   "timestamp": 1792439976,
+   "logIndex": 1,
+   "txHash": "0xaed256637a6cf1cb853df17261ac9a47328dbbae60ccf1b7a1428d27562e6df7",
+   "txFrom": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+   "txTo": "0x610178da211fef7d417bc0e6fed39f05609ad788",
+   "params": {
+    "tasks": "1",
+    "executed": "0",
+    "skipped": "1"
+   }
+  },
+  {
+   "contract": "MockKeystoneForwarder",
+   "event": "ReportProcessed",
+   "srcAddress": "0x610178da211fef7d417bc0e6fed39f05609ad788",
+   "blockNumber": 53,
+   "timestamp": 1792439976,
+   "logIndex": 2,
+   "txHash": "0xaed256637a6cf1cb853df17261ac9a47328dbbae60ccf1b7a1428d27562e6df7",
+   "txFrom": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+   "txTo": "0x610178da211fef7d417bc0e6fed39f05609ad788",
+   "params": {
+    "receiver": "0xb7f8bc63bbcad18155201308c8f3540b07f84f5e",
+    "workflowExecutionId": "0xfcfe92b03acb85625eaf2f5650385029e4120c9598f8a310665da81e2f564a59",
+    "reportId": "0x0001",
+    "result": true
+   }
+  },
+  {
+   "contract": "Stablecoin",
+   "event": "Approval",
+   "srcAddress": "0x5fbdb2315678afecb367f032d93f642f64180aa3",
+   "blockNumber": 54,
+   "timestamp": 1792439977,
+   "logIndex": 0,
+   "txHash": "0x6997f11c7d2c4d0014d028eaf1b0c7241acc9546de318c178081f837f2dbf27d",
+   "txFrom": "0x70997970c51812dc3a010c7d01b50e0d17dc79c8",
+   "txTo": "0x8a791620dd6260079bf849dc5567adc3f2fdc318",
+   "params": {
+    "owner": "0x6e601385ef85c16d16ce3a443f2df66e546df6e2",
+    "spender": "0x9fe46736679d2d9a65f0992f2272de9f3c7fa6e0",
+    "value": "100767123"
+   }
+  },
+  {
+   "contract": "PolarisCheckout",
+   "event": "Reauthorized",
+   "srcAddress": "0x8a791620dd6260079bf849dc5567adc3f2fdc318",
+   "blockNumber": 54,
+   "timestamp": 1792439977,
+   "logIndex": 1,
+   "txHash": "0x6997f11c7d2c4d0014d028eaf1b0c7241acc9546de318c178081f837f2dbf27d",
+   "txFrom": "0x70997970c51812dc3a010c7d01b50e0d17dc79c8",
+   "txTo": "0x8a791620dd6260079bf849dc5567adc3f2fdc318",
+   "params": {
+    "buyer": "0x6e601385ef85c16d16ce3a443f2df66e546df6e2",
+    "value": "100767123",
+    "deadline": "1792441776"
+   }
+  },
+  {
+   "contract": "Stablecoin",
+   "event": "Transfer",
+   "srcAddress": "0x5fbdb2315678afecb367f032d93f642f64180aa3",
+   "blockNumber": 55,
+   "timestamp": 1792439978,
+   "logIndex": 0,
+   "txHash": "0xf8887c9d077e73f33c4506bf0aeb0b8eb06092e47aba1f02522d65463b384c46",
+   "txFrom": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+   "txTo": "0x610178da211fef7d417bc0e6fed39f05609ad788",
+   "params": {
+    "from": "0x6e601385ef85c16d16ce3a443f2df66e546df6e2",
+    "to": "0x9fe46736679d2d9a65f0992f2272de9f3c7fa6e0",
+    "value": "25191781"
+   }
+  },
+  {
+   "contract": "PolarisLoanEngine",
+   "event": "InstallmentPaid",
+   "srcAddress": "0x9fe46736679d2d9a65f0992f2272de9f3c7fa6e0",
+   "blockNumber": 55,
+   "timestamp": 1792439978,
+   "logIndex": 1,
+   "txHash": "0xf8887c9d077e73f33c4506bf0aeb0b8eb06092e47aba1f02522d65463b384c46",
+   "txFrom": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+   "txTo": "0x610178da211fef7d417bc0e6fed39f05609ad788",
+   "params": {
+    "loanId": "2",
+    "borrower": "0x6e601385ef85c16d16ce3a443f2df66e546df6e2",
+    "installmentIndex": "0",
+    "amount": "25191781",
+    "onTime": true
+   }
+  },
+  {
+   "contract": "ScoreManager",
+   "event": "ScoreChanged",
+   "srcAddress": "0xe7f1725e7734ce288f8367e1bb143e90bb3f0512",
+   "blockNumber": 55,
+   "timestamp": 1792439978,
+   "logIndex": 2,
+   "txHash": "0xf8887c9d077e73f33c4506bf0aeb0b8eb06092e47aba1f02522d65463b384c46",
+   "txFrom": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+   "txTo": "0x610178da211fef7d417bc0e6fed39f05609ad788",
+   "params": {
+    "user": "0x6e601385ef85c16d16ce3a443f2df66e546df6e2",
+    "oldScore": "676",
+    "newScore": "688",
+    "reason": "on-time payment"
+   }
+  },
+  {
+   "contract": "PolarisLoanEngine",
+   "event": "InstallmentCollected",
+   "srcAddress": "0x9fe46736679d2d9a65f0992f2272de9f3c7fa6e0",
+   "blockNumber": 55,
+   "timestamp": 1792439978,
+   "logIndex": 3,
+   "txHash": "0xf8887c9d077e73f33c4506bf0aeb0b8eb06092e47aba1f02522d65463b384c46",
+   "txFrom": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+   "txTo": "0x610178da211fef7d417bc0e6fed39f05609ad788",
+   "params": {
+    "loanId": "2",
+    "caller": "0xb7f8bc63bbcad18155201308c8f3540b07f84f5e",
+    "amount": "25191781"
+   }
+  },
+  {
+   "contract": "CollectionsReceiver",
+   "event": "TaskExecuted",
+   "srcAddress": "0xb7f8bc63bbcad18155201308c8f3540b07f84f5e",
+   "blockNumber": 55,
+   "timestamp": 1792439978,
+   "logIndex": 4,
+   "txHash": "0xf8887c9d077e73f33c4506bf0aeb0b8eb06092e47aba1f02522d65463b384c46",
+   "txFrom": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+   "txTo": "0x610178da211fef7d417bc0e6fed39f05609ad788",
+   "params": {
+    "action": "1",
+    "id": "2",
+    "amount": "25191781"
+   }
+  },
+  {
+   "contract": "CollectionsReceiver",
+   "event": "CollectionsRun",
+   "srcAddress": "0xb7f8bc63bbcad18155201308c8f3540b07f84f5e",
+   "blockNumber": 55,
+   "timestamp": 1792439978,
+   "logIndex": 5,
+   "txHash": "0xf8887c9d077e73f33c4506bf0aeb0b8eb06092e47aba1f02522d65463b384c46",
+   "txFrom": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+   "txTo": "0x610178da211fef7d417bc0e6fed39f05609ad788",
+   "params": {
+    "tasks": "1",
+    "executed": "1",
+    "skipped": "0"
+   }
+  },
+  {
+   "contract": "MockKeystoneForwarder",
+   "event": "ReportProcessed",
+   "srcAddress": "0x610178da211fef7d417bc0e6fed39f05609ad788",
+   "blockNumber": 55,
+   "timestamp": 1792439978,
+   "logIndex": 6,
+   "txHash": "0xf8887c9d077e73f33c4506bf0aeb0b8eb06092e47aba1f02522d65463b384c46",
+   "txFrom": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+   "txTo": "0x610178da211fef7d417bc0e6fed39f05609ad788",
+   "params": {
+    "receiver": "0xb7f8bc63bbcad18155201308c8f3540b07f84f5e",
+    "workflowExecutionId": "0xaee4e5e3ed61123fba474b3b31053c3dbd5bd7b3b3f9df9c4be3898af0e670a1",
+    "reportId": "0x0001",
+    "result": true
+   }
+  },
+  {
+   "contract": "Stablecoin",
+   "event": "Approval",
+   "srcAddress": "0x5fbdb2315678afecb367f032d93f642f64180aa3",
+   "blockNumber": 56,
+   "timestamp": 1792439979,
+   "logIndex": 0,
+   "txHash": "0xbb536f4865731f1ba720fc7f2d3e849b277320a605db03415996b086cdae5d45",
+   "txFrom": "0x70997970c51812dc3a010c7d01b50e0d17dc79c8",
+   "txTo": "0x8a791620dd6260079bf849dc5567adc3f2fdc318",
+   "params": {
+    "owner": "0x6e601385ef85c16d16ce3a443f2df66e546df6e2",
+    "spender": "0xcf7ed3acca5a467e9e704c703e8d87f634fb0fc9",
+    "value": "12000000"
+   }
+  },
+  {
+   "contract": "Stablecoin",
+   "event": "Transfer",
+   "srcAddress": "0x5fbdb2315678afecb367f032d93f642f64180aa3",
+   "blockNumber": 56,
+   "timestamp": 1792439979,
+   "logIndex": 1,
+   "txHash": "0xbb536f4865731f1ba720fc7f2d3e849b277320a605db03415996b086cdae5d45",
+   "txFrom": "0x70997970c51812dc3a010c7d01b50e0d17dc79c8",
+   "txTo": "0x8a791620dd6260079bf849dc5567adc3f2fdc318",
+   "params": {
+    "from": "0x6e601385ef85c16d16ce3a443f2df66e546df6e2",
+    "to": "0x61ff15a7e6922aa13d01156c6d05e86628d2cbf1",
+    "value": "995000"
+   }
+  },
+  {
+   "contract": "Stablecoin",
+   "event": "Transfer",
+   "srcAddress": "0x5fbdb2315678afecb367f032d93f642f64180aa3",
+   "blockNumber": 56,
+   "timestamp": 1792439979,
+   "logIndex": 2,
+   "txHash": "0xbb536f4865731f1ba720fc7f2d3e849b277320a605db03415996b086cdae5d45",
+   "txFrom": "0x70997970c51812dc3a010c7d01b50e0d17dc79c8",
+   "txTo": "0x8a791620dd6260079bf849dc5567adc3f2fdc318",
+   "params": {
+    "from": "0x6e601385ef85c16d16ce3a443f2df66e546df6e2",
+    "to": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+    "value": "5000"
+   }
+  },
+  {
+   "contract": "PolarisPayments",
+   "event": "Subscribed",
+   "srcAddress": "0xcf7ed3acca5a467e9e704c703e8d87f634fb0fc9",
+   "blockNumber": 56,
+   "timestamp": 1792439979,
+   "logIndex": 3,
+   "txHash": "0xbb536f4865731f1ba720fc7f2d3e849b277320a605db03415996b086cdae5d45",
+   "txFrom": "0x70997970c51812dc3a010c7d01b50e0d17dc79c8",
+   "txTo": "0x8a791620dd6260079bf849dc5567adc3f2fdc318",
+   "params": {
+    "subId": "1",
+    "planId": "2",
+    "subscriber": "0x6e601385ef85c16d16ce3a443f2df66e546df6e2"
+   }
+  },
+  {
+   "contract": "PolarisPayments",
+   "event": "SubscriptionCharged",
+   "srcAddress": "0xcf7ed3acca5a467e9e704c703e8d87f634fb0fc9",
+   "blockNumber": 56,
+   "timestamp": 1792439979,
+   "logIndex": 4,
+   "txHash": "0xbb536f4865731f1ba720fc7f2d3e849b277320a605db03415996b086cdae5d45",
+   "txFrom": "0x70997970c51812dc3a010c7d01b50e0d17dc79c8",
+   "txTo": "0x8a791620dd6260079bf849dc5567adc3f2fdc318",
+   "params": {
+    "subId": "1",
+    "amount": "1000000",
+    "fee": "5000",
+    "period": "1"
+   }
+  },
+  {
+   "contract": "PolarisCheckout",
+   "event": "SubscriptionStarted",
+   "srcAddress": "0x8a791620dd6260079bf849dc5567adc3f2fdc318",
+   "blockNumber": 56,
+   "timestamp": 1792439979,
+   "logIndex": 5,
+   "txHash": "0xbb536f4865731f1ba720fc7f2d3e849b277320a605db03415996b086cdae5d45",
+   "txFrom": "0x70997970c51812dc3a010c7d01b50e0d17dc79c8",
+   "txTo": "0x8a791620dd6260079bf849dc5567adc3f2fdc318",
+   "params": {
+    "orderKey": "0x9dfd9f68615c02efab5e7e5168607a282d652c069c262a412e9af2c9aea7ccc0",
+    "merchant": "0x61ff15a7e6922aa13d01156c6d05e86628d2cbf1",
+    "buyer": "0x6e601385ef85c16d16ce3a443f2df66e546df6e2",
+    "subId": "1",
+    "planId": "2",
+    "orderId": "order-sub-0xefccc3743227",
+    "pricePerPeriod": "1000000",
+    "periodSeconds": "60",
+    "nextChargeAt": "1792440039"
+   }
+  },
+  {
+   "contract": "Stablecoin",
+   "event": "Transfer",
+   "srcAddress": "0x5fbdb2315678afecb367f032d93f642f64180aa3",
+   "blockNumber": 58,
+   "timestamp": 1792440041,
+   "logIndex": 0,
+   "txHash": "0x57fcdf86572339e21f2e1705473037f4f690349a5934ec734c5c0c2636980e63",
+   "txFrom": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+   "txTo": "0x610178da211fef7d417bc0e6fed39f05609ad788",
+   "params": {
+    "from": "0x6e601385ef85c16d16ce3a443f2df66e546df6e2",
+    "to": "0x61ff15a7e6922aa13d01156c6d05e86628d2cbf1",
+    "value": "995000"
+   }
+  },
+  {
+   "contract": "Stablecoin",
+   "event": "Transfer",
+   "srcAddress": "0x5fbdb2315678afecb367f032d93f642f64180aa3",
+   "blockNumber": 58,
+   "timestamp": 1792440041,
+   "logIndex": 1,
+   "txHash": "0x57fcdf86572339e21f2e1705473037f4f690349a5934ec734c5c0c2636980e63",
+   "txFrom": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+   "txTo": "0x610178da211fef7d417bc0e6fed39f05609ad788",
+   "params": {
+    "from": "0x6e601385ef85c16d16ce3a443f2df66e546df6e2",
+    "to": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+    "value": "5000"
+   }
+  },
+  {
+   "contract": "PolarisPayments",
+   "event": "SubscriptionCharged",
+   "srcAddress": "0xcf7ed3acca5a467e9e704c703e8d87f634fb0fc9",
+   "blockNumber": 58,
+   "timestamp": 1792440041,
+   "logIndex": 2,
+   "txHash": "0x57fcdf86572339e21f2e1705473037f4f690349a5934ec734c5c0c2636980e63",
+   "txFrom": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+   "txTo": "0x610178da211fef7d417bc0e6fed39f05609ad788",
+   "params": {
+    "subId": "1",
+    "amount": "1000000",
+    "fee": "5000",
+    "period": "2"
+   }
+  },
+  {
+   "contract": "CollectionsReceiver",
+   "event": "TaskExecuted",
+   "srcAddress": "0xb7f8bc63bbcad18155201308c8f3540b07f84f5e",
+   "blockNumber": 58,
+   "timestamp": 1792440041,
+   "logIndex": 3,
+   "txHash": "0x57fcdf86572339e21f2e1705473037f4f690349a5934ec734c5c0c2636980e63",
+   "txFrom": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+   "txTo": "0x610178da211fef7d417bc0e6fed39f05609ad788",
+   "params": {
+    "action": "2",
+    "id": "1",
+    "amount": "0"
+   }
+  },
+  {
+   "contract": "CollectionsReceiver",
+   "event": "CollectionsRun",
+   "srcAddress": "0xb7f8bc63bbcad18155201308c8f3540b07f84f5e",
+   "blockNumber": 58,
+   "timestamp": 1792440041,
+   "logIndex": 4,
+   "txHash": "0x57fcdf86572339e21f2e1705473037f4f690349a5934ec734c5c0c2636980e63",
+   "txFrom": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+   "txTo": "0x610178da211fef7d417bc0e6fed39f05609ad788",
+   "params": {
+    "tasks": "1",
+    "executed": "1",
+    "skipped": "0"
+   }
+  },
+  {
+   "contract": "MockKeystoneForwarder",
+   "event": "ReportProcessed",
+   "srcAddress": "0x610178da211fef7d417bc0e6fed39f05609ad788",
+   "blockNumber": 58,
+   "timestamp": 1792440041,
+   "logIndex": 5,
+   "txHash": "0x57fcdf86572339e21f2e1705473037f4f690349a5934ec734c5c0c2636980e63",
+   "txFrom": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+   "txTo": "0x610178da211fef7d417bc0e6fed39f05609ad788",
+   "params": {
+    "receiver": "0xb7f8bc63bbcad18155201308c8f3540b07f84f5e",
+    "workflowExecutionId": "0xd66f96be3adcd87c60529acd76f70972451d029614b1608d6e8a5e1d29899801",
+    "reportId": "0x0001",
+    "result": true
+   }
+  },
+  {
+   "contract": "Stablecoin",
+   "event": "AuthorizationUsed",
+   "srcAddress": "0x5fbdb2315678afecb367f032d93f642f64180aa3",
+   "blockNumber": 59,
+   "timestamp": 1792440042,
+   "logIndex": 0,
+   "txHash": "0x478a53238abeaff0a95b6f8669a170801518d635b43305c055308f1ecd105d88",
+   "txFrom": "0x70997970c51812dc3a010c7d01b50e0d17dc79c8",
+   "txTo": "0xa513e6e4b8f2a923d98304ec87f64353c4d5c853",
+   "params": {
+    "authorizer": "0x58bc9517b931bd3a5126f97588f41ea14ec8bdfc",
+    "nonce": "0x035713ebc4789837004d3a4ce75a3d65460872d8269465b559955acc773dc9e3"
+   }
+  },
+  {
+   "contract": "Stablecoin",
+   "event": "Transfer",
+   "srcAddress": "0x5fbdb2315678afecb367f032d93f642f64180aa3",
+   "blockNumber": 59,
+   "timestamp": 1792440042,
+   "logIndex": 1,
+   "txHash": "0x478a53238abeaff0a95b6f8669a170801518d635b43305c055308f1ecd105d88",
+   "txFrom": "0x70997970c51812dc3a010c7d01b50e0d17dc79c8",
+   "txTo": "0xa513e6e4b8f2a923d98304ec87f64353c4d5c853",
+   "params": {
+    "from": "0x58bc9517b931bd3a5126f97588f41ea14ec8bdfc",
+    "to": "0xa513e6e4b8f2a923d98304ec87f64353c4d5c853",
+    "value": "50000000"
+   }
+  },
+  {
+   "contract": "PolarisSend",
+   "event": "Sent",
+   "srcAddress": "0xa513e6e4b8f2a923d98304ec87f64353c4d5c853",
+   "blockNumber": 59,
+   "timestamp": 1792440042,
+   "logIndex": 2,
+   "txHash": "0x478a53238abeaff0a95b6f8669a170801518d635b43305c055308f1ecd105d88",
+   "txFrom": "0x70997970c51812dc3a010c7d01b50e0d17dc79c8",
+   "txTo": "0xa513e6e4b8f2a923d98304ec87f64353c4d5c853",
+   "params": {
+    "linkKey": "0x4ca09aa0b014dcdbd134a50d80b07cf98c1f537f",
+    "sender": "0x58bc9517b931bd3a5126f97588f41ea14ec8bdfc",
+    "amount": "50000000",
+    "expiresAt": "1793044841"
+   }
+  },
+  {
+   "contract": "Stablecoin",
+   "event": "Transfer",
+   "srcAddress": "0x5fbdb2315678afecb367f032d93f642f64180aa3",
+   "blockNumber": 60,
+   "timestamp": 1792440043,
+   "logIndex": 0,
+   "txHash": "0xc899fa6f401c57249332196a797c7a350733cc86f2441b4fa216cd75215b53c3",
+   "txFrom": "0x70997970c51812dc3a010c7d01b50e0d17dc79c8",
+   "txTo": "0xa513e6e4b8f2a923d98304ec87f64353c4d5c853",
+   "params": {
+    "from": "0xa513e6e4b8f2a923d98304ec87f64353c4d5c853",
+    "to": "0x5c2a2efd6e10973ce9ce2a2888dc0a687541633a",
+    "value": "50000000"
+   }
+  },
+  {
+   "contract": "PolarisSend",
+   "event": "Claimed",
+   "srcAddress": "0xa513e6e4b8f2a923d98304ec87f64353c4d5c853",
+   "blockNumber": 60,
+   "timestamp": 1792440043,
+   "logIndex": 1,
+   "txHash": "0xc899fa6f401c57249332196a797c7a350733cc86f2441b4fa216cd75215b53c3",
+   "txFrom": "0x70997970c51812dc3a010c7d01b50e0d17dc79c8",
+   "txTo": "0xa513e6e4b8f2a923d98304ec87f64353c4d5c853",
+   "params": {
+    "linkKey": "0x4ca09aa0b014dcdbd134a50d80b07cf98c1f537f",
+    "to": "0x5c2a2efd6e10973ce9ce2a2888dc0a687541633a",
+    "amount": "50000000"
+   }
+  },
+  {
+   "contract": "ScoreManager",
+   "event": "Underwritten",
+   "srcAddress": "0xe7f1725e7734ce288f8367e1bb143e90bb3f0512",
+   "blockNumber": 61,
+   "timestamp": 1792440044,
+   "logIndex": 0,
+   "txHash": "0x3ce613d1e408d81825b34be84f881567199affc5e9828347e881225dacf7bd08",
+   "txFrom": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+   "txTo": "0x610178da211fef7d417bc0e6fed39f05609ad788",
+   "params": {
+    "user": "0x2fa500668bf33c4c799663728c393780a437d7e7",
+    "score": "570",
+    "declined": false,
+    "observedAt": "1792440043"
+   }
+  },
+  {
+   "contract": "ScoreManager",
+   "event": "ScoreChanged",
+   "srcAddress": "0xe7f1725e7734ce288f8367e1bb143e90bb3f0512",
+   "blockNumber": 61,
+   "timestamp": 1792440044,
+   "logIndex": 1,
+   "txHash": "0x3ce613d1e408d81825b34be84f881567199affc5e9828347e881225dacf7bd08",
+   "txFrom": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+   "txTo": "0x610178da211fef7d417bc0e6fed39f05609ad788",
+   "params": {
+    "user": "0x2fa500668bf33c4c799663728c393780a437d7e7",
+    "oldScore": "600",
+    "newScore": "570",
+    "reason": "underwritten"
+   }
+  },
+  {
+   "contract": "UnderwritingReceiver",
+   "event": "UnderwritingApplied",
+   "srcAddress": "0xa51c1fc2f0d1a1b8494ed1fe312d7c3a78ed91c0",
+   "blockNumber": 61,
+   "timestamp": 1792440044,
+   "logIndex": 2,
+   "txHash": "0x3ce613d1e408d81825b34be84f881567199affc5e9828347e881225dacf7bd08",
+   "txFrom": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+   "txTo": "0x610178da211fef7d417bc0e6fed39f05609ad788",
+   "params": {
+    "user": "0x2fa500668bf33c4c799663728c393780a437d7e7",
+    "linkedWallet": "0x0000000000000000000000000000000000000000",
+    "score": "570"
+   }
+  },
+  {
+   "contract": "MockKeystoneForwarder",
+   "event": "ReportProcessed",
+   "srcAddress": "0x610178da211fef7d417bc0e6fed39f05609ad788",
+   "blockNumber": 61,
+   "timestamp": 1792440044,
+   "logIndex": 3,
+   "txHash": "0x3ce613d1e408d81825b34be84f881567199affc5e9828347e881225dacf7bd08",
+   "txFrom": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+   "txTo": "0x610178da211fef7d417bc0e6fed39f05609ad788",
+   "params": {
+    "receiver": "0xa51c1fc2f0d1a1b8494ed1fe312d7c3a78ed91c0",
+    "workflowExecutionId": "0xbfd2548986674ae2fd76fea70f8af27e92d7067c8b3e1b89967de4397b47e4f9",
+    "reportId": "0x0001",
+    "result": true
+   }
+  },
+  {
+   "contract": "Stablecoin",
+   "event": "Transfer",
+   "srcAddress": "0x5fbdb2315678afecb367f032d93f642f64180aa3",
+   "blockNumber": 63,
+   "timestamp": 1792440046,
+   "logIndex": 0,
+   "txHash": "0xdd27b32481e563dcd0d0c4643c5fe375d5bb629a2a8e463e06da4980a8955e4e",
+   "txFrom": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+   "txTo": "0x5fbdb2315678afecb367f032d93f642f64180aa3",
+   "params": {
+    "from": "0x0000000000000000000000000000000000000000",
+    "to": "0x2fa500668bf33c4c799663728c393780a437d7e7",
+    "value": "20000000"
+   }
+  },
+  {
+   "contract": "Stablecoin",
+   "event": "Approval",
+   "srcAddress": "0x5fbdb2315678afecb367f032d93f642f64180aa3",
+   "blockNumber": 64,
+   "timestamp": 1792440047,
+   "logIndex": 0,
+   "txHash": "0x871c9e7a25a7ec247ecb6022df18280309bd0b3281a45bddf5bbb6b033aeccfa",
+   "txFrom": "0x2fa500668bf33c4c799663728c393780a437d7e7",
+   "txTo": "0x5fbdb2315678afecb367f032d93f642f64180aa3",
+   "params": {
+    "owner": "0x2fa500668bf33c4c799663728c393780a437d7e7",
+    "spender": "0x5fc8d32690cc91d4c39d9d3abcbd16989f875707",
+    "value": "20000000"
+   }
+  },
+  {
+   "contract": "Stablecoin",
+   "event": "Transfer",
+   "srcAddress": "0x5fbdb2315678afecb367f032d93f642f64180aa3",
+   "blockNumber": 65,
+   "timestamp": 1792440048,
+   "logIndex": 0,
+   "txHash": "0x107b16fb74c2948f461ab0705d756b037c842de2749882d18d4c27db5c2bc128",
+   "txFrom": "0x2fa500668bf33c4c799663728c393780a437d7e7",
+   "txTo": "0x5fc8d32690cc91d4c39d9d3abcbd16989f875707",
+   "params": {
+    "from": "0x2fa500668bf33c4c799663728c393780a437d7e7",
+    "to": "0x5fc8d32690cc91d4c39d9d3abcbd16989f875707",
+    "value": "20000000"
+   }
+  },
+  {
+   "contract": "CollateralVault",
+   "event": "CollateralLocked",
+   "srcAddress": "0x5fc8d32690cc91d4c39d9d3abcbd16989f875707",
+   "blockNumber": 65,
+   "timestamp": 1792440048,
+   "logIndex": 1,
+   "txHash": "0x107b16fb74c2948f461ab0705d756b037c842de2749882d18d4c27db5c2bc128",
+   "txFrom": "0x2fa500668bf33c4c799663728c393780a437d7e7",
+   "txTo": "0x5fc8d32690cc91d4c39d9d3abcbd16989f875707",
+   "params": {
+    "user": "0x2fa500668bf33c4c799663728c393780a437d7e7",
+    "amount": "20000000",
+    "newTotal": "20000000"
+   }
+  },
+  {
+   "contract": "Stablecoin",
+   "event": "Approval",
+   "srcAddress": "0x5fbdb2315678afecb367f032d93f642f64180aa3",
+   "blockNumber": 66,
+   "timestamp": 1792440049,
+   "logIndex": 0,
+   "txHash": "0xb5336999e05769d3476e981f98b0053ca077b4e2fe9986f3ec1cbc84a7bbed8c",
+   "txFrom": "0x70997970c51812dc3a010c7d01b50e0d17dc79c8",
+   "txTo": "0x8a791620dd6260079bf849dc5567adc3f2fdc318",
+   "params": {
+    "owner": "0x2fa500668bf33c4c799663728c393780a437d7e7",
+    "spender": "0x9fe46736679d2d9a65f0992f2272de9f3c7fa6e0",
+    "value": "100000076"
+   }
+  },
+  {
+   "contract": "Stablecoin",
+   "event": "Transfer",
+   "srcAddress": "0x5fbdb2315678afecb367f032d93f642f64180aa3",
+   "blockNumber": 66,
+   "timestamp": 1792440049,
+   "logIndex": 1,
+   "txHash": "0xb5336999e05769d3476e981f98b0053ca077b4e2fe9986f3ec1cbc84a7bbed8c",
+   "txFrom": "0x70997970c51812dc3a010c7d01b50e0d17dc79c8",
+   "txTo": "0x8a791620dd6260079bf849dc5567adc3f2fdc318",
+   "params": {
+    "from": "0x9fe46736679d2d9a65f0992f2272de9f3c7fa6e0",
+    "to": "0x61ff15a7e6922aa13d01156c6d05e86628d2cbf1",
+    "value": "100000000"
+   }
+  },
+  {
+   "contract": "PolarisLoanEngine",
+   "event": "LoanCreated",
+   "srcAddress": "0x9fe46736679d2d9a65f0992f2272de9f3c7fa6e0",
+   "blockNumber": 66,
+   "timestamp": 1792440049,
+   "logIndex": 2,
+   "txHash": "0xb5336999e05769d3476e981f98b0053ca077b4e2fe9986f3ec1cbc84a7bbed8c",
+   "txFrom": "0x70997970c51812dc3a010c7d01b50e0d17dc79c8",
+   "txTo": "0x8a791620dd6260079bf849dc5567adc3f2fdc318",
+   "params": {
+    "loanId": "3",
+    "borrower": "0x2fa500668bf33c4c799663728c393780a437d7e7",
+    "merchant": "0x61ff15a7e6922aa13d01156c6d05e86628d2cbf1",
+    "principal": "100000000",
+    "totalOwed": "100000076",
+    "installments": "4"
+   }
+  },
+  {
+   "contract": "PolarisCheckout",
+   "event": "PlanOpened",
+   "srcAddress": "0x8a791620dd6260079bf849dc5567adc3f2fdc318",
+   "blockNumber": 66,
+   "timestamp": 1792440049,
+   "logIndex": 3,
+   "txHash": "0xb5336999e05769d3476e981f98b0053ca077b4e2fe9986f3ec1cbc84a7bbed8c",
+   "txFrom": "0x70997970c51812dc3a010c7d01b50e0d17dc79c8",
+   "txTo": "0x8a791620dd6260079bf849dc5567adc3f2fdc318",
+   "params": {
+    "orderKey": "0x7913e846fd51c0f7cfc87af2e89243cbb2a9658feef8e1358ab0e556f6684d52",
+    "merchant": "0x61ff15a7e6922aa13d01156c6d05e86628d2cbf1",
+    "buyer": "0x2fa500668bf33c4c799663728c393780a437d7e7",
+    "loanId": "3",
+    "orderId": "order-plan2-0xd8b66a9c",
+    "principal": "100000000",
+    "totalOwed": "100000076",
+    "installments": "4",
+    "interval": "60",
+    "firstDueAt": "1792440109"
+   }
+  },
+  {
+   "contract": "CollectionsReceiver",
+   "event": "TaskSkipped",
+   "srcAddress": "0xb7f8bc63bbcad18155201308c8f3540b07f84f5e",
+   "blockNumber": 68,
+   "timestamp": 1792440111,
+   "logIndex": 0,
+   "txHash": "0x9c7112990d7a0e41ae825e6cd60088c5485ee2ae3288f562823adeb0dbc666d7",
+   "txFrom": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+   "txTo": "0x610178da211fef7d417bc0e6fed39f05609ad788",
+   "params": {
+    "action": "1",
+    "id": "3",
+    "reason": "0xcf479181000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000017d7853"
+   }
+  },
+  {
+   "contract": "CollectionsReceiver",
+   "event": "TaskSkipped",
+   "srcAddress": "0xb7f8bc63bbcad18155201308c8f3540b07f84f5e",
+   "blockNumber": 68,
+   "timestamp": 1792440111,
+   "logIndex": 1,
+   "txHash": "0x9c7112990d7a0e41ae825e6cd60088c5485ee2ae3288f562823adeb0dbc666d7",
+   "txFrom": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+   "txTo": "0x610178da211fef7d417bc0e6fed39f05609ad788",
+   "params": {
+    "action": "1",
+    "id": "1",
+    "reason": "0x082f7846"
+   }
+  },
+  {
+   "contract": "CollectionsReceiver",
+   "event": "CollectionsRun",
+   "srcAddress": "0xb7f8bc63bbcad18155201308c8f3540b07f84f5e",
+   "blockNumber": 68,
+   "timestamp": 1792440111,
+   "logIndex": 2,
+   "txHash": "0x9c7112990d7a0e41ae825e6cd60088c5485ee2ae3288f562823adeb0dbc666d7",
+   "txFrom": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+   "txTo": "0x610178da211fef7d417bc0e6fed39f05609ad788",
+   "params": {
+    "tasks": "2",
+    "executed": "0",
+    "skipped": "2"
+   }
+  },
+  {
+   "contract": "MockKeystoneForwarder",
+   "event": "ReportProcessed",
+   "srcAddress": "0x610178da211fef7d417bc0e6fed39f05609ad788",
+   "blockNumber": 68,
+   "timestamp": 1792440111,
+   "logIndex": 3,
+   "txHash": "0x9c7112990d7a0e41ae825e6cd60088c5485ee2ae3288f562823adeb0dbc666d7",
+   "txFrom": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+   "txTo": "0x610178da211fef7d417bc0e6fed39f05609ad788",
+   "params": {
+    "receiver": "0xb7f8bc63bbcad18155201308c8f3540b07f84f5e",
+    "workflowExecutionId": "0x96d60bdd45247dcbb36ddc0a55572e118152d297bb2cc026753c63f3ba1a1aad",
+    "reportId": "0x0001",
+    "result": true
+   }
+  },
+  {
+   "contract": "Stablecoin",
+   "event": "Transfer",
+   "srcAddress": "0x5fbdb2315678afecb367f032d93f642f64180aa3",
+   "blockNumber": 70,
+   "timestamp": 1792440233,
+   "logIndex": 0,
+   "txHash": "0xba7fc96efe24fa2c9858a06d0f6e2c0ac959fa7c3894a1e05ca137e020731b28",
+   "txFrom": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+   "txTo": "0x610178da211fef7d417bc0e6fed39f05609ad788",
+   "params": {
+    "from": "0x5fc8d32690cc91d4c39d9d3abcbd16989f875707",
+    "to": "0x9fe46736679d2d9a65f0992f2272de9f3c7fa6e0",
+    "value": "20000000"
+   }
+  },
+  {
+   "contract": "CollateralVault",
+   "event": "CollateralSeized",
+   "srcAddress": "0x5fc8d32690cc91d4c39d9d3abcbd16989f875707",
+   "blockNumber": 70,
+   "timestamp": 1792440233,
+   "logIndex": 1,
+   "txHash": "0xba7fc96efe24fa2c9858a06d0f6e2c0ac959fa7c3894a1e05ca137e020731b28",
+   "txFrom": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+   "txTo": "0x610178da211fef7d417bc0e6fed39f05609ad788",
+   "params": {
+    "user": "0x2fa500668bf33c4c799663728c393780a437d7e7",
+    "amount": "20000000",
+    "to": "0x9fe46736679d2d9a65f0992f2272de9f3c7fa6e0"
+   }
+  },
+  {
+   "contract": "ScoreManager",
+   "event": "ScoreChanged",
+   "srcAddress": "0xe7f1725e7734ce288f8367e1bb143e90bb3f0512",
+   "blockNumber": 70,
+   "timestamp": 1792440233,
+   "logIndex": 2,
+   "txHash": "0xba7fc96efe24fa2c9858a06d0f6e2c0ac959fa7c3894a1e05ca137e020731b28",
+   "txFrom": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+   "txTo": "0x610178da211fef7d417bc0e6fed39f05609ad788",
+   "params": {
+    "user": "0x2fa500668bf33c4c799663728c393780a437d7e7",
+    "oldScore": "570",
+    "newScore": "420",
+    "reason": "liquidation"
+   }
+  },
+  {
+   "contract": "PolarisLoanEngine",
+   "event": "LoanLiquidated",
+   "srcAddress": "0x9fe46736679d2d9a65f0992f2272de9f3c7fa6e0",
+   "blockNumber": 70,
+   "timestamp": 1792440233,
+   "logIndex": 3,
+   "txHash": "0xba7fc96efe24fa2c9858a06d0f6e2c0ac959fa7c3894a1e05ca137e020731b28",
+   "txFrom": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+   "txTo": "0x610178da211fef7d417bc0e6fed39f05609ad788",
+   "params": {
+    "loanId": "3",
+    "borrower": "0x2fa500668bf33c4c799663728c393780a437d7e7",
+    "outstanding": "100000076",
+    "recovered": "20000000"
+   }
+  },
+  {
+   "contract": "CollectionsReceiver",
+   "event": "TaskExecuted",
+   "srcAddress": "0xb7f8bc63bbcad18155201308c8f3540b07f84f5e",
+   "blockNumber": 70,
+   "timestamp": 1792440233,
+   "logIndex": 4,
+   "txHash": "0xba7fc96efe24fa2c9858a06d0f6e2c0ac959fa7c3894a1e05ca137e020731b28",
+   "txFrom": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+   "txTo": "0x610178da211fef7d417bc0e6fed39f05609ad788",
+   "params": {
+    "action": "3",
+    "id": "3",
+    "amount": "0"
+   }
+  },
+  {
+   "contract": "CollectionsReceiver",
+   "event": "CollectionsRun",
+   "srcAddress": "0xb7f8bc63bbcad18155201308c8f3540b07f84f5e",
+   "blockNumber": 70,
+   "timestamp": 1792440233,
+   "logIndex": 5,
+   "txHash": "0xba7fc96efe24fa2c9858a06d0f6e2c0ac959fa7c3894a1e05ca137e020731b28",
+   "txFrom": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+   "txTo": "0x610178da211fef7d417bc0e6fed39f05609ad788",
+   "params": {
+    "tasks": "1",
+    "executed": "1",
+    "skipped": "0"
+   }
+  },
+  {
+   "contract": "MockKeystoneForwarder",
+   "event": "ReportProcessed",
+   "srcAddress": "0x610178da211fef7d417bc0e6fed39f05609ad788",
+   "blockNumber": 70,
+   "timestamp": 1792440233,
+   "logIndex": 6,
+   "txHash": "0xba7fc96efe24fa2c9858a06d0f6e2c0ac959fa7c3894a1e05ca137e020731b28",
+   "txFrom": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+   "txTo": "0x610178da211fef7d417bc0e6fed39f05609ad788",
+   "params": {
+    "receiver": "0xb7f8bc63bbcad18155201308c8f3540b07f84f5e",
+    "workflowExecutionId": "0x56357257f9e2060f75f8f1382c376657238992dd46cb4dfd120062d4f9b16d84",
+    "reportId": "0x0001",
+    "result": true
+   }
+  },
+  {
+   "contract": "UnderwritingReceiver",
+   "event": "UnderwritingRefused",
+   "srcAddress": "0xa51c1fc2f0d1a1b8494ed1fe312d7c3a78ed91c0",
+   "blockNumber": 71,
+   "timestamp": 1792440234,
+   "logIndex": 0,
+   "txHash": "0x0fc53271830485a5aa4537459f21b83cf76099182c367bbaa670dc73e61dee2a",
+   "txFrom": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+   "txTo": "0x610178da211fef7d417bc0e6fed39f05609ad788",
+   "params": {
+    "user": "0x2fa500668bf33c4c799663728c393780a437d7e7",
+    "linkedWallet": "0x0000000000000000000000000000000000000000",
+    "reason": "0xc64b752a"
+   }
+  },
+  {
+   "contract": "MockKeystoneForwarder",
+   "event": "ReportProcessed",
+   "srcAddress": "0x610178da211fef7d417bc0e6fed39f05609ad788",
+   "blockNumber": 71,
+   "timestamp": 1792440234,
+   "logIndex": 1,
+   "txHash": "0x0fc53271830485a5aa4537459f21b83cf76099182c367bbaa670dc73e61dee2a",
+   "txFrom": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+   "txTo": "0x610178da211fef7d417bc0e6fed39f05609ad788",
+   "params": {
+    "receiver": "0xa51c1fc2f0d1a1b8494ed1fe312d7c3a78ed91c0",
+    "workflowExecutionId": "0xe012e3039b832fb1b7f01313c5c13387094fb6bf0cc490070ffcee488dfb72b1",
+    "reportId": "0x0001",
+    "result": true
+   }
+  },
+  {
+   "contract": "MerchantRegistry",
+   "event": "MerchantRegistered",
+   "srcAddress": "0xdc64a140aa3e981100a9beca4e685f962f0cf6c9",
+   "blockNumber": 72,
+   "timestamp": 1792440235,
+   "logIndex": 0,
+   "txHash": "0x4247b54a5098c64e10d1909dd365fd827093a98d703c52e473d4553225f29ee3",
+   "txFrom": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+   "txTo": "0xdc64a140aa3e981100a9beca4e685f962f0cf6c9",
+   "params": {
+    "merchant": "0x49e0d5389d60bce96e5e569a5ff4711be917bc13",
+    "name": "Kiosk Norte",
+    "payoutAddress": "0x47af93c4b6fc4a2e4235240dbea84a73cd6d6c82"
+   }
+  },
+  {
+   "contract": "MerchantRegistry",
+   "event": "MerchantRegisteredBy",
+   "srcAddress": "0xdc64a140aa3e981100a9beca4e685f962f0cf6c9",
+   "blockNumber": 72,
+   "timestamp": 1792440235,
+   "logIndex": 1,
+   "txHash": "0x4247b54a5098c64e10d1909dd365fd827093a98d703c52e473d4553225f29ee3",
+   "txFrom": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+   "txTo": "0xdc64a140aa3e981100a9beca4e685f962f0cf6c9",
+   "params": {
+    "merchant": "0x49e0d5389d60bce96e5e569a5ff4711be917bc13",
+    "operator": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266"
+   }
+  },
+  {
+   "contract": "Stablecoin",
+   "event": "Transfer",
+   "srcAddress": "0x5fbdb2315678afecb367f032d93f642f64180aa3",
+   "blockNumber": 73,
+   "timestamp": 1792440236,
+   "logIndex": 0,
+   "txHash": "0xc084a708f8cfb7c5f7a0da6fd1b3e520c5529c5098e5bb5aef5141ce3c58b800",
+   "txFrom": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+   "txTo": "0x5fbdb2315678afecb367f032d93f642f64180aa3",
+   "params": {
+    "from": "0x0000000000000000000000000000000000000000",
+    "to": "0x9f533aba76b8cf56a61666269755478f1c38cdc2",
+    "value": "100000000"
+   }
+  },
+  {
+   "contract": "PolarisPayments",
+   "event": "OrderQuoted",
+   "srcAddress": "0xcf7ed3acca5a467e9e704c703e8d87f634fb0fc9",
+   "blockNumber": 74,
+   "timestamp": 1792440237,
+   "logIndex": 0,
+   "txHash": "0xbc515bff5e2e561649c7b03853f6c29b83d618ccb4764863465c51c12c59d949",
+   "txFrom": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+   "txTo": "0xcf7ed3acca5a467e9e704c703e8d87f634fb0fc9",
+   "params": {
+    "paymentId": "0xa61bf7fb293fbfd504a073e5927f94ea5a950ffef2629bd62ea600aeed91f59f",
+    "merchant": "0x49e0d5389d60bce96e5e569a5ff4711be917bc13",
+    "amount": "30000000"
+   }
+  },
+  {
+   "contract": "Stablecoin",
+   "event": "AuthorizationUsed",
+   "srcAddress": "0x5fbdb2315678afecb367f032d93f642f64180aa3",
+   "blockNumber": 75,
+   "timestamp": 1792440238,
+   "logIndex": 0,
+   "txHash": "0xb9d1d21198d8d28063f76085bc1584e684b2ece89279341762df67e6012dc752",
+   "txFrom": "0x70997970c51812dc3a010c7d01b50e0d17dc79c8",
+   "txTo": "0x8a791620dd6260079bf849dc5567adc3f2fdc318",
+   "params": {
+    "authorizer": "0x9f533aba76b8cf56a61666269755478f1c38cdc2",
+    "nonce": "0xa61bf7fb293fbfd504a073e5927f94ea5a950ffef2629bd62ea600aeed91f59f"
+   }
+  },
+  {
+   "contract": "Stablecoin",
+   "event": "Transfer",
+   "srcAddress": "0x5fbdb2315678afecb367f032d93f642f64180aa3",
+   "blockNumber": 75,
+   "timestamp": 1792440238,
+   "logIndex": 1,
+   "txHash": "0xb9d1d21198d8d28063f76085bc1584e684b2ece89279341762df67e6012dc752",
+   "txFrom": "0x70997970c51812dc3a010c7d01b50e0d17dc79c8",
+   "txTo": "0x8a791620dd6260079bf849dc5567adc3f2fdc318",
+   "params": {
+    "from": "0x9f533aba76b8cf56a61666269755478f1c38cdc2",
+    "to": "0xcf7ed3acca5a467e9e704c703e8d87f634fb0fc9",
+    "value": "30000000"
+   }
+  },
+  {
+   "contract": "Stablecoin",
+   "event": "Transfer",
+   "srcAddress": "0x5fbdb2315678afecb367f032d93f642f64180aa3",
+   "blockNumber": 75,
+   "timestamp": 1792440238,
+   "logIndex": 2,
+   "txHash": "0xb9d1d21198d8d28063f76085bc1584e684b2ece89279341762df67e6012dc752",
+   "txFrom": "0x70997970c51812dc3a010c7d01b50e0d17dc79c8",
+   "txTo": "0x8a791620dd6260079bf849dc5567adc3f2fdc318",
+   "params": {
+    "from": "0xcf7ed3acca5a467e9e704c703e8d87f634fb0fc9",
+    "to": "0x49e0d5389d60bce96e5e569a5ff4711be917bc13",
+    "value": "29850000"
+   }
+  },
+  {
+   "contract": "Stablecoin",
+   "event": "Transfer",
+   "srcAddress": "0x5fbdb2315678afecb367f032d93f642f64180aa3",
+   "blockNumber": 75,
+   "timestamp": 1792440238,
+   "logIndex": 3,
+   "txHash": "0xb9d1d21198d8d28063f76085bc1584e684b2ece89279341762df67e6012dc752",
+   "txFrom": "0x70997970c51812dc3a010c7d01b50e0d17dc79c8",
+   "txTo": "0x8a791620dd6260079bf849dc5567adc3f2fdc318",
+   "params": {
+    "from": "0xcf7ed3acca5a467e9e704c703e8d87f634fb0fc9",
+    "to": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+    "value": "150000"
+   }
+  },
+  {
+   "contract": "PolarisPayments",
+   "event": "PaymentMade",
+   "srcAddress": "0xcf7ed3acca5a467e9e704c703e8d87f634fb0fc9",
+   "blockNumber": 75,
+   "timestamp": 1792440238,
+   "logIndex": 4,
+   "txHash": "0xb9d1d21198d8d28063f76085bc1584e684b2ece89279341762df67e6012dc752",
+   "txFrom": "0x70997970c51812dc3a010c7d01b50e0d17dc79c8",
+   "txTo": "0x8a791620dd6260079bf849dc5567adc3f2fdc318",
+   "params": {
+    "paymentId": "0xa61bf7fb293fbfd504a073e5927f94ea5a950ffef2629bd62ea600aeed91f59f",
+    "payer": "0x9f533aba76b8cf56a61666269755478f1c38cdc2",
+    "merchant": "0x49e0d5389d60bce96e5e569a5ff4711be917bc13",
+    "amount": "30000000",
+    "fee": "150000",
+    "orderId": "order-quoted-0x94eb0134"
+   }
+  },
+  {
+   "contract": "PolarisCheckout",
+   "event": "CheckoutPaid",
+   "srcAddress": "0x8a791620dd6260079bf849dc5567adc3f2fdc318",
+   "blockNumber": 75,
+   "timestamp": 1792440238,
+   "logIndex": 5,
+   "txHash": "0xb9d1d21198d8d28063f76085bc1584e684b2ece89279341762df67e6012dc752",
+   "txFrom": "0x70997970c51812dc3a010c7d01b50e0d17dc79c8",
+   "txTo": "0x8a791620dd6260079bf849dc5567adc3f2fdc318",
+   "params": {
+    "orderKey": "0xa61bf7fb293fbfd504a073e5927f94ea5a950ffef2629bd62ea600aeed91f59f",
+    "merchant": "0x49e0d5389d60bce96e5e569a5ff4711be917bc13",
+    "buyer": "0x9f533aba76b8cf56a61666269755478f1c38cdc2",
+    "orderId": "order-quoted-0x94eb0134",
+    "amount": "30000000",
+    "fee": "150000"
+   }
+  },
+  {
+   "contract": "Stablecoin",
+   "event": "AuthorizationUsed",
+   "srcAddress": "0x5fbdb2315678afecb367f032d93f642f64180aa3",
+   "blockNumber": 76,
+   "timestamp": 1792440239,
+   "logIndex": 0,
+   "txHash": "0xdcd8ffa7e384145db7320bfe93142816b42a717bd26a21d75eff5e8ee5866aa2",
+   "txFrom": "0x70997970c51812dc3a010c7d01b50e0d17dc79c8",
+   "txTo": "0x5fbdb2315678afecb367f032d93f642f64180aa3",
+   "params": {
+    "authorizer": "0x49e0d5389d60bce96e5e569a5ff4711be917bc13",
+    "nonce": "0x60321c660def141029aa038cc1cc1d83b296f32f2caf203a5701cb8c75b3e96b"
+   }
+  },
+  {
+   "contract": "Stablecoin",
+   "event": "Transfer",
+   "srcAddress": "0x5fbdb2315678afecb367f032d93f642f64180aa3",
+   "blockNumber": 76,
+   "timestamp": 1792440239,
+   "logIndex": 1,
+   "txHash": "0xdcd8ffa7e384145db7320bfe93142816b42a717bd26a21d75eff5e8ee5866aa2",
+   "txFrom": "0x70997970c51812dc3a010c7d01b50e0d17dc79c8",
+   "txTo": "0x5fbdb2315678afecb367f032d93f642f64180aa3",
+   "params": {
+    "from": "0x49e0d5389d60bce96e5e569a5ff4711be917bc13",
+    "to": "0xd4f0806acfd75a2ed80adff366e0b423b673660f",
+    "value": "10000000"
+   }
+  },
+  {
+   "contract": "Stablecoin",
+   "event": "AuthorizationUsed",
+   "srcAddress": "0x5fbdb2315678afecb367f032d93f642f64180aa3",
+   "blockNumber": 77,
+   "timestamp": 1792440240,
+   "logIndex": 0,
+   "txHash": "0xccb740944758fdde490d0252dba6800afac526b85a987a621286a21392297731",
+   "txFrom": "0x70997970c51812dc3a010c7d01b50e0d17dc79c8",
+   "txTo": "0x5fbdb2315678afecb367f032d93f642f64180aa3",
+   "params": {
+    "authorizer": "0x49e0d5389d60bce96e5e569a5ff4711be917bc13",
+    "nonce": "0x013d8086f2fb1f1a375ff98e2461a565a0693b45875e336b9ceb85e5108f574c"
+   }
+  },
+  {
+   "contract": "Stablecoin",
+   "event": "Transfer",
+   "srcAddress": "0x5fbdb2315678afecb367f032d93f642f64180aa3",
+   "blockNumber": 77,
+   "timestamp": 1792440240,
+   "logIndex": 1,
+   "txHash": "0xccb740944758fdde490d0252dba6800afac526b85a987a621286a21392297731",
+   "txFrom": "0x70997970c51812dc3a010c7d01b50e0d17dc79c8",
+   "txTo": "0x5fbdb2315678afecb367f032d93f642f64180aa3",
+   "params": {
+    "from": "0x49e0d5389d60bce96e5e569a5ff4711be917bc13",
+    "to": "0x47af93c4b6fc4a2e4235240dbea84a73cd6d6c82",
+    "value": "5000000"
+   }
+  },
+  {
+   "contract": "Stablecoin",
+   "event": "Approval",
+   "srcAddress": "0x5fbdb2315678afecb367f032d93f642f64180aa3",
+   "blockNumber": 78,
+   "timestamp": 1792440241,
+   "logIndex": 0,
+   "txHash": "0xf5d38ae2b0ed02bac1b7ad5bba6e770226b6d9adbed40fc2db6ae400f1323365",
+   "txFrom": "0x70997970c51812dc3a010c7d01b50e0d17dc79c8",
+   "txTo": "0x8a791620dd6260079bf849dc5567adc3f2fdc318",
+   "params": {
+    "owner": "0x9f533aba76b8cf56a61666269755478f1c38cdc2",
+    "spender": "0xcf7ed3acca5a467e9e704c703e8d87f634fb0fc9",
+    "value": "119880000"
+   }
+  },
+  {
+   "contract": "Stablecoin",
+   "event": "Transfer",
+   "srcAddress": "0x5fbdb2315678afecb367f032d93f642f64180aa3",
+   "blockNumber": 78,
+   "timestamp": 1792440241,
+   "logIndex": 1,
+   "txHash": "0xf5d38ae2b0ed02bac1b7ad5bba6e770226b6d9adbed40fc2db6ae400f1323365",
+   "txFrom": "0x70997970c51812dc3a010c7d01b50e0d17dc79c8",
+   "txTo": "0x8a791620dd6260079bf849dc5567adc3f2fdc318",
+   "params": {
+    "from": "0x9f533aba76b8cf56a61666269755478f1c38cdc2",
+    "to": "0x61ff15a7e6922aa13d01156c6d05e86628d2cbf1",
+    "value": "9940050"
+   }
+  },
+  {
+   "contract": "Stablecoin",
+   "event": "Transfer",
+   "srcAddress": "0x5fbdb2315678afecb367f032d93f642f64180aa3",
+   "blockNumber": 78,
+   "timestamp": 1792440241,
+   "logIndex": 2,
+   "txHash": "0xf5d38ae2b0ed02bac1b7ad5bba6e770226b6d9adbed40fc2db6ae400f1323365",
+   "txFrom": "0x70997970c51812dc3a010c7d01b50e0d17dc79c8",
+   "txTo": "0x8a791620dd6260079bf849dc5567adc3f2fdc318",
+   "params": {
+    "from": "0x9f533aba76b8cf56a61666269755478f1c38cdc2",
+    "to": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+    "value": "49950"
+   }
+  },
+  {
+   "contract": "PolarisPayments",
+   "event": "Subscribed",
+   "srcAddress": "0xcf7ed3acca5a467e9e704c703e8d87f634fb0fc9",
+   "blockNumber": 78,
+   "timestamp": 1792440241,
+   "logIndex": 3,
+   "txHash": "0xf5d38ae2b0ed02bac1b7ad5bba6e770226b6d9adbed40fc2db6ae400f1323365",
+   "txFrom": "0x70997970c51812dc3a010c7d01b50e0d17dc79c8",
+   "txTo": "0x8a791620dd6260079bf849dc5567adc3f2fdc318",
+   "params": {
+    "subId": "2",
+    "planId": "1",
+    "subscriber": "0x9f533aba76b8cf56a61666269755478f1c38cdc2"
+   }
+  },
+  {
+   "contract": "PolarisPayments",
+   "event": "SubscriptionCharged",
+   "srcAddress": "0xcf7ed3acca5a467e9e704c703e8d87f634fb0fc9",
+   "blockNumber": 78,
+   "timestamp": 1792440241,
+   "logIndex": 4,
+   "txHash": "0xf5d38ae2b0ed02bac1b7ad5bba6e770226b6d9adbed40fc2db6ae400f1323365",
+   "txFrom": "0x70997970c51812dc3a010c7d01b50e0d17dc79c8",
+   "txTo": "0x8a791620dd6260079bf849dc5567adc3f2fdc318",
+   "params": {
+    "subId": "2",
+    "amount": "9990000",
+    "fee": "49950",
+    "period": "1"
+   }
+  },
+  {
+   "contract": "PolarisCheckout",
+   "event": "SubscriptionStarted",
+   "srcAddress": "0x8a791620dd6260079bf849dc5567adc3f2fdc318",
+   "blockNumber": 78,
+   "timestamp": 1792440241,
+   "logIndex": 5,
+   "txHash": "0xf5d38ae2b0ed02bac1b7ad5bba6e770226b6d9adbed40fc2db6ae400f1323365",
+   "txFrom": "0x70997970c51812dc3a010c7d01b50e0d17dc79c8",
+   "txTo": "0x8a791620dd6260079bf849dc5567adc3f2fdc318",
+   "params": {
+    "orderKey": "0xf87344a9e11c33eacc23589e8abc758e8ab05f7ae72371e052a835b7b3629a29",
+    "merchant": "0x61ff15a7e6922aa13d01156c6d05e86628d2cbf1",
+    "buyer": "0x9f533aba76b8cf56a61666269755478f1c38cdc2",
+    "subId": "2",
+    "planId": "1",
+    "orderId": "order-sub3-0xd37d19cb",
+    "pricePerPeriod": "9990000",
+    "periodSeconds": "2592000",
+    "nextChargeAt": "1795032241"
+   }
+  },
+  {
+   "contract": "PolarisPayments",
+   "event": "SubscriptionCancelled",
+   "srcAddress": "0xcf7ed3acca5a467e9e704c703e8d87f634fb0fc9",
+   "blockNumber": 79,
+   "timestamp": 1792440242,
+   "logIndex": 0,
+   "txHash": "0x252b1f6bc6b335c6bb003bcb2dffb53b8eaa4661ebeca0a31d1e5bb30e78cdd2",
+   "txFrom": "0x70997970c51812dc3a010c7d01b50e0d17dc79c8",
+   "txTo": "0xcf7ed3acca5a467e9e704c703e8d87f634fb0fc9",
+   "params": {
+    "subId": "2",
+    "by": "0x9f533aba76b8cf56a61666269755478f1c38cdc2"
+   }
+  },
+  {
+   "contract": "Stablecoin",
+   "event": "Transfer",
+   "srcAddress": "0x5fbdb2315678afecb367f032d93f642f64180aa3",
+   "blockNumber": 80,
+   "timestamp": 1792440243,
+   "logIndex": 0,
+   "txHash": "0xbd44970f2826c79e7b8f7379dec4f6c507e838269ff6631505b4d2fdfb9d921a",
+   "txFrom": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+   "txTo": "0x5fbdb2315678afecb367f032d93f642f64180aa3",
+   "params": {
+    "from": "0x0000000000000000000000000000000000000000",
+    "to": "0xb305133df41c0b0b2a3054367792d3b1fe6a18e1",
+    "value": "20000000"
+   }
+  },
+  {
+   "contract": "Stablecoin",
+   "event": "AuthorizationUsed",
+   "srcAddress": "0x5fbdb2315678afecb367f032d93f642f64180aa3",
+   "blockNumber": 81,
+   "timestamp": 1792440244,
+   "logIndex": 0,
+   "txHash": "0x715aea5653fe806c856b6de8e3abf2b5240cfdb05cb8ee3aad14bfe0d30f0e1e",
+   "txFrom": "0x70997970c51812dc3a010c7d01b50e0d17dc79c8",
+   "txTo": "0xa513e6e4b8f2a923d98304ec87f64353c4d5c853",
+   "params": {
+    "authorizer": "0xb305133df41c0b0b2a3054367792d3b1fe6a18e1",
+    "nonce": "0x022baab80ad10677b178cdf6898c35f2c8d7ca87f4e1553d89b7026da86696c4"
+   }
+  },
+  {
+   "contract": "Stablecoin",
+   "event": "Transfer",
+   "srcAddress": "0x5fbdb2315678afecb367f032d93f642f64180aa3",
+   "blockNumber": 81,
+   "timestamp": 1792440244,
+   "logIndex": 1,
+   "txHash": "0x715aea5653fe806c856b6de8e3abf2b5240cfdb05cb8ee3aad14bfe0d30f0e1e",
+   "txFrom": "0x70997970c51812dc3a010c7d01b50e0d17dc79c8",
+   "txTo": "0xa513e6e4b8f2a923d98304ec87f64353c4d5c853",
+   "params": {
+    "from": "0xb305133df41c0b0b2a3054367792d3b1fe6a18e1",
+    "to": "0xa513e6e4b8f2a923d98304ec87f64353c4d5c853",
+    "value": "5000000"
+   }
+  },
+  {
+   "contract": "PolarisSend",
+   "event": "Sent",
+   "srcAddress": "0xa513e6e4b8f2a923d98304ec87f64353c4d5c853",
+   "blockNumber": 81,
+   "timestamp": 1792440244,
+   "logIndex": 2,
+   "txHash": "0x715aea5653fe806c856b6de8e3abf2b5240cfdb05cb8ee3aad14bfe0d30f0e1e",
+   "txFrom": "0x70997970c51812dc3a010c7d01b50e0d17dc79c8",
+   "txTo": "0xa513e6e4b8f2a923d98304ec87f64353c4d5c853",
+   "params": {
+    "linkKey": "0xf725f25e9e0b9c44c73e4e96b9d7bb86e8b2dcf8",
+    "sender": "0xb305133df41c0b0b2a3054367792d3b1fe6a18e1",
+    "amount": "5000000",
+    "expiresAt": "1792443843"
+   }
+  },
+  {
+   "contract": "Stablecoin",
+   "event": "Transfer",
+   "srcAddress": "0x5fbdb2315678afecb367f032d93f642f64180aa3",
+   "blockNumber": 82,
+   "timestamp": 1792440245,
+   "logIndex": 0,
+   "txHash": "0x5b390499cdd9e2a13cd319936e4acee57484dec59bce9cef93878e1739d1009f",
+   "txFrom": "0x70997970c51812dc3a010c7d01b50e0d17dc79c8",
+   "txTo": "0xa513e6e4b8f2a923d98304ec87f64353c4d5c853",
+   "params": {
+    "from": "0xa513e6e4b8f2a923d98304ec87f64353c4d5c853",
+    "to": "0xb305133df41c0b0b2a3054367792d3b1fe6a18e1",
+    "value": "5000000"
+   }
+  },
+  {
+   "contract": "PolarisSend",
+   "event": "Cancelled",
+   "srcAddress": "0xa513e6e4b8f2a923d98304ec87f64353c4d5c853",
+   "blockNumber": 82,
+   "timestamp": 1792440245,
+   "logIndex": 1,
+   "txHash": "0x5b390499cdd9e2a13cd319936e4acee57484dec59bce9cef93878e1739d1009f",
+   "txFrom": "0x70997970c51812dc3a010c7d01b50e0d17dc79c8",
+   "txTo": "0xa513e6e4b8f2a923d98304ec87f64353c4d5c853",
+   "params": {
+    "linkKey": "0xf725f25e9e0b9c44c73e4e96b9d7bb86e8b2dcf8",
+    "sender": "0xb305133df41c0b0b2a3054367792d3b1fe6a18e1",
+    "amount": "5000000"
+   }
+  },
+  {
+   "contract": "Stablecoin",
+   "event": "AuthorizationUsed",
+   "srcAddress": "0x5fbdb2315678afecb367f032d93f642f64180aa3",
+   "blockNumber": 83,
+   "timestamp": 1792440246,
+   "logIndex": 0,
+   "txHash": "0x15c253974d2063fcc1af1e1f133af606f3cab377bd4edc15d8d4d1fc4dd51cff",
+   "txFrom": "0x70997970c51812dc3a010c7d01b50e0d17dc79c8",
+   "txTo": "0xa513e6e4b8f2a923d98304ec87f64353c4d5c853",
+   "params": {
+    "authorizer": "0xb305133df41c0b0b2a3054367792d3b1fe6a18e1",
+    "nonce": "0x19074b831deb33601277501d3343cdd572d79bb7f2263333703ea519f5df67c1"
+   }
+  },
+  {
+   "contract": "Stablecoin",
+   "event": "Transfer",
+   "srcAddress": "0x5fbdb2315678afecb367f032d93f642f64180aa3",
+   "blockNumber": 83,
+   "timestamp": 1792440246,
+   "logIndex": 1,
+   "txHash": "0x15c253974d2063fcc1af1e1f133af606f3cab377bd4edc15d8d4d1fc4dd51cff",
+   "txFrom": "0x70997970c51812dc3a010c7d01b50e0d17dc79c8",
+   "txTo": "0xa513e6e4b8f2a923d98304ec87f64353c4d5c853",
+   "params": {
+    "from": "0xb305133df41c0b0b2a3054367792d3b1fe6a18e1",
+    "to": "0xa513e6e4b8f2a923d98304ec87f64353c4d5c853",
+    "value": "6000000"
+   }
+  },
+  {
+   "contract": "PolarisSend",
+   "event": "Sent",
+   "srcAddress": "0xa513e6e4b8f2a923d98304ec87f64353c4d5c853",
+   "blockNumber": 83,
+   "timestamp": 1792440246,
+   "logIndex": 2,
+   "txHash": "0x15c253974d2063fcc1af1e1f133af606f3cab377bd4edc15d8d4d1fc4dd51cff",
+   "txFrom": "0x70997970c51812dc3a010c7d01b50e0d17dc79c8",
+   "txTo": "0xa513e6e4b8f2a923d98304ec87f64353c4d5c853",
+   "params": {
+    "linkKey": "0x308e7a2e1b7b94323c54074f6004cbb6638dea24",
+    "sender": "0xb305133df41c0b0b2a3054367792d3b1fe6a18e1",
+    "amount": "6000000",
+    "expiresAt": "1792440546"
+   }
+  },
+  {
+   "contract": "Stablecoin",
+   "event": "Transfer",
+   "srcAddress": "0x5fbdb2315678afecb367f032d93f642f64180aa3",
+   "blockNumber": 85,
+   "timestamp": 1792440549,
+   "logIndex": 0,
+   "txHash": "0xb3ca398bb7a3d002c06624c81151dd563379f264710d1bfd8fce0bf801b2670b",
+   "txFrom": "0x70997970c51812dc3a010c7d01b50e0d17dc79c8",
+   "txTo": "0xa513e6e4b8f2a923d98304ec87f64353c4d5c853",
+   "params": {
+    "from": "0xa513e6e4b8f2a923d98304ec87f64353c4d5c853",
+    "to": "0xb305133df41c0b0b2a3054367792d3b1fe6a18e1",
+    "value": "6000000"
+   }
+  },
+  {
+   "contract": "PolarisSend",
+   "event": "Refunded",
+   "srcAddress": "0xa513e6e4b8f2a923d98304ec87f64353c4d5c853",
+   "blockNumber": 85,
+   "timestamp": 1792440549,
+   "logIndex": 1,
+   "txHash": "0xb3ca398bb7a3d002c06624c81151dd563379f264710d1bfd8fce0bf801b2670b",
+   "txFrom": "0x70997970c51812dc3a010c7d01b50e0d17dc79c8",
+   "txTo": "0xa513e6e4b8f2a923d98304ec87f64353c4d5c853",
+   "params": {
+    "linkKey": "0x308e7a2e1b7b94323c54074f6004cbb6638dea24",
+    "sender": "0xb305133df41c0b0b2a3054367792d3b1fe6a18e1",
+    "amount": "6000000"
+   }
+  },
+  {
+   "contract": "BatchSettlement",
+   "event": "SettlerSet",
+   "srcAddress": "0x0165878a594ca255338adfa4d48449f69242eb8f",
+   "blockNumber": 86,
+   "timestamp": 1792440550,
+   "logIndex": 0,
+   "txHash": "0x72b1d9c32980e670351e43fafa97eae6fcff26c5aaf9d6407f9dd17b4ca5eff3",
+   "txFrom": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+   "txTo": "0x0165878a594ca255338adfa4d48449f69242eb8f",
+   "params": {
+    "settler": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+    "allowed": true
+   }
+  },
+  {
+   "contract": "Stablecoin",
+   "event": "Transfer",
+   "srcAddress": "0x5fbdb2315678afecb367f032d93f642f64180aa3",
+   "blockNumber": 87,
+   "timestamp": 1792440551,
+   "logIndex": 0,
+   "txHash": "0xa9de8555a3613fa87461b098d0ee5b4e180c72fa6218f3679d7ff9bb90f4c549",
+   "txFrom": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+   "txTo": "0x5fbdb2315678afecb367f032d93f642f64180aa3",
+   "params": {
+    "from": "0x0000000000000000000000000000000000000000",
+    "to": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+    "value": "50000000"
+   }
+  },
+  {
+   "contract": "Stablecoin",
+   "event": "Approval",
+   "srcAddress": "0x5fbdb2315678afecb367f032d93f642f64180aa3",
+   "blockNumber": 88,
+   "timestamp": 1792440552,
+   "logIndex": 0,
+   "txHash": "0x8d231c782ec9aa8155b3f4a3ebaa734c538dbea8e517d55fb2290b0512a1a046",
+   "txFrom": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+   "txTo": "0x5fbdb2315678afecb367f032d93f642f64180aa3",
+   "params": {
+    "owner": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+    "spender": "0x0165878a594ca255338adfa4d48449f69242eb8f",
+    "value": "50000000"
+   }
+  },
+  {
+   "contract": "Stablecoin",
+   "event": "Transfer",
+   "srcAddress": "0x5fbdb2315678afecb367f032d93f642f64180aa3",
+   "blockNumber": 89,
+   "timestamp": 1792440553,
+   "logIndex": 0,
+   "txHash": "0x88e8f50f4f0f4cb44842de9d91a55d75b7127d2cc13d2a3828c12cb67eecc125",
+   "txFrom": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+   "txTo": "0x0165878a594ca255338adfa4d48449f69242eb8f",
+   "params": {
+    "from": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+    "to": "0x0165878a594ca255338adfa4d48449f69242eb8f",
+    "value": "50000000"
+   }
+  },
+  {
+   "contract": "BatchSettlement",
+   "event": "Funded",
+   "srcAddress": "0x0165878a594ca255338adfa4d48449f69242eb8f",
+   "blockNumber": 89,
+   "timestamp": 1792440553,
+   "logIndex": 1,
+   "txHash": "0x88e8f50f4f0f4cb44842de9d91a55d75b7127d2cc13d2a3828c12cb67eecc125",
+   "txFrom": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+   "txTo": "0x0165878a594ca255338adfa4d48449f69242eb8f",
+   "params": {
+    "from": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+    "amount": "50000000"
+   }
+  },
+  {
+   "contract": "Stablecoin",
+   "event": "Transfer",
+   "srcAddress": "0x5fbdb2315678afecb367f032d93f642f64180aa3",
+   "blockNumber": 90,
+   "timestamp": 1792440554,
+   "logIndex": 0,
+   "txHash": "0x3803c1a6ff5a64d472d1b68fb462615add4343d8067cc03db8daac453001e18a",
+   "txFrom": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+   "txTo": "0x0165878a594ca255338adfa4d48449f69242eb8f",
+   "params": {
+    "from": "0x0165878a594ca255338adfa4d48449f69242eb8f",
+    "to": "0x49e0d5389d60bce96e5e569a5ff4711be917bc13",
+    "value": "20000000"
+   }
+  },
+  {
+   "contract": "BatchSettlement",
+   "event": "MerchantPaid",
+   "srcAddress": "0x0165878a594ca255338adfa4d48449f69242eb8f",
+   "blockNumber": 90,
+   "timestamp": 1792440554,
+   "logIndex": 1,
+   "txHash": "0x3803c1a6ff5a64d472d1b68fb462615add4343d8067cc03db8daac453001e18a",
+   "txFrom": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+   "txTo": "0x0165878a594ca255338adfa4d48449f69242eb8f",
+   "params": {
+    "batchId": "0x99f7f9a4ef569460c77c7e9aa598a941e8917f4d6a43927a7232aa5282b94408",
+    "merchant": "0x49e0d5389d60bce96e5e569a5ff4711be917bc13",
+    "amount": "20000000",
+    "memo": "0xd4cd9ccbf11f058b18de31988714aa436786df2f02db6971dd220551be9dd440"
+   }
+  },
+  {
+   "contract": "Stablecoin",
+   "event": "Transfer",
+   "srcAddress": "0x5fbdb2315678afecb367f032d93f642f64180aa3",
+   "blockNumber": 90,
+   "timestamp": 1792440554,
+   "logIndex": 2,
+   "txHash": "0x3803c1a6ff5a64d472d1b68fb462615add4343d8067cc03db8daac453001e18a",
+   "txFrom": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+   "txTo": "0x0165878a594ca255338adfa4d48449f69242eb8f",
+   "params": {
+    "from": "0x0165878a594ca255338adfa4d48449f69242eb8f",
+    "to": "0xd4f0806acfd75a2ed80adff366e0b423b673660f",
+    "value": "30000000"
+   }
+  },
+  {
+   "contract": "BatchSettlement",
+   "event": "MerchantPaid",
+   "srcAddress": "0x0165878a594ca255338adfa4d48449f69242eb8f",
+   "blockNumber": 90,
+   "timestamp": 1792440554,
+   "logIndex": 3,
+   "txHash": "0x3803c1a6ff5a64d472d1b68fb462615add4343d8067cc03db8daac453001e18a",
+   "txFrom": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+   "txTo": "0x0165878a594ca255338adfa4d48449f69242eb8f",
+   "params": {
+    "batchId": "0x99f7f9a4ef569460c77c7e9aa598a941e8917f4d6a43927a7232aa5282b94408",
+    "merchant": "0xd4f0806acfd75a2ed80adff366e0b423b673660f",
+    "amount": "30000000",
+    "memo": "0x865f8320855a5fd1d9b40a35ba790c850c63cedbe79ddfc9ada5638d6a3c44d5"
+   }
+  },
+  {
+   "contract": "BatchSettlement",
+   "event": "BatchSettled",
+   "srcAddress": "0x0165878a594ca255338adfa4d48449f69242eb8f",
+   "blockNumber": 90,
+   "timestamp": 1792440554,
+   "logIndex": 4,
+   "txHash": "0x3803c1a6ff5a64d472d1b68fb462615add4343d8067cc03db8daac453001e18a",
+   "txFrom": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+   "txTo": "0x0165878a594ca255338adfa4d48449f69242eb8f",
+   "params": {
+    "batchId": "0x99f7f9a4ef569460c77c7e9aa598a941e8917f4d6a43927a7232aa5282b94408",
+    "recipients": "2",
+    "totalAmount": "50000000",
+    "settler": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266"
+   }
+  }
+ ],
+ "expected": {
+  "loans": {
+   "1": {
+    "status": 1,
+    "installmentsPaid": 4,
+    "totalRepaid": "201534246",
+    "totalOwed": "201534246",
+    "outstanding": "0",
+    "installmentDue": false,
+    "liquidatable": false
+   },
+   "2": {
+    "status": 0,
+    "installmentsPaid": 1,
+    "totalRepaid": "25191781",
+    "totalOwed": "100767123",
+    "outstanding": "75575342",
+    "installmentDue": false,
+    "liquidatable": false
+   },
+   "3": {
+    "status": 2,
+    "installmentsPaid": 0,
+    "totalRepaid": "20000000",
+    "totalOwed": "100000076",
+    "outstanding": "80000076",
+    "installmentDue": false,
+    "liquidatable": false
+   }
+  },
+  "subscriptions": {
+   "1": {
+    "status": 0,
+    "nextChargeAt": 1792440099,
+    "periodsCharged": 2,
+    "missedCharges": 0
+   },
+   "2": {
+    "status": 1,
+    "nextChargeAt": 1795032241,
+    "periodsCharged": 1,
+    "missedCharges": 0
+   }
+  },
+  "buyers": {
+   "0x6e601385ef85c16d16ce3a443f2df66e546df6e2": {
+    "score": 688,
+    "declined": false,
+    "underwritten": true,
+    "creditLimit": "1000000000",
+    "activeDebt": "75575342",
+    "collateral": "0"
+   },
+   "0x2fa500668bf33c4c799663728c393780a437d7e7": {
+    "score": 420,
+    "declined": false,
+    "underwritten": true,
+    "creditLimit": "200000000",
+    "activeDebt": "0",
+    "collateral": "0"
+   },
+   "0x9f533aba76b8cf56a61666269755478f1c38cdc2": {
+    "score": 600,
+    "declined": false,
+    "underwritten": false,
+    "creditLimit": "0",
+    "activeDebt": "0",
+    "collateral": "0"
+   }
+  },
+  "merchants": {
+   "0x61ff15a7e6922aa13d01156c6d05e86628d2cbf1": {
+    "balance": "441780050",
+    "registered": true,
+    "active": true,
+    "payoutAddress": "0x61ff15a7e6922aa13d01156c6d05e86628d2cbf1",
+    "maxOrderValue": "1000000000"
+   },
+   "0x49e0d5389d60bce96e5e569a5ff4711be917bc13": {
+    "balance": "34850000",
+    "registered": true,
+    "active": false,
+    "payoutAddress": "0x47af93c4b6fc4a2e4235240dbea84a73cd6d6c82",
+    "maxOrderValue": "500000000"
+   }
+  },
+  "sends": {
+   "0x4ca09aa0b014dcdbd134a50d80b07cf98c1f537f": {
+    "open": false
+   },
+   "0xf725f25e9e0b9c44c73e4e96b9d7bb86e8b2dcf8": {
+    "open": false
+   },
+   "0x308e7a2e1b7b94323c54074f6004cbb6638dea24": {
+    "open": false
+   }
+  }
+ }
+}

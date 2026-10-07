@@ -1,0 +1,425 @@
+/*
+  @polaris/ui: tokens, themes and the Satoshi face.
+
+  Import it right after Tailwind in an app's global stylesheet:
+
+    @import "tailwindcss";
+    @import "@polaris/ui/styles.css";
+
+  Everything here is namespaced (`--ui-*` variables, `ui-*` utilities,
+  `font-satoshi`), so it can sit beside an app's own tokens without changing
+  a single existing screen. Nothing styles bare elements.
+
+  Themes
+    dark   the default (`:root`) and `[data-theme="dark"]`: the mobile app and
+           every analytics panel (refs A, B, D)
+    light  `[data-theme="light"]`: ref C's light screens
+    ref-e  `[data-theme="ref-e"]`: the merchant web app (ref E, LumaTrade), a
+           dark panel on a lime canvas
+  Scopes nest: a dark panel inside the light shell is `data-theme="dark"` on
+  the panel (use <ThemeScope> or <Card theme="dark">).
+*/
+
+/* The components live here; the app's Tailwind build scans them for classes. */
+@source "./src";
+
+/* Satoshi Variable (Indian Type Foundry, via Fontshare; free for commercial use,
+   see README.md). One file, weights 300 to 900, with tnum. */
+@font-face {
+  font-family: "Satoshi";
+  src: url("./fonts/Satoshi-Variable.woff2") format("woff2-variations"),
+    url("./fonts/Satoshi-Variable.woff2") format("woff2");
+  font-weight: 300 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* ── Dark (default) ─────────────────────────────────────────────────────── */
+
+:root,
+[data-theme="dark"] {
+  --ui-canvas: #0f1011;
+  --ui-surface-1: #1a1b1d;
+  --ui-surface-2: #232426;
+  --ui-surface-3: #2c2d30;
+  --ui-hairline: rgb(255 255 255 / 0.06);
+  --ui-hairline-strong: rgb(255 255 255 / 0.12);
+  --ui-text: #f5f5f5;
+  --ui-muted: #8a8d93;
+  --ui-dim: #55585e;
+
+  /* The dark button and pill: surface-3 on dark (ref B Sell), ink on light (ref C). */
+  --ui-ink: #2c2d30;
+  --ui-on-ink: #f5f5f5;
+  /* Progress and bar tracks (ref D). */
+  --ui-track: #333333;
+  /* Deltas: green and coral on dark (refs A, B, D). */
+  --ui-up: #3ddc84;
+  --ui-down: #ff5a6e;
+  --ui-warn: #f7b955;
+  --ui-info: #8fb2ff;
+  --ui-purple-text: #b596ff;
+  --ui-focus: #9cef5e;
+  --ui-scrim: rgb(0 0 0 / 0.6);
+  --ui-glass: rgb(38 39 42 / 0.72);
+
+  --ui-shadow-pop: 0 18px 48px -12px rgb(0 0 0 / 0.7), 0 0 0 1px rgb(255 255 255 / 0.06);
+  --ui-shadow-nav: 0 16px 40px -10px rgb(0 0 0 / 0.8);
+  --ui-shadow-card: none;
+}
+
+/* ── Light (web dashboard shell, ref C) ─────────────────────────────────── */
+
+[data-theme="light"] {
+  --ui-canvas: #eeedf2;
+  --ui-surface-1: #ffffff;
+  --ui-surface-2: #f6f5f9;
+  --ui-surface-3: #e9e8ee;
+  --ui-hairline: rgb(19 20 31 / 0.08);
+  --ui-hairline-strong: rgb(19 20 31 / 0.14);
+  --ui-text: #13141f;
+  --ui-muted: #6e7080;
+  --ui-dim: #9a9cab;
+
+  --ui-ink: #13141f;
+  --ui-on-ink: #ffffff;
+  --ui-track: #e4e3ea;
+  /* Ref C prints gains in purple-deep and losses in red: AA on white, unlike
+     the dark theme's green. */
+  --ui-up: #6a17ee;
+  --ui-down: #d92f47;
+  --ui-warn: #a45f00;
+  --ui-info: #2f5fd0;
+  --ui-purple-text: #6a17ee;
+  --ui-focus: #6a17ee;
+  --ui-scrim: rgb(19 20 31 / 0.44);
+  --ui-glass: rgb(255 255 255 / 0.78);
+
+  --ui-shadow-pop: 0 18px 48px -12px rgb(19 20 31 / 0.22), 0 0 0 1px rgb(19 20 31 / 0.06);
+  --ui-shadow-nav: 0 16px 40px -10px rgb(19 20 31 / 0.35);
+  --ui-shadow-card: 0 1px 2px rgb(19 20 31 / 0.04);
+}
+
+/* ── Brand, accents and chart pastels: the same in both themes ──────────── */
+
+:root {
+  --ui-lime: #9cef5e;
+  --ui-lime-bright: #d2ec34;
+  --ui-lime-logo: #bffa62;
+  --ui-on-lime: #0f1011;
+  --ui-purple: #8e5cf0;
+  --ui-purple-deep: #6a17ee;
+  --ui-purple-chart-from: #923eca;
+  --ui-purple-chart-to: #b45af2;
+  --ui-crimson-from: #de2f53;
+  --ui-crimson-to: #f0506b;
+
+  --ui-blue: #8fb2ff;
+  --ui-yellow: #ffe98c;
+  --ui-lilac: #d8a8ff;
+  --ui-salmon: #ff8c85;
+  --ui-cyan: #7ef2f4;
+  --ui-mint: #92f2b2;
+  --ui-teal: #63b59c;
+  --ui-pink: #f8d2d1;
+  --ui-sage: #b0ccc0;
+  --ui-sky: #c5dbf2;
+  /* Ref D's warmer yellow (donut, side square) and its pale mint square. */
+  --ui-honey: #ffd78e;
+  --ui-mint-soft: #d2f9e7;
+
+  /* The candlestick panel is dark in both themes (ref C). */
+  --ui-candle-panel: #151520;
+  --ui-candle-chip: #2f303b;
+  --ui-candle-grid: rgb(255 255 255 / 0.07);
+  --ui-candle-axis: #8b8c99;
+}
+
+/* ── Ref E (LumaTrade): the merchant web app ────────────────────────────── */
+
+/* Ref E's own colours, sampled from docs/design/refs-v2/ref-e-lumatrade.png.
+   Constants (defined at the root), so its components also render in the
+   other themes, e.g. in the gallery. */
+:root {
+  /* The lime canvas the dark app floats on (from 1280px). */
+  --ui-frame: #e9ff9b;
+  /* The primary lime button and its near-black label. */
+  --ui-lime-button: #b0c956;
+  /* Lime text and positive deltas, on the dark lime chip. */
+  --ui-lime-text: #aabc6d;
+  /* The active tab and nav link (BUY in the reference): a paler lime. */
+  --ui-lime-active: #c9d77e;
+  --ui-lime-chip: #20231e;
+  --ui-lime-chip-strong: #2b2f24;
+  /* Chart axis labels. */
+  --ui-axis: #7c7f87;
+  /* The small outline squares (refresh, QR, settings) sit darker than the panel. */
+  --ui-square: #0e0f13;
+  /* The round swap button between the stacked cards, and its ring. */
+  --ui-swap: #0b0d0f;
+  /* Status pills: tinted grounds, pale text. */
+  --ui-pill-lime: #2b2e26;
+  --ui-pill-lime-text: #deeaba;
+  --ui-pill-purple: #291f32;
+  --ui-pill-purple-text: #b77fd2;
+  --ui-pill-teal: #1b2d30;
+  --ui-pill-teal-text: #71c8c2;
+  --ui-pill-amber: #2f2817;
+  --ui-pill-amber-text: #e2b866;
+  --ui-pill-red: #321d20;
+  --ui-pill-red-text: #e8847b;
+  --ui-pill-neutral: #25282e;
+  --ui-pill-neutral-text: #a4a7ae;
+  /* The price line: lime yellow at the top, orange lower down, a warm fill. */
+  --ui-chart-top: #e2f07c;
+  --ui-chart-mid: #e3bb5c;
+  --ui-chart-bottom: #f0903f;
+  --ui-chart-fill: #e9903f;
+  /* The dark panel's soft, big shadow on the lime canvas. */
+  --ui-shadow-frame: 0 60px 120px -40px rgb(58 74 0 / 0.5), 0 24px 48px -24px rgb(58 74 0 / 0.35);
+}
+
+/* The theme: the dark app panel, #1D2129 cards and inputs, #37393D hairlines,
+   white text and the reference's lime. Set on <html> by apps/business. */
+[data-theme="ref-e"] {
+  --ui-canvas: #121418;
+  --ui-surface-1: #1d2129;
+  --ui-surface-2: #252a33;
+  --ui-surface-3: #2e343e;
+  --ui-hairline: #2a2d33;
+  --ui-hairline-strong: #37393d;
+  --ui-text: #ffffff;
+  --ui-muted: #8e9199;
+  --ui-dim: #565961;
+
+  --ui-ink: #1d2129;
+  --ui-on-ink: #ffffff;
+  --ui-track: #2a2e36;
+  --ui-up: #aabc6d;
+  --ui-down: #e8847b;
+  --ui-warn: #e2b866;
+  --ui-info: #71c8c2;
+  --ui-purple-text: #b77fd2;
+  --ui-focus: #c8df6c;
+  --ui-scrim: rgb(8 9 11 / 0.66);
+  --ui-glass: rgb(29 33 41 / 0.8);
+
+  /* Every lime control in the library takes the reference's lime. */
+  --ui-lime: #b0c956;
+  --ui-lime-bright: #c3da63;
+  --ui-on-lime: #121418;
+
+  --ui-shadow-pop: 0 24px 60px -16px rgb(0 0 0 / 0.75), 0 0 0 1px #37393d;
+  --ui-shadow-nav: 0 16px 40px -10px rgb(0 0 0 / 0.8);
+  --ui-shadow-card: none;
+
+  /* The candle panel matches the app panel. */
+  --ui-candle-panel: #121418;
+  --ui-candle-chip: #1d2129;
+  --ui-candle-grid: rgb(255 255 255 / 0.05);
+  --ui-candle-axis: #7c7f87;
+  --ui-candle-up: #b0c956;
+  --ui-candle-down: #ee9443;
+
+  /* Bars: olive tracks filled in a darker olive, the selected day in lime. */
+  --ui-bar-fill: #4f5a2c;
+  --ui-bar-low: #3a4027;
+  --ui-bar-selected: #b0c956;
+}
+
+/* The same theme from 1024px only: `data-theme="dark" data-theme-lg="ref-e"`
+   on the customer app's <html>, whose phone layout is dark and whose desktop
+   layout is ref E. Keep it in step with the block above. */
+@media (min-width: 1024px) {
+  [data-theme-lg="ref-e"] {
+    --ui-canvas: #121418;
+    --ui-surface-1: #1d2129;
+    --ui-surface-2: #252a33;
+    --ui-surface-3: #2e343e;
+    --ui-hairline: #2a2d33;
+    --ui-hairline-strong: #37393d;
+    --ui-text: #ffffff;
+    --ui-muted: #8e9199;
+    --ui-dim: #565961;
+
+    --ui-ink: #1d2129;
+    --ui-on-ink: #ffffff;
+    --ui-track: #2a2e36;
+    --ui-up: #aabc6d;
+    --ui-down: #e8847b;
+    --ui-warn: #e2b866;
+    --ui-info: #71c8c2;
+    --ui-purple-text: #b77fd2;
+    --ui-focus: #c8df6c;
+    --ui-scrim: rgb(8 9 11 / 0.66);
+    --ui-glass: rgb(29 33 41 / 0.8);
+
+    /* Every lime control in the library takes the reference's lime. */
+    --ui-lime: #b0c956;
+    --ui-lime-bright: #c3da63;
+    --ui-on-lime: #121418;
+
+    --ui-shadow-pop: 0 24px 60px -16px rgb(0 0 0 / 0.75), 0 0 0 1px #37393d;
+    --ui-shadow-nav: 0 16px 40px -10px rgb(0 0 0 / 0.8);
+    --ui-shadow-card: none;
+
+    /* The candle panel matches the app panel. */
+    --ui-candle-panel: #121418;
+    --ui-candle-chip: #1d2129;
+    --ui-candle-grid: rgb(255 255 255 / 0.05);
+    --ui-candle-axis: #7c7f87;
+    --ui-candle-up: #b0c956;
+    --ui-candle-down: #ee9443;
+
+    /* Bars: olive tracks filled in a darker olive, the selected day in lime. */
+    --ui-bar-fill: #4f5a2c;
+    --ui-bar-low: #3a4027;
+    --ui-bar-selected: #b0c956;
+  }
+}
+
+@theme inline {
+  --color-ui-canvas: var(--ui-canvas);
+  --color-ui-surface-1: var(--ui-surface-1);
+  --color-ui-surface-2: var(--ui-surface-2);
+  --color-ui-surface-3: var(--ui-surface-3);
+  --color-ui-hairline: var(--ui-hairline);
+  --color-ui-hairline-strong: var(--ui-hairline-strong);
+  --color-ui-text: var(--ui-text);
+  --color-ui-muted: var(--ui-muted);
+  --color-ui-dim: var(--ui-dim);
+  --color-ui-ink: var(--ui-ink);
+  --color-ui-on-ink: var(--ui-on-ink);
+  --color-ui-track: var(--ui-track);
+  --color-ui-up: var(--ui-up);
+  --color-ui-down: var(--ui-down);
+  --color-ui-warn: var(--ui-warn);
+  --color-ui-info: var(--ui-info);
+  --color-ui-purple-text: var(--ui-purple-text);
+  --color-ui-focus: var(--ui-focus);
+  --color-ui-scrim: var(--ui-scrim);
+  --color-ui-glass: var(--ui-glass);
+
+  --color-ui-lime: var(--ui-lime);
+  --color-ui-lime-bright: var(--ui-lime-bright);
+  --color-ui-lime-logo: var(--ui-lime-logo);
+  --color-ui-on-lime: var(--ui-on-lime);
+  --color-ui-purple: var(--ui-purple);
+  --color-ui-purple-deep: var(--ui-purple-deep);
+  --color-ui-purple-chart-from: var(--ui-purple-chart-from);
+  --color-ui-purple-chart-to: var(--ui-purple-chart-to);
+  --color-ui-crimson-from: var(--ui-crimson-from);
+  --color-ui-crimson-to: var(--ui-crimson-to);
+
+  --color-ui-blue: var(--ui-blue);
+  --color-ui-yellow: var(--ui-yellow);
+  --color-ui-lilac: var(--ui-lilac);
+  --color-ui-salmon: var(--ui-salmon);
+  --color-ui-cyan: var(--ui-cyan);
+  --color-ui-mint: var(--ui-mint);
+  --color-ui-teal: var(--ui-teal);
+  --color-ui-pink: var(--ui-pink);
+  --color-ui-sage: var(--ui-sage);
+  --color-ui-sky: var(--ui-sky);
+  --color-ui-honey: var(--ui-honey);
+  --color-ui-mint-soft: var(--ui-mint-soft);
+
+  --color-ui-candle-panel: var(--ui-candle-panel);
+  --color-ui-candle-chip: var(--ui-candle-chip);
+
+  --shadow-ui-pop: var(--ui-shadow-pop);
+  --shadow-ui-nav: var(--ui-shadow-nav);
+  --shadow-ui-card: var(--ui-shadow-card);
+
+  --color-ui-frame: var(--ui-frame);
+  --color-ui-lime-button: var(--ui-lime-button);
+  --color-ui-lime-text: var(--ui-lime-text);
+  --color-ui-lime-active: var(--ui-lime-active);
+  --color-ui-lime-chip: var(--ui-lime-chip);
+  --color-ui-lime-chip-strong: var(--ui-lime-chip-strong);
+  --color-ui-axis: var(--ui-axis);
+  --color-ui-square: var(--ui-square);
+  --color-ui-swap: var(--ui-swap);
+  --color-ui-pill-lime: var(--ui-pill-lime);
+  --color-ui-pill-lime-text: var(--ui-pill-lime-text);
+  --color-ui-pill-purple: var(--ui-pill-purple);
+  --color-ui-pill-purple-text: var(--ui-pill-purple-text);
+  --color-ui-pill-teal: var(--ui-pill-teal);
+  --color-ui-pill-teal-text: var(--ui-pill-teal-text);
+  --color-ui-pill-amber: var(--ui-pill-amber);
+  --color-ui-pill-amber-text: var(--ui-pill-amber-text);
+  --color-ui-pill-red: var(--ui-pill-red);
+  --color-ui-pill-red-text: var(--ui-pill-red-text);
+  --color-ui-pill-neutral: var(--ui-pill-neutral);
+  --color-ui-pill-neutral-text: var(--ui-pill-neutral-text);
+  --color-ui-chart-top: var(--ui-chart-top);
+  --color-ui-chart-bottom: var(--ui-chart-bottom);
+  --shadow-ui-frame: var(--ui-shadow-frame);
+}
+
+@theme {
+  --font-satoshi: "Satoshi", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+
+  /* Shape: cards 28, tiles 20, rows 18, keypad keys 22, sheets 32, fields 16. */
+  --radius-ui-card: 28px;
+  --radius-ui-tile: 20px;
+  --radius-ui-row: 18px;
+  --radius-ui-key: 22px;
+  --radius-ui-sheet: 32px;
+  --radius-ui-field: 16px;
+  /* Ref E: the floating app panel, its stacked cards, the outlined summary card. */
+  --radius-ui-frame: 32px;
+  --radius-ui-swap: 30px;
+  --radius-ui-panel: 26px;
+
+  --ease-ui-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-ui-out: cubic-bezier(0.22, 1, 0.36, 1);
+
+  --animate-ui-shimmer: ui-shimmer 1.6s ease-in-out infinite;
+  --animate-ui-caret: ui-caret 1.1s steps(1, end) infinite;
+
+  @keyframes ui-shimmer {
+    0% {
+      background-position: 100% 0;
+    }
+    100% {
+      background-position: -100% 0;
+    }
+  }
+
+  @keyframes ui-caret {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0;
+    }
+  }
+}
+
+@layer components {
+  /* A screen or page root: Satoshi, the theme's ground and text. */
+  .ui-root {
+    font-family: var(--font-satoshi);
+    background-color: var(--ui-canvas);
+    color: var(--ui-text);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* Every figure: tabular and lining, so columns of money line up. */
+  .ui-figure {
+    font-variant-numeric: tabular-nums lining-nums;
+    font-feature-settings: "tnum" 1, "lnum" 1;
+  }
+
+  /* Hide a scrollbar on horizontal rails (carousels, quick transfer). */
+  .ui-no-scrollbar {
+    scrollbar-width: none;
+  }
+  .ui-no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+}

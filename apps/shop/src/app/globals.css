@@ -1,0 +1,332 @@
+@import "tailwindcss";
+
+/*
+ * Halcyon. A warm, quiet store: an off-white ground the colour of the
+ * product photographs' seamless paper, ink type, one sage accent taken from
+ * the camera and the sneakers, and brass for the smallest details.
+ */
+
+@theme {
+  --color-ground: #f7f4ee;
+  --color-paper: #fcfbf8;
+  --color-sand: #eee9e0;
+  --color-tile: #f2eee7;
+  --color-ink: #1d1c1a;
+  --color-ink-2: #3a3833;
+  --color-muted: #66625a;
+  --color-faint: #746f66;
+  --color-hair: rgb(29 28 26 / 0.12);
+  --color-hair-strong: rgb(29 28 26 / 0.22);
+  --color-sage: #4a5842;
+  --color-sage-soft: #dfe3d6;
+  --color-brass: #8c6c35;
+  --color-alert: #9b3a2a;
+  --color-alert-soft: #f4e3dc;
+  --color-ok: #3d5a36;
+  --color-ok-soft: #e1e8d8;
+
+  --font-display: "Hedvig Letters Serif Variable", "Hedvig Letters Serif", ui-serif, Georgia, serif;
+  --font-sans: "Schibsted Grotesk Variable", "Schibsted Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono Variable", "JetBrains Mono", ui-monospace, "SFMono-Regular", monospace;
+
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
+
+  --breakpoint-xs: 26rem;
+}
+
+@layer base {
+  :root {
+    color-scheme: light;
+    /* polarispay-sdk's components take their type and focus colour from the store. */
+    --polaris-font: var(--font-sans);
+    --polaris-text: var(--color-ink);
+    --polaris-focus: var(--color-sage);
+    /* The Polaris line under a price, in the store's size (the SDK's own rule would win over a class). */
+    --polaris-message-size: 0.97rem;
+    /* The Polaris button in the store's ink, so it matches the wallet button beside it. */
+    --polaris-button-bg: var(--color-ink);
+    --polaris-button-hover: #34322e;
+  }
+
+
+  html {
+    background: var(--color-ground);
+    color: var(--color-ink);
+    -webkit-text-size-adjust: 100%;
+    text-rendering: optimizeLegibility;
+    scroll-behavior: smooth;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+  }
+
+  body {
+    font-family: var(--font-sans);
+    font-size: 16px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    min-height: 100dvh;
+  }
+
+  ::selection {
+    background: var(--color-sage-soft);
+    color: var(--color-ink);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-sage);
+    outline-offset: 3px;
+    border-radius: 4px;
+  }
+
+  input,
+  select,
+  textarea {
+    caret-color: var(--color-sage);
+  }
+
+  a {
+    text-underline-offset: 0.22em;
+    text-decoration-thickness: 1px;
+  }
+
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  /* Thin, warm scrollbars where the page scrolls inside a panel. */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: rgb(29 28 26 / 0.25) transparent;
+  }
+}
+
+@layer components {
+  .display {
+    font-family: var(--font-display);
+    font-weight: 400;
+    letter-spacing: -0.02em;
+    line-height: 1.02;
+  }
+
+  /* Lining figures for prices. Schibsted's tabular figures also space out
+     the point and the comma ("$224 . 75"), so prices stay proportional. */
+  .num {
+    font-variant-numeric: lining-nums;
+  }
+
+  .link {
+    text-decoration: underline;
+    text-decoration-color: var(--color-hair-strong);
+    transition: text-decoration-color 0.2s;
+  }
+  .link:hover {
+    text-decoration-color: currentColor;
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.6rem;
+    min-height: 3.25rem;
+    padding: 0 1.6rem;
+    border-radius: 999px;
+    font-weight: 560;
+    font-size: 0.97rem;
+    letter-spacing: -0.005em;
+    transition:
+      background-color 0.25s var(--ease-out-quart),
+      color 0.25s var(--ease-out-quart),
+      transform 0.25s var(--ease-out-expo),
+      box-shadow 0.25s;
+    user-select: none;
+  }
+  .btn:active:not(:disabled):not([aria-busy="true"]) {
+    transform: scale(0.985);
+  }
+  .btn:disabled {
+    cursor: default;
+    opacity: 0.55;
+  }
+  /* Working, not broken: a button that is busy stays solid (it ignores clicks through aria-disabled). */
+  .btn[aria-busy="true"] {
+    opacity: 1;
+    cursor: progress;
+  }
+  .btn[aria-disabled="true"]:not([aria-busy="true"]) {
+    cursor: default;
+    opacity: 0.55;
+  }
+  .btn-ink {
+    background: var(--color-ink);
+    color: var(--color-paper);
+  }
+  .btn-ink:hover:not(:disabled) {
+    background: #34322e;
+  }
+  .btn-line {
+    background: transparent;
+    color: var(--color-ink);
+    box-shadow: inset 0 0 0 1px var(--color-hair-strong);
+  }
+  .btn-line:hover:not(:disabled) {
+    box-shadow: inset 0 0 0 1px var(--color-ink);
+  }
+  .btn-paper {
+    background: var(--color-paper);
+    color: var(--color-ink);
+  }
+  .btn-paper:hover:not(:disabled) {
+    background: #fff;
+  }
+
+  .field {
+    display: block;
+    width: 100%;
+    height: 3.1rem;
+    padding: 0 0.95rem;
+    border-radius: 0.7rem;
+    background: var(--color-paper);
+    box-shadow: inset 0 0 0 1px var(--color-hair-strong);
+    color: var(--color-ink);
+    font: inherit;
+    transition: box-shadow 0.2s;
+  }
+  .field::placeholder {
+    color: var(--color-faint);
+  }
+  .field:hover {
+    box-shadow: inset 0 0 0 1px rgb(29 28 26 / 0.35);
+  }
+  .field:focus {
+    outline: none;
+    box-shadow:
+      inset 0 0 0 1.5px var(--color-ink),
+      0 0 0 4px rgb(74 88 66 / 0.14);
+  }
+  .field[aria-invalid="true"] {
+    box-shadow:
+      inset 0 0 0 1.5px var(--color-alert),
+      0 0 0 4px rgb(155 58 42 / 0.1);
+  }
+  select.field {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%231d1c1a' stroke-width='1.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 1rem center;
+    padding-right: 2.5rem;
+  }
+
+  .label {
+    display: block;
+    margin-bottom: 0.4rem;
+    font-size: 0.86rem;
+    font-weight: 540;
+    color: var(--color-ink-2);
+  }
+
+  .hairline {
+    border-color: var(--color-hair);
+  }
+
+  .tile {
+    background: var(--color-tile);
+  }
+}
+
+/* The hero's words rise into place on first paint: CSS, so they don't wait for hydration or need JavaScript. */
+@layer components {
+  .hero-rise {
+    animation: hero-rise 1s var(--ease-out-expo) var(--rise-delay, 0s) both;
+  }
+  @keyframes hero-rise {
+    from {
+      opacity: 0;
+      transform: translateY(18px);
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .hero-rise {
+      animation: none;
+    }
+  }
+}
+
+/* Photographs open like a shutter as they come into view (see components/reveal.tsx). */
+@layer components {
+  .reveal {
+    clip-path: inset(3.5% 3.5% 3.5% 3.5%);
+    transition: clip-path 1.25s var(--ease-out-expo);
+  }
+  .reveal > * {
+    transform: scale(1.045);
+    transition: transform 1.6s var(--ease-out-expo);
+    transition-delay: inherit;
+  }
+  .reveal[data-shown] {
+    clip-path: inset(0 0 0 0);
+  }
+  .reveal[data-shown] > * {
+    transform: none;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .reveal,
+    .reveal > * {
+      clip-path: none;
+      transform: none;
+      transition: none;
+    }
+  }
+}
+
+/*
+ * polarispay-sdk sets its prices in tabular figures; in Schibsted Grotesk that
+ * spaces out the point ("$87 . 25"). Unlayered, so it outranks the SDK's own
+ * unlayered <style> by specificity (a rule inside a Tailwind layer never would).
+ */
+:root .plrs-msg strong,
+:root .plrs-caption strong,
+:root .plrs-hero,
+:root .plrs-amt {
+  font-variant-numeric: lining-nums;
+}
+
+/*
+ * "Learn more" after "with ✦ Polaris": the gap is the brand's right margin,
+ * not the link's left one, so when the link wraps it starts its line flush
+ * instead of indented. A taller hit area on phones, with no change to layout.
+ */
+:root .plrs-brand {
+  margin-right: 0.4em;
+}
+:root .plrs-link {
+  margin-left: 0;
+  padding: 0.55em 0;
+  margin-block: -0.55em;
+}
+
+/* On phones the Learn more sheet sits on a scrim, not straight on the page. */
+@media (max-width: 480px) {
+  :root .plrs-pop {
+    box-shadow:
+      0 0 0 100vmax rgb(15 16 17 / 0.35),
+      0 28px 64px -28px rgb(15 16 17 / 0.5);
+  }
+}
+
+/* The Polaris button sits flat beside the store's own wallet button. */
+:root .plrs-checkout .plrs-btn {
+  box-shadow: none;
+}

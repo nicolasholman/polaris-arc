@@ -1,0 +1,121 @@
+[
+  {
+    "inputs": [],
+    "name": "InvalidReport",
+    "type": "error"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "receiver",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "workflowExecutionId",
+        "type": "bytes32"
+      },
+      {
+        "indexed": true,
+        "internalType": "bytes2",
+        "name": "reportId",
+        "type": "bytes2"
+      },
+      {
+        "indexed": false,
+        "internalType": "bool",
+        "name": "result",
+        "type": "bool"
+      }
+    ],
+    "name": "ReportProcessed",
+    "type": "event"
+  },
+  {
+    "inputs": [],
+    "name": "lastRevertData",
+    "outputs": [
+      {
+        "internalType": "bytes",
+        "name": "",
+        "type": "bytes"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "receiver",
+        "type": "address"
+      },
+      {
+        "internalType": "bytes",
+        "name": "rawReport",
+        "type": "bytes"
+      },
+      {
+        "internalType": "bytes",
+        "name": "",
+        "type": "bytes"
+      },
+      {
+        "internalType": "bytes[]",
+        "name": "",
+        "type": "bytes[]"
+      }
+    ],
+    "name": "report",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "receiver",
+        "type": "address"
+      },
+      {
+        "internalType": "bytes",
+        "name": "metadata",
+        "type": "bytes"
+      },
+      {
+        "internalType": "bytes",
+        "name": "body",
+        "type": "bytes"
+      }
+    ],
+    "name": "route",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "typeAndVersion",
+    "outputs": [
+      {
+        "internalType": "string",
+        "name": "",
+        "type": "string"
+      }
+    ],
+    "stateMutability": "pure",
+    "type": "function"
+  }
+]

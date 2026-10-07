@@ -1,0 +1,36 @@
+{
+  "fixture": {
+    "label": "FIXTURE: synthesized in the provider's documented response shape. Not live data, not a recording.",
+    "provider": "etherscan",
+    "request": "GET /v2/api?chainid=42161&module=logs&action=getLogs&topic0=LiquidationCall&topic3=<borrower>",
+    "shape": "Etherscan V2 getLogs response (docs.etherscan.io/api-reference/endpoint/getlogs-topics)",
+    "persona": "liquidated",
+    "recorded": false,
+    "synthesizedFor": "2026-09-26T00:00:00Z"
+  },
+  "status": 200,
+  "headers": {},
+  "body": {
+    "status": "1",
+    "message": "OK",
+    "result": [
+      {
+        "address": "0x794a61358d6845594f94dc1db02a252b5b4814ad",
+        "topics": [
+          "0xe413a321e8681d831f4dbccbca790d2952b56f977908e45be37335533e005286",
+          "0x000000000000000000000000a0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+          "0x000000000000000000000000c02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
+          "0x000000000000000000000000b0b0000000000000000000000000000000000003"
+        ],
+        "data": "0x000000000000000000000000000000000000000000000000000000003b9aca00000000000000000000000000000000000000000000000000000000000de0b6b300000000000000000000000011000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000000",
+        "blockNumber": "0x121eac0",
+        "timeStamp": "0x69a23000",
+        "gasPrice": "0x3b9aca00",
+        "gasUsed": "0x5208",
+        "logIndex": "0x1",
+        "transactionHash": "0x3c9198bd9768100a66064f07e203700953d168a4d7b6737b50177e1d41fc1fad",
+        "transactionIndex": "0x2"
+      }
+    ]
+  }
+}

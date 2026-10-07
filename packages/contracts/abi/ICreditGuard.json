@@ -1,0 +1,20 @@
+[
+  {
+    "inputs": [],
+    "name": "isCreditPaused",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "paused",
+        "type": "bool"
+      },
+      {
+        "internalType": "uint8",
+        "name": "reasons",
+        "type": "uint8"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  }
+]

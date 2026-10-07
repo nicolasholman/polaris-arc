@@ -1,0 +1,15 @@
+{
+  "fixture": {
+    "label": "FIXTURE: synthesized in the provider's documented response shape. Not live data, not a recording.",
+    "provider": "rpc",
+    "request": "eth_call balanceOf on Monad testnet AUSD and USDC",
+    "shape": "JSON-RPC results; the transport wraps each in {jsonrpc, id, result}",
+    "persona": "fresh-account",
+    "recorded": false,
+    "synthesizedFor": "2026-09-26T00:00:00Z"
+  },
+  "calls": {
+    "testnet-rpc.monad.xyz:balanceOf:0xa9012a055bd4e0edff8ce09f960291c09d5322dc": "0x00000000000000000000000000000000000000000000000000000000023dbb00",
+    "testnet-rpc.monad.xyz:balanceOf:0x534b2f3a21130d7a60830c2df862319e593943a3": "0x0000000000000000000000000000000000000000000000000000000000000000"
+  }
+}

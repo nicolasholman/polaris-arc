@@ -1,0 +1,30 @@
+{
+  "name": "polaris-indexer",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Envio HyperIndex indexer for Polaris on Monad: payments, Pay in 4 plans and instalments, subscriptions, sends, payouts, merchants, credit and CRE collections, behind the dashboard, the webhooks and the CRE collections workflow.",
+  "license": "MIT",
+  "scripts": {
+    "generate": "node scripts/generate.mjs",
+    "generate:check": "node scripts/generate.mjs --check",
+    "codegen": "envio codegen",
+    "dev": "envio dev",
+    "start": "envio start",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run --test-timeout=60000",
+    "record-fixture": "node scripts/record-fixture.mjs"
+  },
+  "dependencies": {
+    "envio": "3.12.1"
+  },
+  "devDependencies": {
+    "@types/node": "24.12.2",
+    "typescript": "6.0.3",
+    "viem": "2.54.0",
+    "vitest": "4.1.0"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  }
+}

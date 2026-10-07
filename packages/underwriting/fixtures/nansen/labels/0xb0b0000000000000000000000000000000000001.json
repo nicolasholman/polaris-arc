@@ -1,0 +1,37 @@
+{
+  "fixture": {
+    "label": "FIXTURE: synthesized in the provider's documented response shape. Not live data, not a recording.",
+    "provider": "nansen",
+    "request": "POST /api/v1/profiler/address/labels",
+    "shape": "Labels response, Nansen OpenAPI 1.0.0 (docs/research/data.md §2.5.7)",
+    "persona": "strong",
+    "recorded": false,
+    "synthesizedFor": "2026-09-26T00:00:00Z",
+    "notes": "100 credits, API key only. Off unless NANSEN_LABELS=1."
+  },
+  "status": 200,
+  "headers": {
+    "x-nansen-credits-cost": "100",
+    "x-nansen-credits-used": "100",
+    "x-nansen-credits-remaining": "96"
+  },
+  "body": {
+    "pagination": {
+      "page": 1,
+      "per_page": 100,
+      "is_last_page": true
+    },
+    "data": [
+      {
+        "label": "Smart Trader",
+        "category": "smart_money",
+        "kind": []
+      },
+      {
+        "label": "Aave V3 User",
+        "category": "defi",
+        "kind": []
+      }
+    ]
+  }
+}

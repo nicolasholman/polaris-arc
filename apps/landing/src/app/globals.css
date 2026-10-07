@@ -1,0 +1,276 @@
+@import "tailwindcss";
+
+/*
+ * Tokens sampled from the reference recording (docs/design/landing.md).
+ * The spec's names are kept as plain custom properties; @theme maps them to
+ * Tailwind utilities (bg-olive, text-lime, ...).
+ */
+:root {
+  --olive: #2d3a02;
+  --olive-ink: #151a01; /* the dark "pay in 4" card, darker than the olive */
+  --olive-mid: #8da430; /* top blocks of the hero chart */
+  --lime: #e1ff67;
+  --lime-bar: #b7d83d;
+  --lime-muted: #afc164; /* muted copy on olive */
+  --lime-pale: #f3fcc9; /* pale lime chips */
+  --mint: #d8ece9;
+  --mint-chip: #dcebea;
+  --lavender: #e0e5f8;
+  --paper: #ffffff;
+  --paper-warm: #fdfff2;
+  /* Muted copy. The frames sample about #8a8f7a, which is 3.3:1 on white;
+     this is the nearest tone that passes AA (4.9:1) at body sizes. */
+  --muted: #6e735f;
+  --pill: #eeeeea;
+  --stone: #d6d7cb;
+  --sage: #808767;
+  --sage-panel: #abb38c; /* the frosted "Send money" panel */
+  /* Footer copy on the olive card: sampled #899264 lifted to 4.7:1. */
+  --footer-muted: #9ca576;
+
+  --radius-card: 22px;
+  --radius-footer: 28px;
+
+  --ease-reveal: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --gutter: 40px;
+  --content: 1360px;
+}
+
+@theme inline {
+  --color-olive: var(--olive);
+  --color-olive-ink: var(--olive-ink);
+  --color-olive-mid: var(--olive-mid);
+  --color-lime: var(--lime);
+  --color-lime-bar: var(--lime-bar);
+  --color-lime-muted: var(--lime-muted);
+  --color-lime-pale: var(--lime-pale);
+  --color-mint: var(--mint);
+  --color-mint-chip: var(--mint-chip);
+  --color-lavender: var(--lavender);
+  --color-paper: var(--paper);
+  --color-paper-warm: var(--paper-warm);
+  --color-muted: var(--muted);
+  --color-pill: var(--pill);
+  --color-stone: var(--stone);
+  --color-sage: var(--sage);
+  --color-sage-panel: var(--sage-panel);
+  --color-footer-muted: var(--footer-muted);
+
+  --radius-card: var(--radius-card);
+  --radius-footer: var(--radius-footer);
+
+  --font-sans: var(--font-inter-tight), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --ease-reveal: var(--ease-reveal);
+}
+
+@media (max-width: 1279px) {
+  :root {
+    --gutter: 32px;
+  }
+}
+
+@media (max-width: 767px) {
+  :root {
+    --gutter: 16px;
+  }
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body {
+  background: var(--paper);
+  color: var(--olive);
+  font-family: var(--font-sans);
+  font-feature-settings: "ss01" off, "cv11" on;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  overflow-x: clip;
+}
+
+::selection {
+  background: var(--lime);
+  color: var(--olive);
+}
+
+/* Lenis */
+html.lenis,
+html.lenis body {
+  height: auto;
+}
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+.lenis.lenis-smooth [data-lenis-prevent] {
+  overscroll-behavior: contain;
+}
+.lenis.lenis-stopped {
+  overflow: hidden;
+}
+
+@layer components {
+  /* The page container: a 1360px measure with 40px gutters at 1440. */
+  .shell {
+    width: 100%;
+    max-width: calc(var(--content) + var(--gutter) * 2);
+    margin-inline: auto;
+    padding-inline: var(--gutter);
+  }
+
+  /* The pricing band sits on a narrower, 1200px measure. */
+  .shell-narrow {
+    width: 100%;
+    max-width: calc(1200px + var(--gutter) * 2);
+    margin-inline: auto;
+    padding-inline: var(--gutter);
+  }
+
+  .display {
+    font-weight: 500;
+    letter-spacing: -0.04em;
+    line-height: 0.98;
+    text-wrap: balance;
+  }
+
+  /* Balanced so a heading that flows on phones never leaves a lone word. */
+  .heading {
+    font-weight: 500;
+    letter-spacing: -0.04em;
+    line-height: 1.06;
+    text-wrap: balance;
+  }
+
+  /* A word in a blur reveal: inline-block so transforms apply, but it keeps
+     the space after it. No permanent will-change: there are hundreds of
+     these, and each would keep its own compositor layer. */
+  .reveal-word {
+    display: inline-block;
+  }
+
+  /* The hero headline's word reveal, as CSS so it plays before hydration.
+     Each word sets its own animation-delay. */
+  .word-in {
+    animation: word-in 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  }
+}
+
+@layer utilities {
+  .text-hero {
+    font-size: clamp(44px, 5.4vw, 80px);
+  }
+  .text-h2 {
+    font-size: clamp(36px, 4.45vw, 64px);
+  }
+  .text-h3 {
+    font-size: clamp(26px, 2.35vw, 34px);
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    scrollbar-width: none;
+  }
+}
+
+/* The calculator's native range input sits invisibly over the drawn slider;
+   its thumb matches the drawn 20px knob so dragging lines up. */
+.range-input {
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  margin: 0;
+}
+.range-input::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 26px;
+}
+.range-input::-moz-range-thumb {
+  width: 20px;
+  height: 26px;
+  border: 0;
+}
+
+/* The drawn stand-in for streaks.jpg: soft diagonal bands that drift. */
+.streaks-drawn {
+  transform: rotate(-26deg);
+  filter: blur(6px) saturate(1.05);
+}
+.streak {
+  position: absolute;
+  left: -10%;
+  width: 120%;
+  height: 17%;
+  border-radius: 9999px;
+  filter: blur(16px);
+  animation: streak-drift 9s ease-in-out infinite alternate;
+  will-change: transform;
+}
+.streak:nth-child(2n) {
+  animation-duration: 12s;
+  animation-direction: alternate-reverse;
+}
+.streak:nth-child(3n) {
+  animation-duration: 15s;
+}
+@keyframes word-in {
+  from {
+    opacity: 0;
+    filter: blur(12px);
+    transform: translateY(0.25em);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0px);
+    transform: translateY(0);
+  }
+}
+
+@keyframes streak-drift {
+  from {
+    transform: translateX(-9%);
+  }
+  to {
+    transform: translateX(9%);
+  }
+}
+
+/*
+ * Reduced motion: every reveal shows its final state, before and after
+ * hydration. .rv marks the roots of the motion primitives; the rv-* classes
+ * cover reveals that animate a size or a colour, with the final value in a
+ * custom property. The same rules are repeated in a <noscript> style in
+ * layout.tsx, so the page is complete without JavaScript too.
+ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-delay: 0s !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+  .reveal-word,
+  .rv {
+    opacity: 1 !important;
+    filter: none !important;
+    transform: none !important;
+    clip-path: none !important;
+  }
+  .rv-h {
+    height: var(--rv-h) !important;
+  }
+  .rv-w {
+    width: auto !important;
+  }
+  .rv-fill {
+    background-color: var(--rv-bg) !important;
+    color: var(--rv-fg) !important;
+  }
+}

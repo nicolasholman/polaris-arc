@@ -1,0 +1,13 @@
+.next/
+next-env.d.ts
+*.tsbuildinfo
+.env*.local
+# The local SQLite store (POLARIS_DB_URL default)
+.data/
+# Written by scripts/privy/*.mjs: relayer and payout signer keys
+.env.privy
+# Written once by scripts/privy/setup-relayer.mjs: the admin key quorum's private key
+.privy-admin.key
+# Written by `next dev` (agent rules); never committed.
+AGENTS.md
+CLAUDE.md

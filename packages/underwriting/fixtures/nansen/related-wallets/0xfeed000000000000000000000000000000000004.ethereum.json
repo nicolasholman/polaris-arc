@@ -1,0 +1,275 @@
+{
+  "fixture": {
+    "label": "FIXTURE: synthesized in the provider's documented response shape. Not live data, not a recording.",
+    "provider": "nansen",
+    "request": "POST /api/v1/profiler/address/related-wallets",
+    "shape": "ProfilerRelatedWallet rows, Nansen OpenAPI 1.0.0 (docs/research/data.md §2.5.2)",
+    "persona": "sybil",
+    "recorded": false,
+    "synthesizedFor": "2026-09-26T00:00:00Z",
+    "notes": "The relation vocabulary is UNVERIFIED (data.md §9 item 2); the collector counts every relation."
+  },
+  "status": 200,
+  "headers": {
+    "x-nansen-credits-cost": "1",
+    "x-nansen-credits-used": "1",
+    "x-nansen-credits-remaining": "96"
+  },
+  "body": {
+    "pagination": {
+      "page": 1,
+      "per_page": 100,
+      "is_last_page": true
+    },
+    "data": [
+      {
+        "address": "0xb0b0000000000000000000000000000000000004",
+        "relation": "First Funder",
+        "transaction_hash": "0x36fa519b6c0f5867a8d1d31a206051f180541264ee9185efbec1ecef684a94a0",
+        "block_timestamp": "2026-08-17T00:00:00Z",
+        "order": 1,
+        "chain": "ethereum"
+      },
+      {
+        "address": "0x51b0000000000000000000000000000000000001",
+        "relation": "Funded",
+        "transaction_hash": "0x74943711646dab87eefb918829d48a08043f186ec5a25bb2169a952f566141b8",
+        "block_timestamp": "2026-08-16T00:01:37Z",
+        "order": 2,
+        "chain": "ethereum"
+      },
+      {
+        "address": "0x51b0000000000000000000000000000000000002",
+        "relation": "Funded",
+        "transaction_hash": "0x6ec127a3fa203c7d43510c87e233fa62436313e6704b34348cd739f9d5fc95eb",
+        "block_timestamp": "2026-08-15T00:03:14Z",
+        "order": 3,
+        "chain": "ethereum"
+      },
+      {
+        "address": "0x51b0000000000000000000000000000000000003",
+        "relation": "Funded",
+        "transaction_hash": "0xfd7583924ca2fb1c7c7d6e946386511bbf08742ee21cce6e13cc347415faa75e",
+        "block_timestamp": "2026-08-14T00:04:51Z",
+        "order": 4,
+        "chain": "ethereum"
+      },
+      {
+        "address": "0x51b0000000000000000000000000000000000004",
+        "relation": "Funded",
+        "transaction_hash": "0x9dde0d7a513943d68759c862fb968ea4741b01c79e1d729e43b8fdf349c4816a",
+        "block_timestamp": "2026-08-13T00:06:28Z",
+        "order": 5,
+        "chain": "ethereum"
+      },
+      {
+        "address": "0x51b0000000000000000000000000000000000005",
+        "relation": "Funded",
+        "transaction_hash": "0x2debab72b965c255187f6b406a01408ec74f2f8bc66ba3ff1757ae9d847a7129",
+        "block_timestamp": "2026-08-12T00:08:05Z",
+        "order": 6,
+        "chain": "ethereum"
+      },
+      {
+        "address": "0x51b0000000000000000000000000000000000006",
+        "relation": "Funded",
+        "transaction_hash": "0xf5396b965495a312e2f7b408c10cee7b4385db7920d4889fa2e6045012bb400d",
+        "block_timestamp": "2026-08-11T00:09:42Z",
+        "order": 7,
+        "chain": "ethereum"
+      },
+      {
+        "address": "0x51b0000000000000000000000000000000000007",
+        "relation": "Funded",
+        "transaction_hash": "0x6198a4ce79730d610dd199fbb72c7a1d4948a3a243c30351149c5931f7720fc4",
+        "block_timestamp": "2026-08-10T00:11:19Z",
+        "order": 8,
+        "chain": "ethereum"
+      },
+      {
+        "address": "0x51b0000000000000000000000000000000000008",
+        "relation": "Funded",
+        "transaction_hash": "0xcdd9f8edd7585b3311a3a6dc1ceb2ed9647d0216b5721666b928e44e5f142b4a",
+        "block_timestamp": "2026-08-09T00:12:56Z",
+        "order": 9,
+        "chain": "ethereum"
+      },
+      {
+        "address": "0x51b0000000000000000000000000000000000009",
+        "relation": "Funded",
+        "transaction_hash": "0xf788812afd0d04d9e6596c521916328ef532aeb2517bd4b553dc36871d34a810",
+        "block_timestamp": "2026-08-08T00:14:33Z",
+        "order": 10,
+        "chain": "ethereum"
+      },
+      {
+        "address": "0x51b000000000000000000000000000000000000a",
+        "relation": "Funded",
+        "transaction_hash": "0xee8c22c50bb93a4b9fcf57232b8c33d31752bfa79ec3c981dfcfba3f0d32e09d",
+        "block_timestamp": "2026-08-07T00:16:10Z",
+        "order": 11,
+        "chain": "ethereum"
+      },
+      {
+        "address": "0x51b000000000000000000000000000000000000b",
+        "relation": "Funded",
+        "transaction_hash": "0xa7614197d65c7378b8199305a01de07cbeba034967c6e8956a593dc6dfed7ff5",
+        "block_timestamp": "2026-08-06T00:17:47Z",
+        "order": 12,
+        "chain": "ethereum"
+      },
+      {
+        "address": "0x51b000000000000000000000000000000000000c",
+        "relation": "Funded",
+        "transaction_hash": "0x7d26ce9b8d016ccdb50371768f73c5860887e565de64dc0351f2669c96cb521e",
+        "block_timestamp": "2026-08-05T00:19:24Z",
+        "order": 13,
+        "chain": "ethereum"
+      },
+      {
+        "address": "0x51b000000000000000000000000000000000000d",
+        "relation": "Funded",
+        "transaction_hash": "0xdac7ce0d7d4dac8c7cd516ba8a260d5836197562e8d9940aecb819bf79cf990d",
+        "block_timestamp": "2026-08-04T00:21:01Z",
+        "order": 14,
+        "chain": "ethereum"
+      },
+      {
+        "address": "0x51b000000000000000000000000000000000000e",
+        "relation": "Funded",
+        "transaction_hash": "0x41a1d777816104cf08c7c385f7db50d12f35e3777c48f753fe5a638af52a85f1",
+        "block_timestamp": "2026-08-03T00:22:38Z",
+        "order": 15,
+        "chain": "ethereum"
+      },
+      {
+        "address": "0x51b000000000000000000000000000000000000f",
+        "relation": "Funded",
+        "transaction_hash": "0x808123bd79570bda0b2259a321ddb9cf5203855f6a6b66b100f22893b2f7e486",
+        "block_timestamp": "2026-08-02T00:24:15Z",
+        "order": 16,
+        "chain": "ethereum"
+      },
+      {
+        "address": "0x51b0000000000000000000000000000000000010",
+        "relation": "Funded",
+        "transaction_hash": "0xcc2ae10e5388dfe10000527ced6aad414b71e69fbfc2d7faecc3168103117155",
+        "block_timestamp": "2026-08-01T00:25:52Z",
+        "order": 17,
+        "chain": "ethereum"
+      },
+      {
+        "address": "0x51b0000000000000000000000000000000000011",
+        "relation": "Funded",
+        "transaction_hash": "0xc3318f419e0e48a87cdeadabd38a738c51151e817a8ed4eebb6a0fdc16721384",
+        "block_timestamp": "2026-07-31T00:27:29Z",
+        "order": 18,
+        "chain": "ethereum"
+      },
+      {
+        "address": "0x51b0000000000000000000000000000000000012",
+        "relation": "Funded",
+        "transaction_hash": "0x46543a4a3c40b8021aba7e1f78a1235fd06bf2451884eef8b718512bf010ebac",
+        "block_timestamp": "2026-07-30T00:29:06Z",
+        "order": 19,
+        "chain": "ethereum"
+      },
+      {
+        "address": "0x51b0000000000000000000000000000000000013",
+        "relation": "Funded",
+        "transaction_hash": "0x5499b696decabaa3dd914531a689a35158a6e3459504eea4c42b86d4678d18f1",
+        "block_timestamp": "2026-07-29T00:30:43Z",
+        "order": 20,
+        "chain": "ethereum"
+      },
+      {
+        "address": "0x51b0000000000000000000000000000000000014",
+        "relation": "Funded",
+        "transaction_hash": "0x90be8d31108db0eb7f9f7474a830a88620ee10c7673aedc2055ad1d75478db9c",
+        "block_timestamp": "2026-07-28T00:32:20Z",
+        "order": 21,
+        "chain": "ethereum"
+      },
+      {
+        "address": "0x51b0000000000000000000000000000000000015",
+        "relation": "Funded",
+        "transaction_hash": "0x9e9f4edc97758a32efa04fcd496959eaea6525db69f31aaadb065bccf10d2969",
+        "block_timestamp": "2026-07-27T00:33:57Z",
+        "order": 22,
+        "chain": "ethereum"
+      },
+      {
+        "address": "0x51b0000000000000000000000000000000000016",
+        "relation": "Funded",
+        "transaction_hash": "0x26048b1ea0f77ce69b8369976cb9de3fc273f6d9fbaa3cf543386f7afda8d8e2",
+        "block_timestamp": "2026-07-26T00:35:34Z",
+        "order": 23,
+        "chain": "ethereum"
+      },
+      {
+        "address": "0x51b0000000000000000000000000000000000017",
+        "relation": "Funded",
+        "transaction_hash": "0x210e1660984709529a4566dac496c26167381972024b15b9808047fd489ba239",
+        "block_timestamp": "2026-07-25T00:37:11Z",
+        "order": 24,
+        "chain": "ethereum"
+      },
+      {
+        "address": "0x51b0000000000000000000000000000000000018",
+        "relation": "Funded",
+        "transaction_hash": "0xf2554aaa043b1bf15da508f76998c80be972fa4041d0c654ac8a626261d58fa3",
+        "block_timestamp": "2026-07-24T00:38:48Z",
+        "order": 25,
+        "chain": "ethereum"
+      },
+      {
+        "address": "0x51b0000000000000000000000000000000000019",
+        "relation": "Funded",
+        "transaction_hash": "0x20f53997d2bfdb9bcc053ac3122745f4d8ec26d2d6cb104a2e7caa99a9c4d696",
+        "block_timestamp": "2026-07-23T00:40:25Z",
+        "order": 26,
+        "chain": "ethereum"
+      },
+      {
+        "address": "0x51b000000000000000000000000000000000001a",
+        "relation": "Funded",
+        "transaction_hash": "0x759c483e3b22453abf4ad6f949f7fba0da143f9b3f914f0a216820e705cf15a3",
+        "block_timestamp": "2026-07-22T00:42:02Z",
+        "order": 27,
+        "chain": "ethereum"
+      },
+      {
+        "address": "0x51b000000000000000000000000000000000001b",
+        "relation": "Funded",
+        "transaction_hash": "0x044a445b72094d65e4d54564fbef35ecea21484ef67999cb50ea2b4e087c4f56",
+        "block_timestamp": "2026-07-21T00:43:39Z",
+        "order": 28,
+        "chain": "ethereum"
+      },
+      {
+        "address": "0x51b000000000000000000000000000000000001c",
+        "relation": "Funded",
+        "transaction_hash": "0x13bb51ee30e3808cf3bade6652b682239c3b73643e164ec68bff0943b5dd4d06",
+        "block_timestamp": "2026-07-20T00:45:16Z",
+        "order": 29,
+        "chain": "ethereum"
+      },
+      {
+        "address": "0x51b000000000000000000000000000000000001d",
+        "relation": "Funded",
+        "transaction_hash": "0xe851aada0d1e7c710e5c1bf71aa525299e49897e98f46ac6244c52b28ec6f2d2",
+        "block_timestamp": "2026-07-19T00:46:53Z",
+        "order": 30,
+        "chain": "ethereum"
+      },
+      {
+        "address": "0x51b000000000000000000000000000000000001e",
+        "relation": "Funded",
+        "transaction_hash": "0x305b82b11442a588cbb828aee8671ba2d6ca415240445709e885abf50f2499e9",
+        "block_timestamp": "2026-07-18T00:48:30Z",
+        "order": 31,
+        "chain": "ethereum"
+      }
+    ]
+  }
+}

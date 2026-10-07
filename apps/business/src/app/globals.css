@@ -1,0 +1,136 @@
+@import "tailwindcss";
+/* The shared library: tokens, themes and Satoshi, all namespaced (--ui-*, ui-*). */
+@import "@polaris/ui/styles.css";
+
+/*
+  POLARIS FOR BUSINESS
+  ────────────────────
+  Ref E (docs/design/refs-v2/ref-e-lumatrade.png, docs/design/system.md): from
+  1024px the app is a dark rounded panel floating on a lime canvas; below it
+  the dark panel is full bleed. <html data-theme="ref-e"> sets the tokens.
+  Every colour, radius and font comes from @polaris/ui; this file adds only
+  the monospace face, the page ground and the landing page's reveal motion.
+*/
+
+@theme {
+  --font-mono: "JetBrains Mono Variable", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+}
+
+/* Satoshi, preloaded by next/font (src/app/layout.tsx), ahead of the
+   library's @font-face; stronger than the library's :root token. */
+:root[data-theme] {
+  --font-satoshi: var(--font-satoshi-next), "Satoshi", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+html {
+  color-scheme: dark;
+  background-color: var(--ui-canvas);
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body {
+  min-height: 100dvh;
+}
+
+/* The lime canvas shows past the panel (and on overscroll) from 1024px. */
+@media (min-width: 1024px) {
+  html {
+    background-color: var(--ui-frame);
+  }
+}
+
+::selection {
+  background: rgb(176 201 86 / 0.36);
+  color: #fff;
+}
+
+/* In the base layer, so a component's own `outline-none` (a dialog panel that
+   takes focus when it opens) still wins. */
+@layer base {
+  :focus-visible {
+    outline: 2px solid var(--ui-focus);
+    outline-offset: 2px;
+  }
+}
+
+/* A soft lime and violet glow behind heroes, drawn in CSS (no image). */
+.glow-lime {
+  background: radial-gradient(closest-side, rgb(176 201 86 / 0.18), transparent 70%);
+}
+.glow-violet {
+  background: radial-gradient(closest-side, rgb(142 92 240 / 0.26), transparent 70%);
+}
+
+/* A faint graticule that fades out towards the edges, behind hero visuals. */
+.grid-ground {
+  background-image:
+    linear-gradient(to right, rgb(255 255 255 / 0.045) 1px, transparent 1px),
+    linear-gradient(to bottom, rgb(255 255 255 / 0.045) 1px, transparent 1px);
+  background-size: 56px 56px;
+  mask-image: radial-gradient(ellipse at center, #000 20%, transparent 72%);
+}
+
+@layer components {
+  /* A word in a blur reveal (the landing's motion, from apps/landing). */
+  .reveal-word {
+    display: inline-block;
+  }
+  /* The hero headline's word reveal, in CSS so it plays before hydration. */
+  .word-in {
+    animation: word-in 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  }
+  /* Floating glass renders: a slow bob. */
+  .float-slow {
+    animation: float-y 7s ease-in-out infinite alternate;
+  }
+  .float-slower {
+    animation: float-y 9s ease-in-out infinite alternate-reverse;
+  }
+}
+
+@keyframes word-in {
+  from {
+    opacity: 0;
+    filter: blur(12px);
+    transform: translateY(0.25em);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0px);
+    transform: translateY(0);
+  }
+}
+
+@keyframes float-y {
+  from {
+    transform: translateY(-10px) rotate(-2deg);
+  }
+  to {
+    transform: translateY(12px) rotate(3deg);
+  }
+}
+
+/*
+  Reduced motion: every reveal shows its final state, before and after
+  hydration. `.rv` marks the roots of the motion primitives (as in
+  apps/landing).
+*/
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-delay: 0s !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+  .reveal-word,
+  .rv {
+    opacity: 1 !important;
+    filter: none !important;
+    transform: none !important;
+    clip-path: none !important;
+  }
+}

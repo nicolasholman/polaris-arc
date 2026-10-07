@@ -1,0 +1,1540 @@
+[
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "initialOwner",
+        "type": "address"
+      },
+      {
+        "internalType": "contract IERC20",
+        "name": "_stablecoin",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_treasury",
+        "type": "address"
+      },
+      {
+        "internalType": "uint64",
+        "name": "_minPeriod",
+        "type": "uint64"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "constructor"
+  },
+  {
+    "inputs": [],
+    "name": "AlreadySubscribed",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "checkout",
+        "type": "address"
+      }
+    ],
+    "name": "CheckoutNotAContract",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "DuplicatePayment",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "InvalidFee",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "merchant",
+        "type": "address"
+      }
+    ],
+    "name": "InvalidMerchant",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "InvalidPeriod",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "InvalidShortString",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "NotCheckout",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "NotDue",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "NotOperator",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "NotSubscriber",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "paymentId",
+        "type": "bytes32"
+      }
+    ],
+    "name": "OrderAlreadySettled",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "owner",
+        "type": "address"
+      }
+    ],
+    "name": "OwnableInvalidOwner",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "account",
+        "type": "address"
+      }
+    ],
+    "name": "OwnableUnauthorizedAccount",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "PlanNotActive",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "ReentrancyGuardReentrantCall",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint8",
+        "name": "bits",
+        "type": "uint8"
+      },
+      {
+        "internalType": "uint256",
+        "name": "value",
+        "type": "uint256"
+      }
+    ],
+    "name": "SafeCastOverflowedUintDowncast",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "token",
+        "type": "address"
+      }
+    ],
+    "name": "SafeERC20FailedOperation",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "SignatureExpired",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "string",
+        "name": "str",
+        "type": "string"
+      }
+    ],
+    "name": "StringTooLong",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "SubscriptionNotActive",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "expected",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "received",
+        "type": "uint256"
+      }
+    ],
+    "name": "UnexpectedAmount",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "quoted",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "offered",
+        "type": "uint256"
+      }
+    ],
+    "name": "WrongAmount",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "ZeroAddress",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "ZeroAmount",
+    "type": "error"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "subId",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint32",
+        "name": "misses",
+        "type": "uint32"
+      },
+      {
+        "indexed": false,
+        "internalType": "string",
+        "name": "reason",
+        "type": "string"
+      }
+    ],
+    "name": "ChargeMissed",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "checkout",
+        "type": "address"
+      }
+    ],
+    "name": "CheckoutSet",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [],
+    "name": "EIP712DomainChanged",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "bps",
+        "type": "uint256"
+      }
+    ],
+    "name": "FeeChanged",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "operator",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "bool",
+        "name": "allowed",
+        "type": "bool"
+      }
+    ],
+    "name": "OperatorSet",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "paymentId",
+        "type": "bytes32"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "merchant",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      }
+    ],
+    "name": "OrderQuoted",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "previousOwner",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "newOwner",
+        "type": "address"
+      }
+    ],
+    "name": "OwnershipTransferred",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "paymentId",
+        "type": "bytes32"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "payer",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "merchant",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "fee",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "string",
+        "name": "orderId",
+        "type": "string"
+      }
+    ],
+    "name": "PaymentMade",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "planId",
+        "type": "uint256"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "merchant",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "price",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint64",
+        "name": "period",
+        "type": "uint64"
+      }
+    ],
+    "name": "PlanCreated",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "planId",
+        "type": "uint256"
+      }
+    ],
+    "name": "PlanDeactivated",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "subId",
+        "type": "uint256"
+      },
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "planId",
+        "type": "uint256"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "subscriber",
+        "type": "address"
+      }
+    ],
+    "name": "Subscribed",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "subId",
+        "type": "uint256"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "by",
+        "type": "address"
+      }
+    ],
+    "name": "SubscriptionCancelled",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "subId",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "fee",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint32",
+        "name": "period",
+        "type": "uint32"
+      }
+    ],
+    "name": "SubscriptionCharged",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "subId",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint32",
+        "name": "misses",
+        "type": "uint32"
+      }
+    ],
+    "name": "SubscriptionLapsed",
+    "type": "event"
+  },
+  {
+    "inputs": [],
+    "name": "CANCEL_SUBSCRIPTION_TYPEHASH",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "CHARGE_WINDOW",
+    "outputs": [
+      {
+        "internalType": "uint64",
+        "name": "",
+        "type": "uint64"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "DEFAULT_MIN_PERIOD",
+    "outputs": [
+      {
+        "internalType": "uint64",
+        "name": "",
+        "type": "uint64"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "MAX_FEE_BPS",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "MAX_MISSES",
+    "outputs": [
+      {
+        "internalType": "uint32",
+        "name": "",
+        "type": "uint32"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "MIN_ALLOWED_PERIOD",
+    "outputs": [
+      {
+        "internalType": "uint64",
+        "name": "",
+        "type": "uint64"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "subId",
+        "type": "uint256"
+      }
+    ],
+    "name": "cancel",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "subId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "deadline",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint8",
+        "name": "v",
+        "type": "uint8"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "r",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "s",
+        "type": "bytes32"
+      }
+    ],
+    "name": "cancelWithSignature",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "subId",
+        "type": "uint256"
+      }
+    ],
+    "name": "chargeDue",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "checkout",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "pricePerPeriod",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint64",
+        "name": "periodSeconds",
+        "type": "uint64"
+      },
+      {
+        "internalType": "string",
+        "name": "name",
+        "type": "string"
+      }
+    ],
+    "name": "createPlan",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "planId",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "merchant",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "pricePerPeriod",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint64",
+        "name": "periodSeconds",
+        "type": "uint64"
+      },
+      {
+        "internalType": "string",
+        "name": "name",
+        "type": "string"
+      }
+    ],
+    "name": "createPlanFor",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "planId",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "planId",
+        "type": "uint256"
+      }
+    ],
+    "name": "deactivatePlan",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "eip712Domain",
+    "outputs": [
+      {
+        "internalType": "bytes1",
+        "name": "fields",
+        "type": "bytes1"
+      },
+      {
+        "internalType": "string",
+        "name": "name",
+        "type": "string"
+      },
+      {
+        "internalType": "string",
+        "name": "version",
+        "type": "string"
+      },
+      {
+        "internalType": "uint256",
+        "name": "chainId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "address",
+        "name": "verifyingContract",
+        "type": "address"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "salt",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "uint256[]",
+        "name": "extensions",
+        "type": "uint256[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "feeBps",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "planId",
+        "type": "uint256"
+      }
+    ],
+    "name": "getPlan",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "address",
+            "name": "merchant",
+            "type": "address"
+          },
+          {
+            "internalType": "uint128",
+            "name": "pricePerPeriod",
+            "type": "uint128"
+          },
+          {
+            "internalType": "uint64",
+            "name": "periodSeconds",
+            "type": "uint64"
+          },
+          {
+            "internalType": "bool",
+            "name": "active",
+            "type": "bool"
+          },
+          {
+            "internalType": "string",
+            "name": "name",
+            "type": "string"
+          }
+        ],
+        "internalType": "struct PolarisPayments.Plan",
+        "name": "",
+        "type": "tuple"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "subId",
+        "type": "uint256"
+      }
+    ],
+    "name": "getSubscription",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "address",
+            "name": "subscriber",
+            "type": "address"
+          },
+          {
+            "internalType": "uint256",
+            "name": "planId",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint64",
+            "name": "startedAt",
+            "type": "uint64"
+          },
+          {
+            "internalType": "uint64",
+            "name": "nextChargeAt",
+            "type": "uint64"
+          },
+          {
+            "internalType": "uint32",
+            "name": "periodsCharged",
+            "type": "uint32"
+          },
+          {
+            "internalType": "uint32",
+            "name": "missedCharges",
+            "type": "uint32"
+          },
+          {
+            "internalType": "enum PolarisPayments.SubStatus",
+            "name": "status",
+            "type": "uint8"
+          }
+        ],
+        "internalType": "struct PolarisPayments.Subscription",
+        "name": "",
+        "type": "tuple"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "subId",
+        "type": "uint256"
+      }
+    ],
+    "name": "isChargeDue",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "name": "isOperator",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "paymentId",
+        "type": "bytes32"
+      }
+    ],
+    "name": "markSettledByCheckout",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "minPeriod",
+    "outputs": [
+      {
+        "internalType": "uint64",
+        "name": "",
+        "type": "uint64"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "owner",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "merchant",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      },
+      {
+        "internalType": "string",
+        "name": "orderId",
+        "type": "string"
+      }
+    ],
+    "name": "pay",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "paymentId",
+        "type": "bytes32"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "payer",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "merchant",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      },
+      {
+        "internalType": "string",
+        "name": "orderId",
+        "type": "string"
+      },
+      {
+        "internalType": "uint256",
+        "name": "validAfter",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "validBefore",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint8",
+        "name": "v",
+        "type": "uint8"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "r",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "s",
+        "type": "bytes32"
+      }
+    ],
+    "name": "payWithAuthorization",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "paymentId",
+        "type": "bytes32"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "paymentCount",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "merchant",
+        "type": "address"
+      },
+      {
+        "internalType": "string",
+        "name": "orderId",
+        "type": "string"
+      }
+    ],
+    "name": "paymentFor",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "address",
+            "name": "payer",
+            "type": "address"
+          },
+          {
+            "internalType": "address",
+            "name": "merchant",
+            "type": "address"
+          },
+          {
+            "internalType": "uint128",
+            "name": "amount",
+            "type": "uint128"
+          },
+          {
+            "internalType": "uint64",
+            "name": "paidAt",
+            "type": "uint64"
+          }
+        ],
+        "internalType": "struct PolarisPayments.Payment",
+        "name": "",
+        "type": "tuple"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "name": "payments",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "payer",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "merchant",
+        "type": "address"
+      },
+      {
+        "internalType": "uint128",
+        "name": "amount",
+        "type": "uint128"
+      },
+      {
+        "internalType": "uint64",
+        "name": "paidAt",
+        "type": "uint64"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "planCount",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "name": "plans",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "merchant",
+        "type": "address"
+      },
+      {
+        "internalType": "uint128",
+        "name": "pricePerPeriod",
+        "type": "uint128"
+      },
+      {
+        "internalType": "uint64",
+        "name": "periodSeconds",
+        "type": "uint64"
+      },
+      {
+        "internalType": "bool",
+        "name": "active",
+        "type": "bool"
+      },
+      {
+        "internalType": "string",
+        "name": "name",
+        "type": "string"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "name": "publishedOnBehalf",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "merchant",
+        "type": "address"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "paymentId",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      }
+    ],
+    "name": "quoteOrder",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "name": "quotedAmount",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "renounceOwnership",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_checkout",
+        "type": "address"
+      }
+    ],
+    "name": "setCheckout",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "bps",
+        "type": "uint256"
+      }
+    ],
+    "name": "setFeeBps",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "operator",
+        "type": "address"
+      },
+      {
+        "internalType": "bool",
+        "name": "allowed",
+        "type": "bool"
+      }
+    ],
+    "name": "setOperator",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_treasury",
+        "type": "address"
+      }
+    ],
+    "name": "setTreasury",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "name": "settledByCheckout",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "stablecoin",
+    "outputs": [
+      {
+        "internalType": "contract IERC20",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "planId",
+        "type": "uint256"
+      }
+    ],
+    "name": "subscribe",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "subId",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "subscriber",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "planId",
+        "type": "uint256"
+      }
+    ],
+    "name": "subscribeFor",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "subId",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "subscriptionCount",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "name": "subscriptionOf",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "name": "subscriptions",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "subscriber",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "planId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint64",
+        "name": "startedAt",
+        "type": "uint64"
+      },
+      {
+        "internalType": "uint64",
+        "name": "nextChargeAt",
+        "type": "uint64"
+      },
+      {
+        "internalType": "uint32",
+        "name": "periodsCharged",
+        "type": "uint32"
+      },
+      {
+        "internalType": "uint32",
+        "name": "missedCharges",
+        "type": "uint32"
+      },
+      {
+        "internalType": "enum PolarisPayments.SubStatus",
+        "name": "status",
+        "type": "uint8"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "newOwner",
+        "type": "address"
+      }
+    ],
+    "name": "transferOwnership",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "treasury",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  }
+]

@@ -1,0 +1,341 @@
+{
+  "fixture": {
+    "label": "FIXTURE: synthesized in the provider's documented response shape. Not live data, not a recording.",
+    "provider": "zerion",
+    "request": "GET /v1/wallets/0xb0b0000000000000000000000000000000000001/positions/?filter[positions]=only_simple&filter[trash]=only_non_trash",
+    "shape": "Wallet fungible positions response, Zerion OpenAPI (docs/research/data.md §3.3)",
+    "persona": "strong",
+    "recorded": false,
+    "synthesizedFor": "2026-09-26T00:00:00Z",
+    "notes": "Not paginated, like the API. filter[chain_ids] is applied by the fixture transport. The trash row shows the API's own filter would drop it; the parser drops it too."
+  },
+  "status": 200,
+  "headers": {},
+  "body": {
+    "links": {
+      "self": "https://api.zerion.io/v1/wallets/0xb0b0000000000000000000000000000000000001/positions/"
+    },
+    "data": [
+      {
+        "type": "positions",
+        "id": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48-ethereum-asset-asset-0",
+        "attributes": {
+          "parent": null,
+          "protocol": null,
+          "name": "Asset",
+          "position_type": "wallet",
+          "quantity": {
+            "int": "3100250000",
+            "decimals": 6,
+            "float": 3100.25,
+            "numeric": "3100.25"
+          },
+          "value": 3100.25,
+          "price": 1,
+          "changes": {
+            "absolute_1d": 0,
+            "percent_1d": 0
+          },
+          "fungible_info": {
+            "name": "USD Coin",
+            "symbol": "USDC",
+            "icon": null,
+            "flags": {
+              "verified": true
+            },
+            "implementations": [
+              {
+                "chain_id": "ethereum",
+                "address": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+                "decimals": 6
+              }
+            ]
+          },
+          "flags": {
+            "displayable": true,
+            "is_trash": false
+          },
+          "application_metadata": null,
+          "updated_at": "2026-09-25T23:00:00Z",
+          "updated_at_block": 21000000
+        },
+        "relationships": {
+          "chain": {
+            "links": {
+              "related": "https://api.zerion.io/v1/chains/ethereum"
+            },
+            "data": {
+              "type": "chains",
+              "id": "ethereum"
+            }
+          },
+          "fungible": {
+            "links": {
+              "related": "https://api.zerion.io/v1/fungibles/usdc"
+            },
+            "data": {
+              "type": "fungibles",
+              "id": "usdc"
+            }
+          }
+        }
+      },
+      {
+        "type": "positions",
+        "id": "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913-base-asset-asset-1",
+        "attributes": {
+          "parent": null,
+          "protocol": null,
+          "name": "Asset",
+          "position_type": "wallet",
+          "quantity": {
+            "int": "850000000",
+            "decimals": 6,
+            "float": 850,
+            "numeric": "850"
+          },
+          "value": 850,
+          "price": 1,
+          "changes": {
+            "absolute_1d": 0,
+            "percent_1d": 0
+          },
+          "fungible_info": {
+            "name": "USD Coin",
+            "symbol": "USDC",
+            "icon": null,
+            "flags": {
+              "verified": true
+            },
+            "implementations": [
+              {
+                "chain_id": "base",
+                "address": "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+                "decimals": 6
+              }
+            ]
+          },
+          "flags": {
+            "displayable": true,
+            "is_trash": false
+          },
+          "application_metadata": null,
+          "updated_at": "2026-09-25T23:00:00Z",
+          "updated_at_block": 21000000
+        },
+        "relationships": {
+          "chain": {
+            "links": {
+              "related": "https://api.zerion.io/v1/chains/base"
+            },
+            "data": {
+              "type": "chains",
+              "id": "base"
+            }
+          },
+          "fungible": {
+            "links": {
+              "related": "https://api.zerion.io/v1/fungibles/usdc"
+            },
+            "data": {
+              "type": "fungibles",
+              "id": "usdc"
+            }
+          }
+        }
+      },
+      {
+        "type": "positions",
+        "id": "0x6b175474e89094c44da98b954eedeac495271d0f-ethereum-asset-asset-2",
+        "attributes": {
+          "parent": null,
+          "protocol": null,
+          "name": "Asset",
+          "position_type": "wallet",
+          "quantity": {
+            "int": "250000000000000000001",
+            "decimals": 18,
+            "float": 250,
+            "numeric": "250.000000000000000001"
+          },
+          "value": 250,
+          "price": 1,
+          "changes": {
+            "absolute_1d": 0,
+            "percent_1d": 0
+          },
+          "fungible_info": {
+            "name": "Dai Stablecoin",
+            "symbol": "DAI",
+            "icon": null,
+            "flags": {
+              "verified": true
+            },
+            "implementations": [
+              {
+                "chain_id": "ethereum",
+                "address": "0x6b175474e89094c44da98b954eedeac495271d0f",
+                "decimals": 18
+              }
+            ]
+          },
+          "flags": {
+            "displayable": true,
+            "is_trash": false
+          },
+          "application_metadata": null,
+          "updated_at": "2026-09-25T23:00:00Z",
+          "updated_at_block": 21000000
+        },
+        "relationships": {
+          "chain": {
+            "links": {
+              "related": "https://api.zerion.io/v1/chains/ethereum"
+            },
+            "data": {
+              "type": "chains",
+              "id": "ethereum"
+            }
+          },
+          "fungible": {
+            "links": {
+              "related": "https://api.zerion.io/v1/fungibles/dai"
+            },
+            "data": {
+              "type": "fungibles",
+              "id": "dai"
+            }
+          }
+        }
+      },
+      {
+        "type": "positions",
+        "id": "base-ethereum-asset-asset-3",
+        "attributes": {
+          "parent": null,
+          "protocol": null,
+          "name": "Asset",
+          "position_type": "wallet",
+          "quantity": {
+            "int": "1840000000000000000",
+            "decimals": 18,
+            "float": 1.84,
+            "numeric": "1.84"
+          },
+          "value": 5741.54,
+          "price": 3120.4,
+          "changes": {
+            "absolute_1d": 0,
+            "percent_1d": 0
+          },
+          "fungible_info": {
+            "name": "Ethereum",
+            "symbol": "ETH",
+            "icon": null,
+            "flags": {
+              "verified": true
+            },
+            "implementations": [
+              {
+                "chain_id": "ethereum",
+                "address": null,
+                "decimals": 18
+              }
+            ]
+          },
+          "flags": {
+            "displayable": true,
+            "is_trash": false
+          },
+          "application_metadata": null,
+          "updated_at": "2026-09-25T23:00:00Z",
+          "updated_at_block": 21000000
+        },
+        "relationships": {
+          "chain": {
+            "links": {
+              "related": "https://api.zerion.io/v1/chains/ethereum"
+            },
+            "data": {
+              "type": "chains",
+              "id": "ethereum"
+            }
+          },
+          "fungible": {
+            "links": {
+              "related": "https://api.zerion.io/v1/fungibles/eth"
+            },
+            "data": {
+              "type": "fungibles",
+              "id": "eth"
+            }
+          }
+        }
+      },
+      {
+        "type": "positions",
+        "id": "0x00000000000000000000000000000000000f4ce0-ethereum-asset-asset-4",
+        "attributes": {
+          "parent": null,
+          "protocol": null,
+          "name": "Asset",
+          "position_type": "wallet",
+          "quantity": {
+            "int": "25000000000",
+            "decimals": 6,
+            "float": 25000,
+            "numeric": "25000"
+          },
+          "value": 2.5,
+          "price": 0.0001,
+          "changes": {
+            "absolute_1d": 0,
+            "percent_1d": 0
+          },
+          "fungible_info": {
+            "name": "USDC Airdrop (visit claim site)",
+            "symbol": "USDC",
+            "icon": null,
+            "flags": {
+              "verified": false
+            },
+            "implementations": [
+              {
+                "chain_id": "ethereum",
+                "address": "0x00000000000000000000000000000000000f4ce0",
+                "decimals": 6
+              }
+            ]
+          },
+          "flags": {
+            "displayable": false,
+            "is_trash": true
+          },
+          "application_metadata": null,
+          "updated_at": "2026-09-25T23:00:00Z",
+          "updated_at_block": 21000000
+        },
+        "relationships": {
+          "chain": {
+            "links": {
+              "related": "https://api.zerion.io/v1/chains/ethereum"
+            },
+            "data": {
+              "type": "chains",
+              "id": "ethereum"
+            }
+          },
+          "fungible": {
+            "links": {
+              "related": "https://api.zerion.io/v1/fungibles/usdc"
+            },
+            "data": {
+              "type": "fungibles",
+              "id": "usdc"
+            }
+          }
+        }
+      }
+    ]
+  }
+}

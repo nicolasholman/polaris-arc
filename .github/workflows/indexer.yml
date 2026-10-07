@@ -1,0 +1,60 @@
+# The Envio indexer's checks. The envio CLI has no Windows build, so this is
+# where a Windows team sees codegen and the handler tests run.
+name: indexer
+
+on:
+  push:
+    paths:
+      - "packages/indexer/**"
+      - "packages/contracts/abi/**"
+      - "packages/contracts/deployments/**"
+      - ".github/workflows/indexer.yml"
+  pull_request:
+    paths:
+      - "packages/indexer/**"
+      - "packages/contracts/abi/**"
+      - "packages/contracts/deployments/**"
+      - ".github/workflows/indexer.yml"
+
+jobs:
+  indexer:
+    name: codegen, typecheck, handler tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      # Standalone install (the indexer is outside the workspace), generate
+      # --check, envio codegen, tsc, vitest. No Docker, no API token.
+      - run: bash packages/indexer/scripts/wsl.sh test
+
+  client:
+    name: GraphQL client
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: pnpm install --frozen-lockfile --filter @polarispay/indexer-client
+      - run: pnpm --filter @polarispay/indexer-client typecheck
+      - run: pnpm --filter @polarispay/indexer-client test
+
+  live:
+    name: a local chain indexed end to end over RPC
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: pnpm install --frozen-lockfile --filter @polarispay/contracts
+      # Several runs over the same chain: the order in which Envio's queries
+      # answer changes every run, and an ordering bug only shows now and then.
+      - run: bash packages/indexer/scripts/wsl.sh live
+        env:
+          POLARIS_LIVE_RUNS: "5"

@@ -1,0 +1,67 @@
+{
+  "fixture": {
+    "label": "FIXTURE: synthesized in the provider's documented response shape. Not live data, not a recording.",
+    "recorded": false,
+    "synthesizedFor": "2026-09-26T00:00:00Z",
+    "notes": "Addresses are synthetic. Ages are measured from each fixture's timestamps, so they grow with the real date; tests pin now to 2026-09-26T12:00:00Z."
+  },
+  "accounts": [
+    {
+      "persona": "fresh-account",
+      "address": "0xacc0000000000000000000000000000000000001",
+      "about": "A Polaris account opened three days ago with a $50 claim link; $37.60 on hand."
+    },
+    {
+      "persona": "regular-account",
+      "address": "0xacc0000000000000000000000000000000000002",
+      "about": "A Polaris account used for four months: 120 transfers (more than one page, so it is dated with probes), $455 on hand."
+    },
+    {
+      "persona": "zerion-blind-account",
+      "address": "0xacc0000000000000000000000000000000000003",
+      "about": "Zerion has no record of it; Etherscan's token transfers date it instead."
+    }
+  ],
+  "linked": [
+    {
+      "persona": "strong",
+      "address": "0xb0b0000000000000000000000000000000000001",
+      "about": "Funded from Coinbase 3+ years ago; 900 transactions; $4,200 in dollars; trading for 2 years; never liquidated."
+    },
+    {
+      "persona": "modest",
+      "address": "0xb0b0000000000000000000000000000000000002",
+      "about": "Funded by a friend 7 months ago on Base; one of 7 accounts that friend set up; $640."
+    },
+    {
+      "persona": "liquidated",
+      "address": "0xb0b0000000000000000000000000000000000003",
+      "about": "Two Aave liquidations (Ethereum, Arbitrum) and one spoofed event that must not count. Declined."
+    },
+    {
+      "persona": "sybil",
+      "address": "0xb0b0000000000000000000000000000000000004",
+      "about": "One of 31 accounts funded by the same address 40 days ago. Declined."
+    },
+    {
+      "persona": "tainted",
+      "address": "0xb0b0000000000000000000000000000000000005",
+      "about": "First funded through Tornado Cash. Not counted as history."
+    },
+    {
+      "persona": "no-funder",
+      "address": "0xb0b0000000000000000000000000000000000006",
+      "about": "Nansen has no first funder; Zerion probes date it to over a year."
+    },
+    {
+      "persona": "infra-funded",
+      "address": "0xb0b0000000000000000000000000000000000007",
+      "about": "Funded by a faucet with 100+ wallets: infrastructure, no cluster penalty."
+    },
+    {
+      "persona": "exchange-wallet",
+      "address": "0xb0b0000000000000000000000000000000000008",
+      "about": "Zerion says 'not trackable'; Nansen's balance is the fallback."
+    }
+  ]
+}

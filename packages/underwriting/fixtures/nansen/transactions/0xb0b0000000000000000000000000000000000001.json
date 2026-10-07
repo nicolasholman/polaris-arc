@@ -1,0 +1,119 @@
+{
+  "fixture": {
+    "label": "FIXTURE: synthesized in the provider's documented response shape. Not live data, not a recording.",
+    "provider": "nansen",
+    "request": "POST /api/v1/profiler/address/transactions",
+    "shape": "ProfilerTransaction rows, Nansen OpenAPI 1.0.0 (docs/research/data.md §2.5.4)",
+    "persona": "strong",
+    "recorded": false,
+    "synthesizedFor": "2026-09-26T00:00:00Z",
+    "notes": "The fixture transport applies date, filters.source_type, order_by and per_page. The source_type vocabulary beyond dex/transfer is UNVERIFIED."
+  },
+  "status": 200,
+  "headers": {
+    "x-nansen-credits-cost": "1",
+    "x-nansen-credits-used": "1",
+    "x-nansen-credits-remaining": "96"
+  },
+  "body": {
+    "pagination": {
+      "page": 1,
+      "per_page": 100,
+      "is_last_page": true
+    },
+    "data": [
+      {
+        "chain": "ethereum",
+        "method": "swap",
+        "volume_usd": 150,
+        "block_timestamp": "2025-10-21T00:00:00Z",
+        "transaction_hash": "0xe5496d57e701e2a52835ea07a274070bc5c31a3d62ef09f76514abba689eca0c",
+        "source_type": "dex",
+        "tokens_sent": [
+          {
+            "token_symbol": "USDC",
+            "token_amount": 150,
+            "price_usd": 1,
+            "value_usd": 150,
+            "token_address": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+            "chain": "ethereum",
+            "from_address": "0xb0b0000000000000000000000000000000000001",
+            "to_address": "0xda00000000000000000000000000000000000001",
+            "from_address_label": null,
+            "to_address_label": "Uniswap V3: Router"
+          }
+        ],
+        "tokens_received": []
+      },
+      {
+        "chain": "base",
+        "method": "swap",
+        "volume_usd": 150,
+        "block_timestamp": "2026-02-28T00:01:01Z",
+        "transaction_hash": "0x5869ebeb44eedefe1553fe4edba64e5239a1f28ae27b074f9ce40eecd37286ee",
+        "source_type": "dex",
+        "tokens_sent": [
+          {
+            "token_symbol": "USDC",
+            "token_amount": 150,
+            "price_usd": 1,
+            "value_usd": 150,
+            "token_address": "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+            "chain": "base",
+            "from_address": "0xb0b0000000000000000000000000000000000001",
+            "to_address": "0xda00000000000000000000000000000000000002",
+            "from_address_label": null,
+            "to_address_label": "Uniswap V3: Router"
+          }
+        ],
+        "tokens_received": []
+      },
+      {
+        "chain": "base",
+        "method": "received",
+        "volume_usd": 900,
+        "block_timestamp": "2026-06-23T00:02:02Z",
+        "transaction_hash": "0x42091ed668185b83606118708d90ae2ab40c81337d022423585dea4cb2e55c9b",
+        "source_type": "transfer",
+        "tokens_sent": [
+          {
+            "token_symbol": "USDC",
+            "token_amount": 900,
+            "price_usd": 1,
+            "value_usd": 900,
+            "token_address": "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+            "chain": "base",
+            "from_address": "0xb0b0000000000000000000000000000000000001",
+            "to_address": "0xda00000000000000000000000000000000000003",
+            "from_address_label": null,
+            "to_address_label": null
+          }
+        ],
+        "tokens_received": []
+      },
+      {
+        "chain": "ethereum",
+        "method": "swap",
+        "volume_usd": 75,
+        "block_timestamp": "2026-08-17T00:03:03Z",
+        "transaction_hash": "0xaec5ffc01382c65dcd14881b457e8f48add5239afce093577fcca57e8cb69cd4",
+        "source_type": "dex",
+        "tokens_sent": [
+          {
+            "token_symbol": "USDC",
+            "token_amount": 75,
+            "price_usd": 1,
+            "value_usd": 75,
+            "token_address": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+            "chain": "ethereum",
+            "from_address": "0xb0b0000000000000000000000000000000000001",
+            "to_address": "0xda00000000000000000000000000000000000004",
+            "from_address_label": null,
+            "to_address_label": "Uniswap V3: Router"
+          }
+        ],
+        "tokens_received": []
+      }
+    ]
+  }
+}

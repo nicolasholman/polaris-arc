@@ -1,0 +1,7 @@
+node_modules/
+# written by `envio codegen` (Envio Cloud runs codegen itself)
+.envio/
+envio-env.d.ts
+generated/
+*.log
+.env

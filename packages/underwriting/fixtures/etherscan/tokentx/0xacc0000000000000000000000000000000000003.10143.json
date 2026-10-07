@@ -1,0 +1,83 @@
+{
+  "fixture": {
+    "label": "FIXTURE: synthesized in the provider's documented response shape. Not live data, not a recording.",
+    "provider": "etherscan",
+    "request": "GET /v2/api?chainid=10143&module=account&action=tokentx&address=0xacc0000000000000000000000000000000000003",
+    "shape": "Etherscan V2 tokentx response (docs.etherscan.io/api-reference/endpoint/tokentx)",
+    "persona": "zerion-blind-account",
+    "recorded": false,
+    "synthesizedFor": "2026-09-26T00:00:00Z",
+    "notes": "The fixture transport applies sort and offset."
+  },
+  "status": 200,
+  "headers": {},
+  "body": {
+    "status": "1",
+    "message": "OK",
+    "result": [
+      {
+        "blockNumber": "40000000",
+        "timeStamp": "1786492800",
+        "hash": "0xfa3d20b35d0606fd5b63598a2b0fe804537d47c96aa75547a6764c0bb5736af0",
+        "nonce": "0",
+        "blockHash": "0x0a604183ef0bb0c576ac07cf741a03fb14122ad83f2bc9be214e22522fec5208",
+        "from": "0x5e00000000000000000000000000000000000001",
+        "contractAddress": "0xa9012a055bd4e0edff8ce09f960291c09d5322dc",
+        "to": "0xacc0000000000000000000000000000000000003",
+        "value": "25000000",
+        "tokenName": "AUSD",
+        "tokenSymbol": "AUSD",
+        "tokenDecimal": "6",
+        "transactionIndex": "0",
+        "gas": "120000",
+        "gasPrice": "52000000000",
+        "gasUsed": "61234",
+        "cumulativeGasUsed": "61234",
+        "input": "deprecated",
+        "confirmations": "1200"
+      },
+      {
+        "blockNumber": "40001000",
+        "timeStamp": "1788652817",
+        "hash": "0x18a7df9428c3ea8125b54db87305e6b7a32a0b205963a355299ba55b66ded8c6",
+        "nonce": "0",
+        "blockHash": "0x73bc16d373aff6c05603f6b8a608c100a698b6643094a249f9b5094c0500bd3e",
+        "from": "0xacc0000000000000000000000000000000000003",
+        "contractAddress": "0xa9012a055bd4e0edff8ce09f960291c09d5322dc",
+        "to": "0x5e00000000000000000000000000000000000002",
+        "value": "10000000",
+        "tokenName": "AUSD",
+        "tokenSymbol": "AUSD",
+        "tokenDecimal": "6",
+        "transactionIndex": "0",
+        "gas": "120000",
+        "gasPrice": "52000000000",
+        "gasUsed": "61234",
+        "cumulativeGasUsed": "61234",
+        "input": "deprecated",
+        "confirmations": "1200"
+      },
+      {
+        "blockNumber": "40002000",
+        "timeStamp": "1790208034",
+        "hash": "0x7167b44e88639c405a93443b5e74f91f56c0f80b062ffecca7dc1288bdb8a20f",
+        "nonce": "0",
+        "blockHash": "0x8b222d3020119342bcb6f00ac8886af171b7d95440b3e987db98c97e1462bd98",
+        "from": "0x5e00000000000000000000000000000000000003",
+        "contractAddress": "0xa9012a055bd4e0edff8ce09f960291c09d5322dc",
+        "to": "0xacc0000000000000000000000000000000000003",
+        "value": "5000000",
+        "tokenName": "AUSD",
+        "tokenSymbol": "AUSD",
+        "tokenDecimal": "6",
+        "transactionIndex": "0",
+        "gas": "120000",
+        "gasPrice": "52000000000",
+        "gasUsed": "61234",
+        "cumulativeGasUsed": "61234",
+        "input": "deprecated",
+        "confirmations": "1200"
+      }
+    ]
+  }
+}

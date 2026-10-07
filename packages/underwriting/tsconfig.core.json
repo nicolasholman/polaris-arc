@@ -1,0 +1,14 @@
+// The core runs inside the Chainlink CRE workflow (WASM). No node or dom types
+// here, so Buffer, process, fetch, setTimeout, TextEncoder or Intl anywhere in
+// src/core fails this check.
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "lib": ["ES2022"],
+    "types": [],
+    "noEmit": true,
+    "rootDir": "./src/core"
+  },
+  "include": ["src/core/**/*.ts"],
+  "exclude": []
+}

@@ -1,0 +1,18 @@
+{
+  "fixture": {
+    "label": "FIXTURE: synthesized in the provider's documented response shape. Not live data, not a recording.",
+    "provider": "etherscan",
+    "request": "GET /v2/api?chainid=137&module=logs&action=getLogs&topic0=LiquidationCall&topic3=<borrower>",
+    "shape": "Etherscan V2 getLogs response (docs.etherscan.io/api-reference/endpoint/getlogs-topics)",
+    "persona": "tainted",
+    "recorded": false,
+    "synthesizedFor": "2026-09-26T00:00:00Z"
+  },
+  "status": 200,
+  "headers": {},
+  "body": {
+    "status": "0",
+    "message": "No records found",
+    "result": []
+  }
+}

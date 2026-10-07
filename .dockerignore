@@ -1,0 +1,40 @@
+# The build context for apps/business/Dockerfile is the repository root (the
+# image installs a pruned pnpm workspace). Keep everything the image doesn't
+# need out of it: installs, build output, local state, secrets and media.
+
+**/node_modules
+**/.next
+**/dist
+**/build
+**/out
+**/coverage
+**/*.tsbuildinfo
+**/.turbo
+
+# Secrets and local state never enter an image.
+**/.env
+**/.env.*
+!**/.env.example
+**/.data
+.demo
+.claude
+.git
+.github
+**/*.log
+
+# Contracts: build output and Hardhat caches (the image reads only the ABIs and deployments/*.json).
+packages/contracts/artifacts
+packages/contracts/cache
+packages/contracts/typechain-types
+
+# The Envio indexer is outside the workspace; the CRE workflows' tools and WASM.
+packages/indexer/generated
+packages/indexer/.envio
+workflows/.tools
+workflows/.local
+workflows/**/*.wasm
+workflows/evidence
+
+# Documentation, screenshots and recordings.
+docs
+*.mp4

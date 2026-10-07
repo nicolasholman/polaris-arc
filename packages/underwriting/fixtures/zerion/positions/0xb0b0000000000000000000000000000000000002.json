@@ -1,0 +1,85 @@
+{
+  "fixture": {
+    "label": "FIXTURE: synthesized in the provider's documented response shape. Not live data, not a recording.",
+    "provider": "zerion",
+    "request": "GET /v1/wallets/0xb0b0000000000000000000000000000000000002/positions/?filter[positions]=only_simple&filter[trash]=only_non_trash",
+    "shape": "Wallet fungible positions response, Zerion OpenAPI (docs/research/data.md §3.3)",
+    "persona": "modest",
+    "recorded": false,
+    "synthesizedFor": "2026-09-26T00:00:00Z",
+    "notes": "Not paginated, like the API. filter[chain_ids] is applied by the fixture transport. The trash row shows the API's own filter would drop it; the parser drops it too."
+  },
+  "status": 200,
+  "headers": {},
+  "body": {
+    "links": {
+      "self": "https://api.zerion.io/v1/wallets/0xb0b0000000000000000000000000000000000002/positions/"
+    },
+    "data": [
+      {
+        "type": "positions",
+        "id": "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913-base-asset-asset-0",
+        "attributes": {
+          "parent": null,
+          "protocol": null,
+          "name": "Asset",
+          "position_type": "wallet",
+          "quantity": {
+            "int": "640000000",
+            "decimals": 6,
+            "float": 640,
+            "numeric": "640"
+          },
+          "value": 640,
+          "price": 1,
+          "changes": {
+            "absolute_1d": 0,
+            "percent_1d": 0
+          },
+          "fungible_info": {
+            "name": "USD Coin",
+            "symbol": "USDC",
+            "icon": null,
+            "flags": {
+              "verified": true
+            },
+            "implementations": [
+              {
+                "chain_id": "base",
+                "address": "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+                "decimals": 6
+              }
+            ]
+          },
+          "flags": {
+            "displayable": true,
+            "is_trash": false
+          },
+          "application_metadata": null,
+          "updated_at": "2026-09-25T23:00:00Z",
+          "updated_at_block": 21000000
+        },
+        "relationships": {
+          "chain": {
+            "links": {
+              "related": "https://api.zerion.io/v1/chains/base"
+            },
+            "data": {
+              "type": "chains",
+              "id": "base"
+            }
+          },
+          "fungible": {
+            "links": {
+              "related": "https://api.zerion.io/v1/fungibles/usdc"
+            },
+            "data": {
+              "type": "fungibles",
+              "id": "usdc"
+            }
+          }
+        }
+      }
+    ]
+  }
+}

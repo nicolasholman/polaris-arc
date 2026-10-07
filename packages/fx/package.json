@@ -1,0 +1,31 @@
+{
+  "name": "@polaris/fx",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Chainlink FX rates for Polaris's local-currency amounts: the verified feed table (Monad mainnet, Ethereum, Polygon, Base), a cached server-side reader built on viem, and the browser-safe formatting of the line under a dollar amount.",
+  "license": "MIT",
+  "exports": {
+    ".": "./src/index.ts",
+    "./feeds": "./src/feeds.ts",
+    "./display": "./src/display.ts",
+    "./package.json": "./package.json"
+  },
+  "engines": {
+    "node": ">=22.6.0"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.json",
+    "check:live": "node --experimental-strip-types --disable-warning=ExperimentalWarning scripts/check-live.ts",
+    "record": "node --experimental-strip-types --disable-warning=ExperimentalWarning scripts/check-live.ts --record"
+  },
+  "dependencies": {
+    "viem": "2.56.9"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.1",
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.7"
+  }
+}

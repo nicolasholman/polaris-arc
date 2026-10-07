@@ -1,0 +1,114 @@
+{
+  "name": "polarispay-sdk",
+  "version": "0.3.0",
+  "description": "Polaris for any app on Monad: hosted checkout (Pay now, Pay in 4 on Polaris credit, Subscribe), gasless direct pay in AUSD, and signed webhooks.",
+  "license": "MIT",
+  "author": "Polaris Team",
+  "homepage": "https://github.com/nickthelegend/polarispay-keeperhub/tree/main/packages/sdk#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nickthelegend/polarispay-keeperhub.git",
+    "directory": "packages/sdk"
+  },
+  "bugs": {
+    "url": "https://github.com/nickthelegend/polarispay-keeperhub/issues"
+  },
+  "keywords": [
+    "monad",
+    "ausd",
+    "payments",
+    "checkout",
+    "bnpl",
+    "buy-now-pay-later",
+    "pay-in-4",
+    "subscriptions",
+    "stablecoin",
+    "erc-3009",
+    "webhooks",
+    "evm",
+    "polaris"
+  ],
+  "type": "module",
+  "sideEffects": false,
+  "main": "./dist/cjs/index.js",
+  "module": "./dist/esm/index.js",
+  "types": "./dist/types/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/types/index.d.ts",
+      "import": "./dist/esm/index.js",
+      "require": "./dist/cjs/index.js",
+      "default": "./dist/esm/index.js"
+    },
+    "./server": {
+      "types": "./dist/types/server.d.ts",
+      "import": "./dist/esm/server.js",
+      "require": "./dist/cjs/server.js",
+      "default": "./dist/esm/server.js"
+    },
+    "./react": {
+      "types": "./dist/types/react.d.ts",
+      "import": "./dist/esm/react.js",
+      "require": "./dist/cjs/react.js",
+      "default": "./dist/esm/react.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "clean": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\"",
+    "gen:deployments": "node scripts/gen-deployments.mjs",
+    "check:deployments": "node scripts/gen-deployments.mjs --check",
+    "build": "npm run gen:deployments && npm run clean && tsc -p tsconfig.esm.json && tsc -p tsconfig.cjs.json && node scripts/mark-dist.mjs",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:chain": "npm run build && pnpm --dir ../contracts exec hardhat run ../sdk/test/chain/pay-e2e.cjs",
+    "prepublishOnly": "npm run typecheck && npm test && npm run build"
+  },
+  "peerDependencies": {
+    "ethers": ">=6",
+    "react": ">=18",
+    "react-dom": ">=18"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    },
+    "react-dom": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.1",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "ethers": "^6.17.0",
+    "jsdom": "^26.1.0",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.7"
+  },
+  "typesVersions": {
+    "*": {
+      "server": [
+        "./dist/types/server.d.ts"
+      ],
+      "react": [
+        "./dist/types/react.d.ts"
+      ]
+    }
+  }
+}

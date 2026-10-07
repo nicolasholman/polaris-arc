@@ -1,0 +1,811 @@
+# Polaris on Monad, as the dashboard, the webhook dispatcher and the CRE
+# collections workflow read it.
+#
+# Conventions
+# - Money is BigInt in AUSD base units (6 decimals): 50383562 = $50.383562.
+#   Hasura returns BigInt as a JSON string; the client (./client) parses it.
+# - Times are Int unix seconds, so GraphQL variables stay plain `Int`.
+# - Addresses and hashes are lowercase hex strings (config: address_format).
+# - Status fields are Strings with the values listed in their description, not
+#   GraphQL enums, so every filter is a plain `String` comparison.
+# - Envio Cloud exposes no aggregate queries, so every total a screen shows is
+#   a counter kept here at indexing time.
+# - Rows are per chain (disable_default_cross_chain): filter with `where`, and
+#   use `limit: 1` rather than `_by_pk`.
+
+"""
+Protocol-wide settings and totals. One row per chain, id "polaris".
+"""
+type Protocol {
+  id: ID!
+  "PolarisPayments.feeBps, from FeeChanged (50 = 0.5%)."
+  feeBps: Int!
+  "ScoreManager.requireUnderwriting: unsecured credit needs a CRE underwriting first."
+  requireUnderwriting: Boolean!
+  "CollateralVault.creditMultiplierBps (15000 = 150% of locked collateral)."
+  collateralMultiplierBps: Int!
+  "True once ScoreManager points at a CollateralVault, so collateral raises limits."
+  collateralCountsTowardLimits: Boolean!
+  "PolarisCheckout.paused(): new checkouts refused."
+  checkoutPaused: Boolean!
+
+  merchantCount: Int!
+  registeredMerchantCount: Int!
+  buyerCount: Int!
+
+  "Every settled order and subscription charge, all modes."
+  paymentCount: Int!
+  grossVolume: BigInt!
+  feeVolume: BigInt!
+  payNowCount: Int!
+  payNowVolume: BigInt!
+
+  planCount: Int!
+  activePlanCount: Int!
+  principalOriginated: BigInt!
+  "Still owed by buyers across active plans."
+  outstanding: BigInt!
+  "Everything buyers have repaid, instalments and prepayments."
+  repaidVolume: BigInt!
+  installmentsCompleted: Int!
+  "Collections the CRE workflow executed (TaskExecuted, action 1)."
+  creCollections: Int!
+  liquidationCount: Int!
+  "Unrecovered outstanding at liquidation."
+  lossVolume: BigInt!
+
+  subscriptionCount: Int!
+  activeSubscriptionCount: Int!
+  subscriptionVolume: BigInt!
+
+  sendCount: Int!
+  sendVolume: BigInt!
+  claimCount: Int!
+  claimVolume: BigInt!
+
+  payoutCount: Int!
+  payoutVolume: BigInt!
+
+  collectionsRuns: Int!
+  lastCollectionsRunAt: Int
+  lastCollectionsRunBlock: Int
+  creReports: Int!
+  "Reports the forwarder delivered but the receiver reverted (ReportProcessed.result false)."
+  creReportsFailed: Int!
+  underwritings: Int!
+  updatedAt: Int!
+}
+
+"""
+A merchant account: the address PolarisPayments, the loan engine and
+subscriptions pay. Created on registration or on the first money it receives.
+"""
+type Merchant {
+  "The merchant's account address (their Privy embedded wallet)."
+  id: ID!
+  "Registered in MerchantRegistry (by its own signature)."
+  registered: Boolean!
+  name: String
+  "Where automatic payouts go (MerchantRegistry.payoutAddress)."
+  payoutAddress: String
+  "Activated by the owner: may originate Pay in 4."
+  active: Boolean!
+  "Largest Pay in 4 order this merchant may originate."
+  maxOrderValue: BigInt
+  registeredAt: Int
+  "The operator that relayed the registration (the Privy relayer), if relayed."
+  registeredBy: String
+  "MerchantRegistry.recordSettlement totals."
+  settlementRecorded: BigInt!
+
+  "Settled orders and subscription charges, all modes."
+  paymentCount: Int!
+  grossVolume: BigInt!
+  feeVolume: BigInt!
+  netVolume: BigInt!
+  payNowCount: Int!
+  payNowVolume: BigInt!
+  "Pay in 4 plans opened; the merchant is paid the principal at once."
+  planCount: Int!
+  planVolume: BigInt!
+  subscriptionChargeCount: Int!
+  subscriptionVolume: BigInt!
+  "Distinct buyers who paid this merchant."
+  customerCount: Int!
+
+  activePlanCount: Int!
+  "Still owed by this merchant's buyers across active plans (the merchant is already paid)."
+  outstanding: BigInt!
+  "Active plans whose last collection failed."
+  dunningPlanCount: Int!
+  atRiskOutstanding: BigInt!
+  repaidPlanCount: Int!
+  liquidatedPlanCount: Int!
+
+  activeSubscriptionCount: Int!
+  "Monthly recurring revenue: active subscriptions' price per 30 days."
+  mrr: BigInt!
+
+  """
+  AUSD held, from every stablecoin transfer in or out since this account
+  registered with the MerchantRegistry (registeredAt), which for a Polaris
+  business is before any money. An account paid without registering is not
+  followed (its balance stays 0; read AUSD.balanceOf); its payments still
+  count in every volume.
+  """
+  balance: BigInt!
+  payoutCount: Int!
+  payoutVolume: BigInt!
+
+  firstSeenAt: Int!
+  lastPaymentAt: Int
+  updatedAt: Int!
+
+  payments: [Payment!]! @derivedFrom(field: "merchant")
+  plans: [Plan!]! @derivedFrom(field: "merchant")
+  subscriptionPlans: [SubscriptionPlan!]! @derivedFrom(field: "merchant")
+  subscriptions: [Subscription!]! @derivedFrom(field: "merchant")
+  payouts: [Payout!]! @derivedFrom(field: "merchant")
+  customers: [Customer!]! @derivedFrom(field: "merchant")
+  days: [MerchantDay!]! @derivedFrom(field: "merchant")
+}
+
+"""
+A Polaris app account: buyer, sender or recipient. Holds the credit line,
+mirrored from ScoreManager, the CollateralVault and the loan engine.
+"""
+type Buyer {
+  "The account address (a Mera passkey account)."
+  id: ID!
+  "300-850. 600 until ScoreManager holds a record."
+  score: Int!
+  "ScoreManager holds a record (underwritten, or any repayment history)."
+  hasRecord: Boolean!
+  underwritten: Boolean!
+  "Unsecured line closed (defaults, or a declined underwriting): collateral only."
+  declined: Boolean!
+  "ScoreManager.baseLimitOf, from the score tier."
+  baseLimit: BigInt!
+  "Locked in the CollateralVault."
+  collateral: BigInt!
+  """
+  ScoreManager.creditLimitOf, recomputed at this buyer's every event. A
+  protocol setting change (multiplier, requireUnderwriting) shows at their
+  next event; the client's creditLimitOf() applies it live.
+  """
+  creditLimit: BigInt!
+  "PolarisLoanEngine.activeDebtOf: owed across active plans."
+  activeDebt: BigInt!
+  "creditLimit - activeDebt, floored at 0."
+  available: BigInt!
+  "The history wallet the underwriting proved (Bring your history)."
+  linkedWallet: String
+  underwrittenAt: Int
+  "Why the last CRE underwriting was refused (StaleEvidence, AlreadyHasRecord, WalletAlreadyLinked, InvalidUser)."
+  lastUnderwritingRefusal: String
+
+  onTimeInstallments: Int!
+  lateInstallments: Int!
+  liquidations: Int!
+  planCount: Int!
+  activePlanCount: Int!
+  paymentCount: Int!
+  "Paid to merchants, all modes (Pay in 4 counts the principal at checkout)."
+  spent: BigInt!
+  activeSubscriptionCount: Int!
+  sentCount: Int!
+  sentVolume: BigInt!
+  claimedCount: Int!
+  claimedVolume: BigInt!
+
+  firstSeenAt: Int!
+  updatedAt: Int!
+
+  plans: [Plan!]! @derivedFrom(field: "buyer")
+  payments: [Payment!]! @derivedFrom(field: "buyer")
+  subscriptions: [Subscription!]! @derivedFrom(field: "buyer")
+  scoreEvents: [ScoreEvent!]! @derivedFrom(field: "buyer")
+  underwritings: [Underwriting!]! @derivedFrom(field: "buyer")
+  days: [BuyerDay!]! @derivedFrom(field: "buyer")
+}
+
+"""
+Money a merchant was paid, one row per settled order or subscription charge.
+Only indexed chain events create these: this is what "Paid" means.
+"""
+type Payment {
+  """
+  The order key (keccak256(merchant, orderId), the PolarisPayments payment id)
+  for Pay now and Pay in 4; sub-<subId>-<period> for a subscription charge.
+  """
+  id: ID!
+  merchant: Merchant!
+  buyer: Buyer!
+  "PAY_NOW, PAY_IN_4 or SUBSCRIPTION."
+  mode: String! @index
+  "What the order cost (Pay in 4: the principal the merchant received)."
+  amount: BigInt!
+  "Protocol fee (0.5% on Pay now and subscriptions; Pay in 4 earns interest instead)."
+  fee: BigInt!
+  "What reached the merchant."
+  net: BigInt!
+  orderId: String @index
+  orderKey: String @index
+  "The price PolarisPayments.quoteOrder pinned, if any."
+  quotedAmount: BigInt
+  plan: Plan
+  subscription: Subscription
+  "Subscription period number (1 = the first, charged at sign-up)."
+  period: Int
+  "Settled through PolarisCheckout (a buyer's signature), not a direct call."
+  viaCheckout: Boolean!
+  "The account that sent the transaction: the Privy relayer or the CRE transmitter."
+  relayer: String!
+  day: Int! @index
+  timestamp: Int! @index
+  blockNumber: Int! @index
+  logIndex: Int!
+  txHash: String!
+}
+
+"""
+An order key's life: quoted (price pinned before payment), then settled once,
+in one mode. The app and the dashboard poll this to show "Paid".
+"""
+type Order {
+  "keccak256(abi.encodePacked(merchant, orderId)): PolarisCheckout.orderKeyOf."
+  id: ID!
+  merchant: Merchant!
+  "Known once settled; a quote carries only the key."
+  orderId: String
+  "QUOTED or PAID."
+  status: String! @index
+  "PAY_NOW, PAY_IN_4 or SUBSCRIPTION, once paid."
+  kind: String
+  quotedAmount: BigInt
+  quotedAt: Int
+  amount: BigInt
+  "Null when unquoted; else whether the settled amount equals the quote."
+  quoteMatched: Boolean
+  buyer: String
+  payment: Payment
+  plan: Plan
+  subscription: Subscription
+  settledAt: Int
+  settledBlock: Int
+  txHash: String
+}
+
+"""
+A Pay in 4 plan (a PolarisLoanEngine loan opened through PolarisCheckout).
+The CRE collections workflow reads its candidates from here.
+"""
+type Plan {
+  "The loan id, decimal."
+  id: ID!
+  loanId: BigInt! @index
+  merchant: Merchant!
+  buyer: Buyer!
+  orderId: String @index
+  orderKey: String @index
+  principal: BigInt!
+  totalOwed: BigInt!
+  interest: BigInt!
+  installmentCount: Int!
+  "The first instalment (instalments differ by at most one base unit)."
+  installmentAmount: BigInt!
+  "Seconds between instalments (from PlanOpened)."
+  interval: Int!
+  startedAt: Int!
+  "Instalment i (0-based) is due at firstDueAt + i * interval."
+  firstDueAt: Int
+  totalRepaid: BigInt!
+  outstanding: BigInt!
+  "Instalments fully covered by what was repaid (the engine's installmentsEarned)."
+  installmentsPaid: Int!
+  "When the next unpaid instalment falls due; null once closed."
+  nextDueAt: Int @index
+  "When checkLiquidatable turns true (nextDueAt + grace + 1); null once closed."
+  liquidatableAt: Int @index
+  """
+  When the collections workflow should next try: nextDueAt, pushed back along
+  the dunning ladder after a failed collection. Null once closed.
+  """
+  nextAttemptAt: Int @index
+  "ACTIVE, REPAID or LIQUIDATED."
+  status: String! @index
+  "The last collection failed and the instalment is still unpaid."
+  dunning: Boolean! @index
+  "Failed collections on the current instalment."
+  failedAttempts: Int!
+  "The engine's error: InsufficientAllowance, InsufficientBalance, ..."
+  lastFailureReason: String
+  "allowance_lost (the buyer signs again), insufficient_funds (balance short), other: the CRE workflow's words."
+  lastFailureAction: String
+  lastFailureAt: Int
+  "Recovered at liquidation (allowance, then collateral)."
+  recovered: BigInt!
+  "Outstanding minus recovered, at liquidation."
+  loss: BigInt!
+  closedAt: Int
+  openedTxHash: String!
+  openedBlock: Int!
+  relayer: String!
+  "The latest Repayment row, so InstallmentCollected can say who collected it."
+  lastRepaymentId: String
+  updatedAt: Int!
+
+  installments: [Installment!]! @derivedFrom(field: "plan")
+  repayments: [Repayment!]! @derivedFrom(field: "plan")
+}
+
+"One instalment of a plan, with its due date and what has been paid toward it."
+type Installment {
+  "<loanId>-<index>"
+  id: ID!
+  plan: Plan!
+  "0-based."
+  index: Int!
+  dueAt: Int! @index
+  "This instalment's slice of totalOwed (the engine's threshold ladder)."
+  amount: BigInt!
+  "Paid toward it so far."
+  paid: BigInt!
+  "PENDING, PAID or WRITTEN_OFF (the plan was liquidated first)."
+  status: String! @index
+  paidAt: Int
+  "Completed within the grace period after its due date."
+  onTime: Boolean
+  "BUYER (repay / repayWithSig), CRE (the collections workflow) or KEEPER (anyone else calling collectInstallment)."
+  paidBy: String
+  paidTxHash: String
+  failedAttempts: Int!
+  lastFailureReason: String
+  lastFailureAt: Int
+}
+
+"Every payment toward a plan (InstallmentPaid), however it arrived."
+type Repayment {
+  "<txHash>-<logIndex>"
+  id: ID!
+  plan: Plan!
+  buyer: String! @index
+  amount: BigInt!
+  "The instalment this payment went toward (0-based)."
+  installmentIndex: Int!
+  "Instalments it completed (a prepayment can complete several)."
+  installmentsCompleted: Int!
+  onTime: Boolean!
+  "BUYER, CRE or KEEPER."
+  source: String!
+  "The instalment completed on time but earned no score bonus (small plan, or the weekly ration was spent)."
+  bonusWithheld: Boolean!
+  relayer: String!
+  timestamp: Int! @index
+  blockNumber: Int!
+  txHash: String!
+}
+
+"A subscription plan a merchant published in PolarisPayments."
+type SubscriptionPlan {
+  "The plan id, decimal."
+  id: ID!
+  planId: BigInt!
+  merchant: Merchant!
+  pricePerPeriod: BigInt!
+  periodSeconds: Int!
+  active: Boolean!
+  subscriberCount: Int!
+  activeSubscriberCount: Int!
+  createdAt: Int!
+  subscriptions: [Subscription!]! @derivedFrom(field: "plan")
+}
+
+"A buyer's subscription. The CRE collections workflow charges it when due."
+type Subscription {
+  "The subscription id, decimal."
+  id: ID!
+  subId: BigInt! @index
+  plan: SubscriptionPlan!
+  merchant: Merchant!
+  buyer: Buyer!
+  orderId: String @index
+  orderKey: String @index
+  pricePerPeriod: BigInt!
+  periodSeconds: Int!
+  startedAt: Int!
+  "PolarisPayments.subscriptions(id).nextChargeAt."
+  nextChargeAt: Int @index
+  """
+  When the collections workflow should next try: nextChargeAt, pushed back
+  along the dunning ladder after a failed charge. Null once ended.
+  """
+  nextAttemptAt: Int @index
+  periodsCharged: Int!
+  "Consecutive periods skipped because the charge window passed (3 lapses it)."
+  missedCharges: Int!
+  "ACTIVE, CANCELLED or LAPSED."
+  status: String! @index
+  totalCharged: BigInt!
+  failedAttempts: Int!
+  lastFailureReason: String
+  lastFailureAt: Int
+  cancelledBy: String
+  endedAt: Int
+  updatedAt: Int!
+  payments: [Payment!]! @derivedFrom(field: "subscription")
+}
+
+"Dollars sent as a link (PolarisSend): escrowed until claimed, cancelled or refunded."
+type Send {
+  "The link key address (never reused)."
+  id: ID!
+  sender: String! @index
+  amount: BigInt!
+  expiresAt: Int! @index
+  "OPEN, CLAIMED, CANCELLED or REFUNDED."
+  status: String! @index
+  "Who claimed it."
+  recipient: String @index
+  sentAt: Int!
+  closedAt: Int
+  sentTxHash: String!
+  closedTxHash: String
+  "The account that relayed the send (the sender never holds MON)."
+  relayer: String!
+}
+
+"""
+Money a merchant moved out of their account to anywhere else: a one-tap or
+automatic payout. Recognised as a stablecoin transfer out of a merchant account
+in a transaction sent to the stablecoin itself (the relayer submitting the
+merchant's signed transferWithAuthorization, or the merchant's own transfer),
+never through a Polaris contract, so paying another merchant at checkout is
+not a payout.
+"""
+type Payout {
+  "<txHash>-<logIndex>"
+  id: ID!
+  merchant: Merchant!
+  amount: BigInt!
+  destination: String! @index
+  "The destination is the merchant's registered payout address (automatic payouts go there)."
+  toPayoutAddress: Boolean!
+  "The account that sent the transaction (the Privy relayer, for a gasless payout)."
+  relayer: String!
+  day: Int! @index
+  timestamp: Int! @index
+  blockNumber: Int!
+  txHash: String!
+}
+
+"A BatchSettlement batch: many sellers paid atomically, each with a memo."
+type Batch {
+  "The batch id (bytes32)."
+  id: ID!
+  recipients: Int!
+  totalAmount: BigInt!
+  settler: String!
+  timestamp: Int!
+  txHash: String!
+  legs: [BatchLeg!]! @derivedFrom(field: "batch")
+}
+
+"Money into BatchSettlement (FUNDED) or one recipient's leg of a batch (PAID)."
+type BatchLeg {
+  "<txHash>-<logIndex>"
+  id: ID!
+  "FUNDED or PAID."
+  kind: String! @index
+  batch: Batch
+  "The funder, or the recipient."
+  account: String! @index
+  amount: BigInt!
+  "The recipient's own reference (bytes32), for PAID."
+  memo: String
+  timestamp: Int!
+  blockNumber: Int!
+  txHash: String!
+}
+
+"A merchant's customer: the first time and how often a buyer paid them."
+type Customer {
+  "<merchant>-<buyer>"
+  id: ID!
+  merchant: Merchant!
+  buyer: Buyer!
+  firstPaidAt: Int!
+  lastPaidAt: Int!
+  paymentCount: Int!
+  volume: BigInt!
+}
+
+"""
+A merchant's day (UTC), for the dashboard's bar and candlestick charts. The
+candle fields open/high/low/close are the day's payment sizes (first,
+largest, smallest, last); balanceOpen..balanceClose follow the merchant's
+balance through the day.
+"""
+type MerchantDay {
+  "<merchant>-<day>"
+  id: ID!
+  merchant: Merchant!
+  "Days since 1970-01-01 (timestamp / 86400)."
+  day: Int! @index
+  "YYYY-MM-DD"
+  date: String!
+  paymentCount: Int!
+  grossVolume: BigInt!
+  feeVolume: BigInt!
+  netVolume: BigInt!
+  payNowCount: Int!
+  payNowVolume: BigInt!
+  planCount: Int!
+  planVolume: BigInt!
+  subscriptionChargeCount: Int!
+  subscriptionVolume: BigInt!
+  installmentsCompleted: Int!
+  "Repaid by this merchant's buyers that day."
+  repaidVolume: BigInt!
+  failedCollections: Int!
+  newCustomers: Int!
+  payoutCount: Int!
+  payoutVolume: BigInt!
+  "First payment of the day."
+  open: BigInt
+  "Largest payment of the day."
+  high: BigInt
+  "Smallest payment of the day."
+  low: BigInt
+  "Last payment of the day."
+  close: BigInt
+  balanceOpen: BigInt!
+  balanceHigh: BigInt!
+  balanceLow: BigInt!
+  balanceClose: BigInt!
+}
+
+"The whole protocol's day (UTC)."
+type ProtocolDay {
+  "<day>"
+  id: ID!
+  day: Int! @index
+  date: String!
+  paymentCount: Int!
+  grossVolume: BigInt!
+  feeVolume: BigInt!
+  planCount: Int!
+  principalOriginated: BigInt!
+  installmentsCompleted: Int!
+  repaidVolume: BigInt!
+  liquidations: Int!
+  subscriptionCharges: Int!
+  subscriptionVolume: BigInt!
+  sendCount: Int!
+  sendVolume: BigInt!
+  claimCount: Int!
+  payoutCount: Int!
+  payoutVolume: BigInt!
+  collectionsRuns: Int!
+  creReports: Int!
+  newBuyers: Int!
+  newMerchants: Int!
+  open: BigInt
+  high: BigInt
+  low: BigInt
+  close: BigInt
+}
+
+"A buyer's day (UTC): the credit score as a candle, and what they spent."
+type BuyerDay {
+  "<buyer>-<day>"
+  id: ID!
+  buyer: Buyer!
+  day: Int! @index
+  date: String!
+  scoreOpen: Int!
+  scoreHigh: Int!
+  scoreLow: Int!
+  scoreClose: Int!
+  spent: BigInt!
+  repaid: BigInt!
+}
+
+"A score change (ScoreManager.ScoreChanged): the why behind every limit."
+type ScoreEvent {
+  "<txHash>-<logIndex>"
+  id: ID!
+  buyer: Buyer!
+  oldScore: Int!
+  newScore: Int!
+  delta: Int!
+  "underwritten, on-time payment, late payment, liquidation."
+  reason: String!
+  timestamp: Int! @index
+  blockNumber: Int!
+  txHash: String!
+}
+
+"One CRE underwriting item: applied (a score) or refused (a reason)."
+type Underwriting {
+  "<txHash>-<buyer>"
+  id: ID!
+  buyer: Buyer!
+  linkedWallet: String
+  applied: Boolean!
+  score: Int
+  declined: Boolean
+  "When the DON observed the facts (ScoreManager.Underwritten.observedAt)."
+  observedAt: Int
+  "StaleEvidence, AlreadyHasRecord, WalletAlreadyLinked, InvalidUser, or the raw selector."
+  refusal: String
+  refusalData: String
+  timestamp: Int! @index
+  blockNumber: Int!
+  txHash: String!
+}
+
+"A history wallet an underwriting proved (UnderwritingReceiver.linkedUserOf)."
+type LinkedWallet {
+  "The history wallet."
+  id: ID!
+  buyer: Buyer!
+  linkedAt: Int!
+  txHash: String!
+}
+
+"One CRE collections report the CollectionsReceiver executed."
+type CollectionRun {
+  "<txHash>-<logIndex>"
+  id: ID!
+  tasks: Int!
+  executed: Int!
+  skipped: Int!
+  "Who delivered it: the CRE transmitter (simulation) or the DON's forwarder caller."
+  transmitter: String!
+  timestamp: Int! @index
+  blockNumber: Int! @index
+  txHash: String! @index
+}
+
+"One task of a CRE collections report: executed, or skipped with the target's reason."
+type CollectionTask {
+  "<txHash>-<logIndex>"
+  id: ID!
+  "1 collect an instalment, 2 charge a subscription, 3 liquidate."
+  action: Int!
+  "COLLECT_INSTALLMENT, CHARGE_SUBSCRIPTION, LIQUIDATE or UNKNOWN."
+  actionName: String! @index
+  "The loan id or subscription id."
+  targetId: BigInt! @index
+  executed: Boolean! @index
+  "Collected, for an executed instalment collection."
+  amount: BigInt
+  "The decoded revert: InsufficientAllowance, InsufficientBalance, NotDue, LoanNotActive, ..."
+  reason: String
+  """
+  What the skip means, in the CRE collections workflow's words:
+  allowance_lost (the buyer must sign a new allowance), insufficient_funds
+  (the buyer's balance is short), stale (the candidate was not actionable;
+  nobody's fault) or other.
+  """
+  reasonAction: String
+  reasonData: String
+  "InsufficientAllowance/InsufficientBalance: what the buyer had and what was needed."
+  have: BigInt
+  need: BigInt
+  plan: Plan
+  subscription: Subscription
+  timestamp: Int! @index
+  blockNumber: Int!
+  txHash: String! @index
+}
+
+"A report Chainlink's forwarder delivered to one of our receivers."
+type CreReport {
+  "<txHash>-<logIndex>"
+  id: ID!
+  "collections or underwrite."
+  workflow: String! @index
+  receiver: String!
+  forwarder: String!
+  workflowExecutionId: String!
+  reportId: String!
+  "False when the receiver reverted (the simulator still says success)."
+  result: Boolean! @index
+  transmitter: String!
+  timestamp: Int! @index
+  blockNumber: Int!
+  txHash: String!
+}
+
+"""
+The webhook outbox: one row per webhook polarispay-sdk defines, in chain
+order, carrying everything its data needs (the client's toWebhookEvent turns
+a row into the event). The dispatcher tails it by `cursor`. Kinds:
+payment.succeeded (Pay now), plan.opened, installment.collected (one row per
+completed instalment), installment.failed (one per miss on the dunning
+ladder), plan.completed, plan.liquidated, subscription.charged (every charge,
+the first included), subscription.canceled, payout.paid.
+"""
+type Activity {
+  "<cursor>"
+  id: ID!
+  "blockNumber * 10^8 + logIndex * 100 + slot: unique, and increasing in chain order."
+  cursor: BigInt! @index
+  kind: String! @index
+  merchant: Merchant!
+  buyer: String
+  orderId: String
+  orderKey: String
+  "PAY_NOW (payment.succeeded) or SUBSCRIPTION (subscription.charged)."
+  mode: String
+  """
+  payment.succeeded: the amount paid; plan.opened, plan.completed: the total
+  owed; installment.*: that instalment's amount; plan.liquidated: what was
+  owed; subscription.*: the price; payout.paid: the amount.
+  """
+  amount: BigInt!
+  fee: BigInt
+  "The payment id, loan id, subscription id or payout id this is about."
+  refId: String!
+  "installment.*: which instalment, 0-based."
+  installmentIndex: Int
+  "plan.opened, installment.*: how many instalments the plan has."
+  installmentCount: Int
+  "plan.opened: the principal, paid to the merchant in full."
+  principal: BigInt
+  "plan.opened: seconds between instalments."
+  interval: Int
+  "plan.opened: when instalment 0 falls due."
+  firstDueAt: Int
+  "installment.collected: still owed after this instalment."
+  remaining: BigInt
+  "plan.liquidated: recovered from the buyer's collateral and allowance."
+  recovered: BigInt
+  "installment.failed: which miss this is on the dunning ladder, 1 for the first."
+  attempt: Int
+  "installment.failed: the next collection attempt; null when the next step is liquidation."
+  nextAttemptAt: Int
+  "installment.failed: insufficient_funds, allowance_lost or other (polarispay-sdk's InstallmentFailureReason)."
+  failureReason: String
+  "subscription.*: the PolarisPayments plan id."
+  subscriptionPlanId: String
+  "subscription.charged: the period charged, 1 for the first."
+  period: Int
+  "subscription.charged: when the next charge falls due."
+  nextChargeAt: Int
+  "subscription.canceled: subscriber, merchant or lapsed."
+  canceledBy: String
+  "installment.failed: the decoded revert; subscription.canceled: cancelled or lapsed."
+  reason: String
+  "installment.failed: allowance_lost, insufficient_funds or other."
+  reasonAction: String
+  "payout.paid: where the money went."
+  destination: String
+  timestamp: Int! @index
+  blockNumber: Int! @index
+  logIndex: Int!
+  txHash: String!
+}
+
+"""
+A role, setting or signature-nonce change on a Polaris contract: operators,
+writers, the checkout, the forwarder, ownership, pauses. The relayer's exact
+powers can be read from here.
+"""
+type ConfigChange {
+  "<txHash>-<logIndex>"
+  id: ID!
+  contract: String! @index
+  event: String! @index
+  "The account the change is about (operator, writer, new owner, ...)."
+  subject: String @index
+  "Granted (true) or revoked (false), for role changes."
+  granted: Boolean
+  "Any other value, as a string (a fee in bps, a nonce, a workflow name)."
+  value: String
+  timestamp: Int!
+  blockNumber: Int!
+  txHash: String!
+}

@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" width="192" height="192" role="img" aria-label="Receive">
+  <!-- An app shortcut icon: the lime of the mark on the app icon's ink, full bleed so launchers
+       can mask it (the arrow sits well inside the 80% safe zone). The arrow is Lucide's
+       arrow-down-left (ISC), scaled 6.4x about its centre. -->
+  <rect width="192" height="192" fill="#111111"/>
+  <g transform="translate(96 96) scale(6.4) translate(-12 -12)" fill="none" stroke="#BFFA62" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M17 7 7 17"/>
+    <path d="M17 17H7V7"/>
+  </g>
+</svg>

@@ -1,0 +1,1032 @@
+[
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "initialOwner",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "constructor"
+  },
+  {
+    "inputs": [],
+    "name": "AlreadyHasRecord",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "NotUnderwriter",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "NotWriter",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "owner",
+        "type": "address"
+      }
+    ],
+    "name": "OwnableInvalidOwner",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "account",
+        "type": "address"
+      }
+    ],
+    "name": "OwnableUnauthorizedAccount",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "StaleEvidence",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint32",
+        "name": "walletAgeDays",
+        "type": "uint32"
+      },
+      {
+        "internalType": "uint32",
+        "name": "txCount",
+        "type": "uint32"
+      }
+    ],
+    "name": "ThinFile",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "vault",
+        "type": "address"
+      }
+    ],
+    "name": "VaultNotAContract",
+    "type": "error"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "vault",
+        "type": "address"
+      }
+    ],
+    "name": "CollateralVaultSet",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "user",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint32",
+        "name": "liquidations",
+        "type": "uint32"
+      }
+    ],
+    "name": "DeclinedForDefaults",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "previousOwner",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "newOwner",
+        "type": "address"
+      }
+    ],
+    "name": "OwnershipTransferred",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "bool",
+        "name": "required",
+        "type": "bool"
+      }
+    ],
+    "name": "RequireUnderwritingSet",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "user",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint16",
+        "name": "oldScore",
+        "type": "uint16"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint16",
+        "name": "newScore",
+        "type": "uint16"
+      },
+      {
+        "indexed": false,
+        "internalType": "string",
+        "name": "reason",
+        "type": "string"
+      }
+    ],
+    "name": "ScoreChanged",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "underwriter",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "bool",
+        "name": "allowed",
+        "type": "bool"
+      }
+    ],
+    "name": "UnderwriterSet",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "user",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint16",
+        "name": "score",
+        "type": "uint16"
+      },
+      {
+        "indexed": false,
+        "internalType": "bool",
+        "name": "declined",
+        "type": "bool"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint64",
+        "name": "observedAt",
+        "type": "uint64"
+      }
+    ],
+    "name": "Underwritten",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "writer",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "bool",
+        "name": "allowed",
+        "type": "bool"
+      }
+    ],
+    "name": "WriterSet",
+    "type": "event"
+  },
+  {
+    "inputs": [],
+    "name": "BONUS_PERIOD",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "DECLINE_AT_LIQUIDATIONS",
+    "outputs": [
+      {
+        "internalType": "uint32",
+        "name": "",
+        "type": "uint32"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "DEFAULT_PENALTY",
+    "outputs": [
+      {
+        "internalType": "uint16",
+        "name": "",
+        "type": "uint16"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "EXCHANGE_FUNDED_POINTS",
+    "outputs": [
+      {
+        "internalType": "uint16",
+        "name": "",
+        "type": "uint16"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "LATE_PENALTY",
+    "outputs": [
+      {
+        "internalType": "uint16",
+        "name": "",
+        "type": "uint16"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "MAX_ACTIVITY_POINTS",
+    "outputs": [
+      {
+        "internalType": "uint16",
+        "name": "",
+        "type": "uint16"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "MAX_AGE_POINTS",
+    "outputs": [
+      {
+        "internalType": "uint16",
+        "name": "",
+        "type": "uint16"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "MAX_BALANCE_POINTS",
+    "outputs": [
+      {
+        "internalType": "uint16",
+        "name": "",
+        "type": "uint16"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "MAX_DEFI_POINTS",
+    "outputs": [
+      {
+        "internalType": "uint16",
+        "name": "",
+        "type": "uint16"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "MAX_EVIDENCE_AGE",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "MAX_SCORE",
+    "outputs": [
+      {
+        "internalType": "uint16",
+        "name": "",
+        "type": "uint16"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "MAX_UNDERWRITTEN_SCORE",
+    "outputs": [
+      {
+        "internalType": "uint16",
+        "name": "",
+        "type": "uint16"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "MIN_HISTORY_DAYS",
+    "outputs": [
+      {
+        "internalType": "uint32",
+        "name": "",
+        "type": "uint32"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "MIN_HISTORY_TXS",
+    "outputs": [
+      {
+        "internalType": "uint32",
+        "name": "",
+        "type": "uint32"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "MIN_SCORE",
+    "outputs": [
+      {
+        "internalType": "uint16",
+        "name": "",
+        "type": "uint16"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "ON_TIME_BONUS",
+    "outputs": [
+      {
+        "internalType": "uint16",
+        "name": "",
+        "type": "uint16"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "STARTING_SCORE",
+    "outputs": [
+      {
+        "internalType": "uint16",
+        "name": "",
+        "type": "uint16"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "UNDERWRITE_FLOOR",
+    "outputs": [
+      {
+        "internalType": "uint16",
+        "name": "",
+        "type": "uint16"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "user",
+        "type": "address"
+      }
+    ],
+    "name": "baseLimitOf",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "collateralVault",
+    "outputs": [
+      {
+        "internalType": "contract ICollateralBoost",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "user",
+        "type": "address"
+      }
+    ],
+    "name": "creditLimitOf",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "components": [
+          {
+            "internalType": "uint32",
+            "name": "walletAgeDays",
+            "type": "uint32"
+          },
+          {
+            "internalType": "uint32",
+            "name": "txCount",
+            "type": "uint32"
+          },
+          {
+            "internalType": "uint64",
+            "name": "stableBalance",
+            "type": "uint64"
+          },
+          {
+            "internalType": "uint32",
+            "name": "defiTenureDays",
+            "type": "uint32"
+          },
+          {
+            "internalType": "uint16",
+            "name": "priorLiquidations",
+            "type": "uint16"
+          },
+          {
+            "internalType": "uint16",
+            "name": "relatedWallets",
+            "type": "uint16"
+          },
+          {
+            "internalType": "bool",
+            "name": "exchangeFunded",
+            "type": "bool"
+          },
+          {
+            "internalType": "uint64",
+            "name": "observedAt",
+            "type": "uint64"
+          }
+        ],
+        "internalType": "struct ScoreManager.Facts",
+        "name": "f",
+        "type": "tuple"
+      }
+    ],
+    "name": "isThinFile",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "pure",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "name": "isUnderwriter",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "name": "isWriter",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "name": "lastBonusAt",
+    "outputs": [
+      {
+        "internalType": "uint64",
+        "name": "",
+        "type": "uint64"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "owner",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "user",
+        "type": "address"
+      }
+    ],
+    "name": "profileOf",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "uint16",
+            "name": "score",
+            "type": "uint16"
+          },
+          {
+            "internalType": "uint32",
+            "name": "onTimePayments",
+            "type": "uint32"
+          },
+          {
+            "internalType": "uint32",
+            "name": "latePayments",
+            "type": "uint32"
+          },
+          {
+            "internalType": "uint32",
+            "name": "liquidations",
+            "type": "uint32"
+          },
+          {
+            "internalType": "uint64",
+            "name": "firstSeenAt",
+            "type": "uint64"
+          },
+          {
+            "internalType": "bool",
+            "name": "initialized",
+            "type": "bool"
+          },
+          {
+            "internalType": "bool",
+            "name": "declined",
+            "type": "bool"
+          },
+          {
+            "internalType": "bool",
+            "name": "underwritten",
+            "type": "bool"
+          }
+        ],
+        "internalType": "struct ScoreManager.Profile",
+        "name": "",
+        "type": "tuple"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "user",
+        "type": "address"
+      }
+    ],
+    "name": "recordLatePayment",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "user",
+        "type": "address"
+      }
+    ],
+    "name": "recordLiquidation",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "user",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "dueAt",
+        "type": "uint256"
+      }
+    ],
+    "name": "recordOnTimeInstallment",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "scored",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "user",
+        "type": "address"
+      }
+    ],
+    "name": "recordOnTimePayment",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "renounceOwnership",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "requireUnderwriting",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "components": [
+          {
+            "internalType": "uint32",
+            "name": "walletAgeDays",
+            "type": "uint32"
+          },
+          {
+            "internalType": "uint32",
+            "name": "txCount",
+            "type": "uint32"
+          },
+          {
+            "internalType": "uint64",
+            "name": "stableBalance",
+            "type": "uint64"
+          },
+          {
+            "internalType": "uint32",
+            "name": "defiTenureDays",
+            "type": "uint32"
+          },
+          {
+            "internalType": "uint16",
+            "name": "priorLiquidations",
+            "type": "uint16"
+          },
+          {
+            "internalType": "uint16",
+            "name": "relatedWallets",
+            "type": "uint16"
+          },
+          {
+            "internalType": "bool",
+            "name": "exchangeFunded",
+            "type": "bool"
+          },
+          {
+            "internalType": "uint64",
+            "name": "observedAt",
+            "type": "uint64"
+          }
+        ],
+        "internalType": "struct ScoreManager.Facts",
+        "name": "f",
+        "type": "tuple"
+      }
+    ],
+    "name": "scoreFromFacts",
+    "outputs": [
+      {
+        "internalType": "uint16",
+        "name": "score",
+        "type": "uint16"
+      },
+      {
+        "internalType": "bool",
+        "name": "declined",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "pure",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "user",
+        "type": "address"
+      }
+    ],
+    "name": "scoreOf",
+    "outputs": [
+      {
+        "internalType": "uint16",
+        "name": "",
+        "type": "uint16"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "contract ICollateralBoost",
+        "name": "vault",
+        "type": "address"
+      }
+    ],
+    "name": "setCollateralVault",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bool",
+        "name": "required",
+        "type": "bool"
+      }
+    ],
+    "name": "setRequireUnderwriting",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "underwriter",
+        "type": "address"
+      },
+      {
+        "internalType": "bool",
+        "name": "allowed",
+        "type": "bool"
+      }
+    ],
+    "name": "setUnderwriter",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "writer",
+        "type": "address"
+      },
+      {
+        "internalType": "bool",
+        "name": "allowed",
+        "type": "bool"
+      }
+    ],
+    "name": "setWriter",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "newOwner",
+        "type": "address"
+      }
+    ],
+    "name": "transferOwnership",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "user",
+        "type": "address"
+      },
+      {
+        "components": [
+          {
+            "internalType": "uint32",
+            "name": "walletAgeDays",
+            "type": "uint32"
+          },
+          {
+            "internalType": "uint32",
+            "name": "txCount",
+            "type": "uint32"
+          },
+          {
+            "internalType": "uint64",
+            "name": "stableBalance",
+            "type": "uint64"
+          },
+          {
+            "internalType": "uint32",
+            "name": "defiTenureDays",
+            "type": "uint32"
+          },
+          {
+            "internalType": "uint16",
+            "name": "priorLiquidations",
+            "type": "uint16"
+          },
+          {
+            "internalType": "uint16",
+            "name": "relatedWallets",
+            "type": "uint16"
+          },
+          {
+            "internalType": "bool",
+            "name": "exchangeFunded",
+            "type": "bool"
+          },
+          {
+            "internalType": "uint64",
+            "name": "observedAt",
+            "type": "uint64"
+          }
+        ],
+        "internalType": "struct ScoreManager.Facts",
+        "name": "f",
+        "type": "tuple"
+      }
+    ],
+    "name": "underwrite",
+    "outputs": [
+      {
+        "internalType": "uint16",
+        "name": "score",
+        "type": "uint16"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  }
+]

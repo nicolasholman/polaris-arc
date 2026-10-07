@@ -1,0 +1,56 @@
+{
+  "name": "@polarispay/underwriting",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "description": "Nansen-powered credit underwriting for Polaris: provider clients (Nansen, Zerion, Etherscan, RPC), ScoreManager Facts, the score and limit model, plain-language reasons, and a pure core the Chainlink CRE workflow runs.",
+  "engines": {
+    "node": ">=22.6.0"
+  },
+  "main": "./dist/node/index.js",
+  "types": "./dist/node/index.d.ts",
+  "exports": {
+    ".": {
+      "source": "./src/node/index.ts",
+      "types": "./dist/node/index.d.ts",
+      "default": "./dist/node/index.js"
+    },
+    "./core": {
+      "source": "./src/core/index.ts",
+      "types": "./dist/core/index.d.ts",
+      "default": "./dist/core/index.js"
+    },
+    "./client": {
+      "source": "./src/client/index.ts",
+      "types": "./dist/client/index.d.ts",
+      "default": "./dist/client/index.js"
+    },
+    "./testing": {
+      "source": "./src/testing/index.ts",
+      "types": "./dist/testing/index.d.ts",
+      "default": "./dist/testing/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "src",
+    "fixtures"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.core.json && tsc -p tsconfig.test.json",
+    "test": "node --experimental-strip-types --disable-warning=ExperimentalWarning --test \"test/*.test.ts\"",
+    "serve": "node --experimental-strip-types --disable-warning=ExperimentalWarning src/node/server.ts",
+    "fixtures:synthesize": "node --experimental-strip-types --disable-warning=ExperimentalWarning scripts/synthesize-fixtures.ts",
+    "record": "node --experimental-strip-types --disable-warning=ExperimentalWarning scripts/record.ts"
+  },
+  "dependencies": {
+    "viem": "2.56.9"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.1",
+    "typescript": "^5.9.3"
+  }
+}

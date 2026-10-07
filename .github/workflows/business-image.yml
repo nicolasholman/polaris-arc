@@ -1,0 +1,87 @@
+# Polaris for Business's production image (apps/business/Dockerfile): lint
+# it, build it, and start it as Fly would, until /api/health/ready says it can
+# take traffic. Nothing is pushed anywhere and no secret is used: the
+# container gets throwaway values, no relayer and an RPC it never reaches
+# (readiness makes no network call). docs/deploy.md has the real deployment.
+name: business image
+
+on:
+  push:
+    paths:
+      - "apps/business/**"
+      - "packages/**"
+      - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
+      - ".dockerignore"
+      - ".github/workflows/business-image.yml"
+  pull_request:
+    paths:
+      - "apps/business/**"
+      - "packages/**"
+      - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
+      - ".dockerignore"
+      - ".github/workflows/business-image.yml"
+  workflow_dispatch:
+
+jobs:
+  image:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: hadolint
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: apps/business/Dockerfile
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/business/Dockerfile
+          load: true
+          push: false
+          tags: polaris-business:ci
+          build-args: |
+            NEXT_PUBLIC_PRIVY_APP_ID=cinotarealprivyappid00000
+            NEXT_PUBLIC_DEMO_SHOP_URL=https://shop.example.test
+
+      - name: Start it the way Fly does (a volume at /data, one proxy)
+        run: |
+          docker volume create polaris-data
+          docker run -d --name business -p 3100:3100 -v polaris-data:/data \
+            -e POLARIS_TRUSTED_PROXIES=1 \
+            -e POLARIS_CHECKOUT_ORIGIN=https://app.example.test \
+            -e POLARIS_PUBLIC_URL=https://business.example.test \
+            -e POLARIS_KEY_PEPPER=ci-pepper -e CRON_SECRET=ci-cron \
+            -e PRIVY_APP_ID=cinotarealprivyappid00000 -e PRIVY_APP_SECRET=ci-not-a-secret \
+            -e POLARIS_RPC_URL=http://127.0.0.1:9 \
+            polaris-business:ci
+
+      - name: Ready within two minutes
+        run: |
+          for i in $(seq 1 60); do
+            if curl -fsS http://127.0.0.1:3100/api/health/ready; then echo; exit 0; fi
+            sleep 2
+          done
+          echo "never ready"; docker logs business; exit 1
+
+      - name: Healthy, non-root, and the store on the volume
+        run: |
+          curl -fsS -H "Authorization: Bearer ci-cron" http://127.0.0.1:3100/api/health | tee health.json; echo
+          grep -q '"production":true' health.json
+          grep -q '"localSession":false' health.json
+          curl -fsS http://127.0.0.1:3100/api/health/ready | grep -q '"persistent":true'
+          # PID 1 is the server itself (the entrypoint execs it): /proc/1 belongs to the user it runs as.
+          test "$(docker exec business stat -c %U /proc/1)" = "node" || { echo "the server doesn't run as node"; exit 1; }
+          docker exec business ls -l /data/polaris.db
+          # Docker's own HEALTHCHECK agrees once its first interval has passed.
+          sleep 35; docker inspect --format '{{.State.Health.Status}}' business | grep -q healthy
+
+      - name: Logs
+        if: always()
+        run: docker logs business || true

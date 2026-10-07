@@ -1,0 +1,1444 @@
+[
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "initialOwner",
+        "type": "address"
+      },
+      {
+        "internalType": "contract PolarisLoanEngine",
+        "name": "_loanEngine",
+        "type": "address"
+      },
+      {
+        "internalType": "contract PolarisPayments",
+        "name": "_payments",
+        "type": "address"
+      },
+      {
+        "internalType": "contract ScoreManager",
+        "name": "_scoreManager",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "constructor"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "allowance",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "owed",
+        "type": "uint256"
+      }
+    ],
+    "name": "AlreadyAuthorized",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint8",
+        "name": "reasonMask",
+        "type": "uint8"
+      }
+    ],
+    "name": "CreditPausedByGuardian",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "EmptyOrderId",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "EnforcedPause",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "ExpectedPause",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "guardian",
+        "type": "address"
+      }
+    ],
+    "name": "GuardianNotAContract",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "account",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "currentNonce",
+        "type": "uint256"
+      }
+    ],
+    "name": "InvalidAccountNonce",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "InvalidShortString",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "InvalidSignature",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "buyer",
+        "type": "address"
+      }
+    ],
+    "name": "NothingOwed",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "orderKey",
+        "type": "bytes32"
+      }
+    ],
+    "name": "OrderAlreadySettled",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "owner",
+        "type": "address"
+      }
+    ],
+    "name": "OwnableInvalidOwner",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "account",
+        "type": "address"
+      }
+    ],
+    "name": "OwnableUnauthorizedAccount",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "value",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "owed",
+        "type": "uint256"
+      }
+    ],
+    "name": "PermitBelowDebt",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "planId",
+        "type": "uint256"
+      }
+    ],
+    "name": "PlanMismatch",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "ReentrancyGuardReentrantCall",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint8",
+        "name": "bits",
+        "type": "uint8"
+      },
+      {
+        "internalType": "uint256",
+        "name": "value",
+        "type": "uint256"
+      }
+    ],
+    "name": "SafeCastOverflowedUintDowncast",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "SignatureExpired",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "SignatureWindowTooLong",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "string",
+        "name": "str",
+        "type": "string"
+      }
+    ],
+    "name": "StringTooLong",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "quoted",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "offered",
+        "type": "uint256"
+      }
+    ],
+    "name": "WrongAmount",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "WrongScoreManager",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "WrongStablecoin",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "ZeroAddress",
+    "type": "error"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "orderKey",
+        "type": "bytes32"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "merchant",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "buyer",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "string",
+        "name": "orderId",
+        "type": "string"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "fee",
+        "type": "uint256"
+      }
+    ],
+    "name": "CheckoutPaid",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "guardian",
+        "type": "address"
+      }
+    ],
+    "name": "CreditGuardianSet",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [],
+    "name": "EIP712DomainChanged",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "buyer",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "nonce",
+        "type": "uint256"
+      }
+    ],
+    "name": "NonceInvalidated",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "previousOwner",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "newOwner",
+        "type": "address"
+      }
+    ],
+    "name": "OwnershipTransferred",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "account",
+        "type": "address"
+      }
+    ],
+    "name": "Paused",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "orderKey",
+        "type": "bytes32"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "merchant",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "buyer",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "loanId",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "string",
+        "name": "orderId",
+        "type": "string"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "principal",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "totalOwed",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint32",
+        "name": "installments",
+        "type": "uint32"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint64",
+        "name": "interval",
+        "type": "uint64"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint64",
+        "name": "firstDueAt",
+        "type": "uint64"
+      }
+    ],
+    "name": "PlanOpened",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "buyer",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "value",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "deadline",
+        "type": "uint256"
+      }
+    ],
+    "name": "Reauthorized",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "orderKey",
+        "type": "bytes32"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "merchant",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "buyer",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "subId",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "planId",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "string",
+        "name": "orderId",
+        "type": "string"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "pricePerPeriod",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint64",
+        "name": "periodSeconds",
+        "type": "uint64"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint64",
+        "name": "nextChargeAt",
+        "type": "uint64"
+      }
+    ],
+    "name": "SubscriptionStarted",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "account",
+        "type": "address"
+      }
+    ],
+    "name": "Unpaused",
+    "type": "event"
+  },
+  {
+    "inputs": [],
+    "name": "MAX_SIGNATURE_WINDOW",
+    "outputs": [
+      {
+        "internalType": "uint64",
+        "name": "",
+        "type": "uint64"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "PERMIT_TYPEHASH",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "PLAN_INTENT_TYPEHASH",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "SUBSCRIBE_INTENT_TYPEHASH",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "creditGuardian",
+    "outputs": [
+      {
+        "internalType": "contract ICreditGuard",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "creditPaused",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "paused",
+        "type": "bool"
+      },
+      {
+        "internalType": "uint8",
+        "name": "reasons",
+        "type": "uint8"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "eip712Domain",
+    "outputs": [
+      {
+        "internalType": "bytes1",
+        "name": "fields",
+        "type": "bytes1"
+      },
+      {
+        "internalType": "string",
+        "name": "name",
+        "type": "string"
+      },
+      {
+        "internalType": "string",
+        "name": "version",
+        "type": "string"
+      },
+      {
+        "internalType": "uint256",
+        "name": "chainId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "address",
+        "name": "verifyingContract",
+        "type": "address"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "salt",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "uint256[]",
+        "name": "extensions",
+        "type": "uint256[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "invalidateNonce",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "nonce",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "loanEngine",
+    "outputs": [
+      {
+        "internalType": "contract PolarisLoanEngine",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "owner",
+        "type": "address"
+      }
+    ],
+    "name": "nonces",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "components": [
+          {
+            "internalType": "address",
+            "name": "buyer",
+            "type": "address"
+          },
+          {
+            "internalType": "address",
+            "name": "merchant",
+            "type": "address"
+          },
+          {
+            "internalType": "uint256",
+            "name": "principal",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint32",
+            "name": "installments",
+            "type": "uint32"
+          },
+          {
+            "internalType": "uint64",
+            "name": "interval",
+            "type": "uint64"
+          },
+          {
+            "internalType": "string",
+            "name": "orderId",
+            "type": "string"
+          },
+          {
+            "internalType": "uint256",
+            "name": "nonce",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "deadline",
+            "type": "uint256"
+          }
+        ],
+        "internalType": "struct PolarisCheckout.PlanIntent",
+        "name": "intent",
+        "type": "tuple"
+      },
+      {
+        "internalType": "bytes",
+        "name": "signature",
+        "type": "bytes"
+      },
+      {
+        "components": [
+          {
+            "internalType": "uint256",
+            "name": "value",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "deadline",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint8",
+            "name": "v",
+            "type": "uint8"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "r",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "s",
+            "type": "bytes32"
+          }
+        ],
+        "internalType": "struct PolarisCheckout.PermitSignature",
+        "name": "permit",
+        "type": "tuple"
+      }
+    ],
+    "name": "openPlan",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "loanId",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "merchant",
+        "type": "address"
+      },
+      {
+        "internalType": "string",
+        "name": "orderId",
+        "type": "string"
+      }
+    ],
+    "name": "orderKeyOf",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "stateMutability": "pure",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "merchant",
+        "type": "address"
+      },
+      {
+        "internalType": "string",
+        "name": "orderId",
+        "type": "string"
+      }
+    ],
+    "name": "orderOf",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "enum PolarisCheckout.OrderKind",
+            "name": "kind",
+            "type": "uint8"
+          },
+          {
+            "internalType": "uint64",
+            "name": "settledAt",
+            "type": "uint64"
+          },
+          {
+            "internalType": "address",
+            "name": "buyer",
+            "type": "address"
+          },
+          {
+            "internalType": "uint128",
+            "name": "amount",
+            "type": "uint128"
+          },
+          {
+            "internalType": "uint128",
+            "name": "ref",
+            "type": "uint128"
+          }
+        ],
+        "internalType": "struct PolarisCheckout.Order",
+        "name": "",
+        "type": "tuple"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "name": "orders",
+    "outputs": [
+      {
+        "internalType": "enum PolarisCheckout.OrderKind",
+        "name": "kind",
+        "type": "uint8"
+      },
+      {
+        "internalType": "uint64",
+        "name": "settledAt",
+        "type": "uint64"
+      },
+      {
+        "internalType": "address",
+        "name": "buyer",
+        "type": "address"
+      },
+      {
+        "internalType": "uint128",
+        "name": "amount",
+        "type": "uint128"
+      },
+      {
+        "internalType": "uint128",
+        "name": "ref",
+        "type": "uint128"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "owner",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "pause",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "paused",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "buyer",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "merchant",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      },
+      {
+        "internalType": "string",
+        "name": "orderId",
+        "type": "string"
+      },
+      {
+        "internalType": "uint256",
+        "name": "validAfter",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "validBefore",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint8",
+        "name": "v",
+        "type": "uint8"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "r",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "s",
+        "type": "bytes32"
+      }
+    ],
+    "name": "pay",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "orderKey",
+        "type": "bytes32"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "payments",
+    "outputs": [
+      {
+        "internalType": "contract PolarisPayments",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "components": [
+          {
+            "internalType": "address",
+            "name": "buyer",
+            "type": "address"
+          },
+          {
+            "internalType": "address",
+            "name": "merchant",
+            "type": "address"
+          },
+          {
+            "internalType": "uint256",
+            "name": "principal",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint32",
+            "name": "installments",
+            "type": "uint32"
+          },
+          {
+            "internalType": "uint64",
+            "name": "interval",
+            "type": "uint64"
+          },
+          {
+            "internalType": "string",
+            "name": "orderId",
+            "type": "string"
+          },
+          {
+            "internalType": "uint256",
+            "name": "nonce",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "deadline",
+            "type": "uint256"
+          }
+        ],
+        "internalType": "struct PolarisCheckout.PlanIntent",
+        "name": "intent",
+        "type": "tuple"
+      }
+    ],
+    "name": "planIntentDigest",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "buyer",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "principal",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint32",
+        "name": "installments",
+        "type": "uint32"
+      },
+      {
+        "internalType": "uint64",
+        "name": "interval",
+        "type": "uint64"
+      }
+    ],
+    "name": "quotePlan",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "uint256",
+            "name": "totalOwed",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "interest",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "installmentAmount",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "permitValue",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "creditLimit",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "activeDebt",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "available",
+            "type": "uint256"
+          },
+          {
+            "internalType": "bool",
+            "name": "withinLimit",
+            "type": "bool"
+          }
+        ],
+        "internalType": "struct PolarisCheckout.PlanQuote",
+        "name": "q",
+        "type": "tuple"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "buyer",
+        "type": "address"
+      },
+      {
+        "components": [
+          {
+            "internalType": "uint256",
+            "name": "value",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "deadline",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint8",
+            "name": "v",
+            "type": "uint8"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "r",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "s",
+            "type": "bytes32"
+          }
+        ],
+        "internalType": "struct PolarisCheckout.PermitSignature",
+        "name": "permit",
+        "type": "tuple"
+      }
+    ],
+    "name": "reauthorize",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "name": "reauthorizedThrough",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "renounceOwnership",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "scoreManager",
+    "outputs": [
+      {
+        "internalType": "contract ScoreManager",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "contract ICreditGuard",
+        "name": "guardian",
+        "type": "address"
+      }
+    ],
+    "name": "setCreditGuardian",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "stablecoin",
+    "outputs": [
+      {
+        "internalType": "contract IERC20",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "components": [
+          {
+            "internalType": "address",
+            "name": "buyer",
+            "type": "address"
+          },
+          {
+            "internalType": "address",
+            "name": "merchant",
+            "type": "address"
+          },
+          {
+            "internalType": "uint256",
+            "name": "planId",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "pricePerPeriod",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint64",
+            "name": "periodSeconds",
+            "type": "uint64"
+          },
+          {
+            "internalType": "string",
+            "name": "orderId",
+            "type": "string"
+          },
+          {
+            "internalType": "uint256",
+            "name": "nonce",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "deadline",
+            "type": "uint256"
+          }
+        ],
+        "internalType": "struct PolarisCheckout.SubscribeIntent",
+        "name": "intent",
+        "type": "tuple"
+      },
+      {
+        "internalType": "bytes",
+        "name": "signature",
+        "type": "bytes"
+      },
+      {
+        "components": [
+          {
+            "internalType": "uint256",
+            "name": "value",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "deadline",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint8",
+            "name": "v",
+            "type": "uint8"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "r",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "s",
+            "type": "bytes32"
+          }
+        ],
+        "internalType": "struct PolarisCheckout.PermitSignature",
+        "name": "permit",
+        "type": "tuple"
+      }
+    ],
+    "name": "subscribe",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "subId",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "components": [
+          {
+            "internalType": "address",
+            "name": "buyer",
+            "type": "address"
+          },
+          {
+            "internalType": "address",
+            "name": "merchant",
+            "type": "address"
+          },
+          {
+            "internalType": "uint256",
+            "name": "planId",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "pricePerPeriod",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint64",
+            "name": "periodSeconds",
+            "type": "uint64"
+          },
+          {
+            "internalType": "string",
+            "name": "orderId",
+            "type": "string"
+          },
+          {
+            "internalType": "uint256",
+            "name": "nonce",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "deadline",
+            "type": "uint256"
+          }
+        ],
+        "internalType": "struct PolarisCheckout.SubscribeIntent",
+        "name": "intent",
+        "type": "tuple"
+      }
+    ],
+    "name": "subscribeIntentDigest",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "newOwner",
+        "type": "address"
+      }
+    ],
+    "name": "transferOwnership",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "unpause",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  }
+]

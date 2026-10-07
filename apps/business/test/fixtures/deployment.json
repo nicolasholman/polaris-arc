@@ -1,0 +1,41 @@
+{
+  "network": "test",
+  "chainId": 31337,
+  "contracts": {
+    "Stablecoin": { "address": "0x00000000000000000000000000000000000a05d0", "kind": "MockAUSD" },
+    "ScoreManager": { "address": "0x0000000000000000000000000000000000005c01" },
+    "PolarisLoanEngine": { "address": "0x0000000000000000000000000000000000001e01" },
+    "PolarisPayments": { "address": "0x0000000000000000000000000000000000009a01" },
+    "MerchantRegistry": { "address": "0x0000000000000000000000000000000000004e01" },
+    "CollateralVault": { "address": "0x000000000000000000000000000000000000c001" },
+    "BatchSettlement": { "address": "0x000000000000000000000000000000000000ba01" },
+    "PolarisSend": { "address": "0x0000000000000000000000000000000000005e01" },
+    "PolarisSplit": { "address": "0x0000000000000000000000000000000000005b11" },
+    "PolarisCheckout": { "address": "0x000000000000000000000000000000000000c4c1" },
+    "CollectionsReceiver": { "address": "0x000000000000000000000000000000000000cc01" },
+    "UnderwritingReceiver": { "address": "0x000000000000000000000000000000000000ee01" },
+    "GuardianReceiver": { "address": "0x000000000000000000000000000000000000a4d1" }
+  },
+  "config": { "minInterval": 60, "minPeriod": 60, "feeBps": 50, "interestRateBps": 1000 },
+  "cre": {
+    "forwarderKind": "local",
+    "forwarder": "0x000000000000000000000000000000000000f0d1",
+    "workflows": {
+      "collections": {
+        "name": "polaris-collections",
+        "receiver": "0x000000000000000000000000000000000000cc01",
+        "retry": { "trigger": "EVM log", "contract": "0x000000000000000000000000000000000000c4c1", "event": "Reauthorized(address indexed buyer,uint256 value,uint256 deadline)" }
+      },
+      "underwrite": { "name": "polaris-underwrite", "receiver": "0x000000000000000000000000000000000000ee01" },
+      "guardian": {
+        "name": "polaris-guardian",
+        "receiver": "0x000000000000000000000000000000000000a4d1",
+        "priceFeed": { "chainId": 143, "chainSelectorName": "monad-mainnet", "address": "0xE20751C7B5867bCBef815ffc1b284c3f412a9e13", "decimals": 8, "description": "AUSD / USD", "kind": "chainlink" },
+        "feed": { "description": "Polaris pool health, computed by CRE", "decimals": 8, "address": "0x000000000000000000000000000000000000a4d1" }
+      }
+    }
+  },
+  "eip712": {
+    "Stablecoin": { "domain": { "name": "Agora Dollar", "version": "1", "chainId": 31337, "verifyingContract": "0x00000000000000000000000000000000000a05d0" } }
+  }
+}
