@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Typed GraphQL client for the Polaris Envio indexer: the queries the dashboard, the webhook dispatcher, the CRE collections workflow and the Polaris app send.",
+  "description": "Typed GraphQL client for the Polaris Envio indexer on Arc: the queries the dashboard, the webhook dispatcher, the Polaris keeper and the Polaris app send.",
   "license": "MIT",
   "sideEffects": false,
   "exports": {
@@ -11,9 +11,9 @@
       "types": "./src/index.ts",
       "default": "./src/index.ts"
     },
-    "./cre": {
-      "types": "./src/cre.ts",
-      "default": "./src/cre.ts"
+    "./keeper": {
+      "types": "./src/keeper.ts",
+      "default": "./src/keeper.ts"
     },
     "./documents": {
       "types": "./src/documents.ts",

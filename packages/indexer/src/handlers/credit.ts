@@ -1,6 +1,7 @@
 /**
- * The buyer's credit line: ScoreManager scores, CRE underwriting (the
- * UnderwritingReceiver), and collateral in the CollateralVault.
+ * The buyer's credit line: ScoreManager scores, the Polaris keeper's
+ * underwriting (the UnderwritingReceiver), and collateral in the
+ * CollateralVault.
  *
  * Inside one underwriting report, per item: ScoreManager.Underwritten, then
  * ScoreChanged("underwritten"), then UnderwritingApplied; or only
@@ -10,6 +11,7 @@
 import { indexer } from "envio";
 
 import { configChange } from "../lib/config.js";
+import { keeperReport } from "../lib/keeper.js";
 import { decodeRevert } from "../lib/revert.js";
 import { scoreTick, withStore, type Store } from "../lib/store.js";
 import { logId, toInt, ZERO_ADDRESS } from "../lib/util.js";
@@ -115,7 +117,7 @@ indexer.onEvent({ contract: "ScoreManager", event: "OwnershipTransferred" }, asy
   }),
 );
 
-/* ── UnderwritingReceiver (CRE `polaris-underwrite`) ───────────────────── */
+/* ── UnderwritingReceiver (the keeper's underwriting reports) ───────────── */
 
 indexer.onEvent({ contract: "UnderwritingReceiver", event: "UnderwritingApplied" }, async ({ event, context }) =>
   withStore(context, event, async (st) => {
@@ -134,6 +136,7 @@ indexer.onEvent({ contract: "UnderwritingReceiver", event: "UnderwritingApplied"
       });
     }
     (await st.protocol()).underwritings += 1;
+    await keeperReport(st, "underwriting", 1);
   }),
 );
 
@@ -147,12 +150,7 @@ indexer.onEvent({ contract: "UnderwritingReceiver", event: "UnderwritingRefused"
     row.refusalData = reason;
     if (linkedWallet !== ZERO_ADDRESS) row.linkedWallet = linkedWallet;
     buyer.lastUnderwritingRefusal = decoded.name;
-  }),
-);
-
-indexer.onEvent({ contract: "UnderwritingReceiver", event: "SimulationTransmitterSet" }, async ({ event, context }) =>
-  withStore(context, event, async (st) => {
-    configChange(st, "UnderwritingReceiver", "SimulationTransmitterSet", { subject: event.params.transmitter });
+    await keeperReport(st, "underwriting", 1);
   }),
 );
 
@@ -189,6 +187,13 @@ indexer.onEvent({ contract: "CollateralVault", event: "MultiplierChanged" }, asy
   }),
 );
 
+// The most collateral one account may lock (10,000 USDC by default).
+indexer.onEvent({ contract: "CollateralVault", event: "MaxLockedPerUserSet" }, async ({ event, context }) =>
+  withStore(context, event, async (st) => {
+    configChange(st, "CollateralVault", "MaxLockedPerUserSet", { value: event.params.cap.toString() });
+  }),
+);
+
 indexer.onEvent({ contract: "CollateralVault", event: "SeizerSet" }, async ({ event, context }) =>
   withStore(context, event, async (st) => {
     configChange(st, "CollateralVault", "SeizerSet", { subject: event.params.seizer, granted: event.params.allowed });
@@ -207,8 +212,7 @@ indexer.onEvent({ contract: "CollateralVault", event: "OwnershipTransferred" }, 
   }),
 );
 
-// A borrower retiring an unspent Withdraw (CollateralVault.invalidateNonce). Only a vault with
-// withdrawWithSig emits it; Monad testnet's of 28 Sep 2026 never does.
+// A borrower retiring an unspent Withdraw (CollateralVault.invalidateNonce).
 indexer.onEvent({ contract: "CollateralVault", event: "NonceInvalidated" }, async ({ event, context }) =>
   withStore(context, event, async (st) => {
     configChange(st, "CollateralVault", "NonceInvalidated", { subject: event.params.borrower, value: event.params.nonce.toString() });

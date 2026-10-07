@@ -1,8 +1,7 @@
 /**
  * A GraphQL POST over `fetch`, with the errors Hasura returns surfaced as
  * exceptions. No dependencies: it runs in Node, the browser, Next.js route
- * handlers and edge runtimes. (The CRE workflow cannot use fetch; it sends
- * the same documents through its HTTP capability, see cre.ts.)
+ * handlers and edge runtimes.
  */
 
 export type FetchLike = (

@@ -1,9 +1,11 @@
 /**
- * The Chainlink CRE `polaris-collections` workflow's reports, as the
- * CollectionsReceiver executed them: every task executed or skipped, and why.
+ * The Polaris keeper's collections reports, as the CollectionsReceiver
+ * executed them: every task executed or skipped, and why. The keeper
+ * (services/keeper) is one EOA that submits each report itself
+ * (`submitReport(bytes)`), so the transaction's sender is the keeper.
  *
  * A skip for a shortfall puts the plan (or subscription) into dunning and
- * schedules its next attempt along the ladder, so the workflow does not pay
+ * schedules its next attempt along the ladder, so the keeper does not pay
  * for a failing collection every minute; a stale candidate (not due, already
  * closed) is nobody's fault and changes nothing.
  *
@@ -14,8 +16,8 @@
 
 import { indexer } from "envio";
 
-import { configChange } from "../lib/config.js";
 import { changePlan } from "../lib/domain.js";
+import { keeperReport } from "../lib/keeper.js";
 import { installmentSlice, nextAttemptAfterFailure } from "../lib/loans.js";
 import { decodeRevert } from "../lib/revert.js";
 import { withStore } from "../lib/store.js";
@@ -56,7 +58,7 @@ indexer.onEvent({ contract: "CollectionsReceiver", event: "TaskExecuted" }, asyn
       blockNumber: st.m.blockNumber,
       txHash: st.m.txHash,
     });
-    if (action === ACTION.COLLECT_INSTALLMENT) (await st.protocol()).creCollections += 1;
+    if (action === ACTION.COLLECT_INSTALLMENT) (await st.protocol()).keeperCollections += 1;
   }),
 );
 
@@ -90,8 +92,8 @@ indexer.onEvent({ contract: "CollectionsReceiver", event: "TaskSkipped" }, async
     if (action === ACTION.COLLECT_INSTALLMENT) {
       const plan = await st.find("Plan", id);
       if (!plan || plan.status !== "ACTIVE") return;
-      // A skip before the attempt the ladder scheduled (the workflow sweeping
-      // the chain when the indexer is down, another keeper) is the same miss,
+      // A skip before the attempt the ladder scheduled (the keeper sweeping
+      // the chain when the indexer is down, an instant retry) is the same miss,
       // not a new one: counting it would walk the buyer down the whole ladder
       // in minutes and send them a failure webhook a minute. The API counts
       // misses the same way.
@@ -155,11 +157,12 @@ indexer.onEvent({ contract: "CollectionsReceiver", event: "CollectionsRun" }, as
       tasks: toInt(tasks),
       executed: toInt(executed),
       skipped: toInt(skipped),
-      transmitter: st.m.from,
+      keeper: st.m.from,
       timestamp: st.m.timestamp,
       blockNumber: st.m.blockNumber,
       txHash: st.m.txHash,
     });
+    await keeperReport(st, "collections", toInt(tasks));
     const p = await st.protocol();
     p.collectionsRuns += 1;
     p.lastCollectionsRunAt = st.m.timestamp;
@@ -167,45 +170,3 @@ indexer.onEvent({ contract: "CollectionsReceiver", event: "CollectionsRun" }, as
     (await st.protocolDay()).collectionsRuns += 1;
   }),
 );
-
-/* ── Receiver settings (both receivers extend Chainlink's ReceiverTemplate) ── */
-
-for (const contract of ["CollectionsReceiver", "UnderwritingReceiver"] as const) {
-  indexer.onEvent({ contract, event: "ForwarderAddressUpdated" }, async ({ event, context }) =>
-    withStore(context, event, async (st) => {
-      configChange(st, contract, "ForwarderAddressUpdated", { subject: event.params.newForwarder, value: event.params.previousForwarder });
-    }),
-  );
-  indexer.onEvent({ contract, event: "ExpectedAuthorUpdated" }, async ({ event, context }) =>
-    withStore(context, event, async (st) => {
-      configChange(st, contract, "ExpectedAuthorUpdated", { subject: event.params.newAuthor, value: event.params.previousAuthor });
-    }),
-  );
-  indexer.onEvent({ contract, event: "ExpectedWorkflowNameUpdated" }, async ({ event, context }) =>
-    withStore(context, event, async (st) => {
-      configChange(st, contract, "ExpectedWorkflowNameUpdated", { value: event.params.newName });
-    }),
-  );
-  indexer.onEvent({ contract, event: "ExpectedWorkflowIdUpdated" }, async ({ event, context }) =>
-    withStore(context, event, async (st) => {
-      configChange(st, contract, "ExpectedWorkflowIdUpdated", { value: event.params.newId });
-    }),
-  );
-  indexer.onEvent({ contract, event: "SecurityWarning" }, async ({ event, context }) =>
-    withStore(context, event, async (st) => {
-      configChange(st, contract, "SecurityWarning", { value: event.params.message });
-    }),
-  );
-  indexer.onEvent({ contract, event: "OwnershipTransferred" }, async ({ event, context }) =>
-    withStore(context, event, async (st) => {
-      configChange(st, contract, "OwnershipTransferred", { subject: event.params.newOwner, value: event.params.previousOwner });
-    }),
-  );
-  // PolarisReceiver: while set, the only transaction origin that may deliver
-  // reports (`cre workflow simulate --broadcast`); zero again for a DON.
-  indexer.onEvent({ contract, event: "SimulationTransmitterSet" }, async ({ event, context }) =>
-    withStore(context, event, async (st) => {
-      configChange(st, contract, "SimulationTransmitterSet", { subject: event.params.transmitter });
-    }),
-  );
-}

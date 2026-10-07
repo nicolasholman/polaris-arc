@@ -1,8 +1,10 @@
-# Polaris on Monad, as the dashboard, the webhook dispatcher and the CRE
-# collections workflow read it.
+# Polaris on Arc, as the dashboard, the webhook dispatcher and the Polaris
+# keeper (services/keeper) read it.
 #
 # Conventions
-# - Money is BigInt in AUSD base units (6 decimals): 50383562 = $50.383562.
+# - Money is BigInt in USDC base units (6 decimals): 50383562 = $50.383562.
+#   EURC (euro send-by-link) has 6 decimals too; its rows say `currency: "EUR"`
+#   and its totals sit in their own `eurc*` fields, never mixed with dollars.
 #   Hasura returns BigInt as a JSON string; the client (./client) parses it.
 # - Times are Int unix seconds, so GraphQL variables stay plain `Int`.
 # - Addresses and hashes are lowercase hex strings (config: address_format).
@@ -20,7 +22,7 @@ type Protocol {
   id: ID!
   "PolarisPayments.feeBps, from FeeChanged (50 = 0.5%)."
   feeBps: Int!
-  "ScoreManager.requireUnderwriting: unsecured credit needs a CRE underwriting first."
+  "ScoreManager.requireUnderwriting: unsecured credit needs the keeper's underwriting first."
   requireUnderwriting: Boolean!
   "CollateralVault.creditMultiplierBps (15000 = 150% of locked collateral)."
   collateralMultiplierBps: Int!
@@ -48,8 +50,8 @@ type Protocol {
   "Everything buyers have repaid, instalments and prepayments."
   repaidVolume: BigInt!
   installmentsCompleted: Int!
-  "Collections the CRE workflow executed (TaskExecuted, action 1)."
-  creCollections: Int!
+  "Instalments the keeper's collections reports collected (TaskExecuted, action 1)."
+  keeperCollections: Int!
   liquidationCount: Int!
   "Unrecovered outstanding at liquidation."
   lossVolume: BigInt!
@@ -58,10 +60,16 @@ type Protocol {
   activeSubscriptionCount: Int!
   subscriptionVolume: BigInt!
 
+  "USDC links (PolarisSend)."
   sendCount: Int!
   sendVolume: BigInt!
   claimCount: Int!
   claimVolume: BigInt!
+  "EURC links (PolarisSendEURC), in EURC base units."
+  eurcSendCount: Int!
+  eurcSendVolume: BigInt!
+  eurcClaimCount: Int!
+  eurcClaimVolume: BigInt!
 
   payoutCount: Int!
   payoutVolume: BigInt!
@@ -69,9 +77,8 @@ type Protocol {
   collectionsRuns: Int!
   lastCollectionsRunAt: Int
   lastCollectionsRunBlock: Int
-  creReports: Int!
-  "Reports the forwarder delivered but the receiver reverted (ReportProcessed.result false)."
-  creReportsFailed: Int!
+  "Reports the Polaris keeper submitted (collections and underwriting): one per transaction."
+  keeperReports: Int!
   underwritings: Int!
   updatedAt: Int!
 }
@@ -127,10 +134,10 @@ type Merchant {
   mrr: BigInt!
 
   """
-  AUSD held, from every stablecoin transfer in or out since this account
+  USDC held, from every USDC transfer in or out since this account
   registered with the MerchantRegistry (registeredAt), which for a Polaris
   business is before any money. An account paid without registering is not
-  followed (its balance stays 0; read AUSD.balanceOf); its payments still
+  followed (its balance stays 0; read USDC.balanceOf); its payments still
   count in every volume.
   """
   balance: BigInt!
@@ -155,7 +162,7 @@ A Polaris app account: buyer, sender or recipient. Holds the credit line,
 mirrored from ScoreManager, the CollateralVault and the loan engine.
 """
 type Buyer {
-  "The account address (a Mera passkey account)."
+  "The account address (a passkey account)."
   id: ID!
   "300-850. 600 until ScoreManager holds a record."
   score: Int!
@@ -181,7 +188,7 @@ type Buyer {
   "The history wallet the underwriting proved (Bring your history)."
   linkedWallet: String
   underwrittenAt: Int
-  "Why the last CRE underwriting was refused (StaleEvidence, AlreadyHasRecord, WalletAlreadyLinked, InvalidUser)."
+  "Why the keeper's last underwriting was refused (StaleEvidence, AlreadyHasRecord, WalletAlreadyLinked, InvalidUser)."
   lastUnderwritingRefusal: String
 
   onTimeInstallments: Int!
@@ -193,10 +200,16 @@ type Buyer {
   "Paid to merchants, all modes (Pay in 4 counts the principal at checkout)."
   spent: BigInt!
   activeSubscriptionCount: Int!
+  "USDC links sent and claimed."
   sentCount: Int!
   sentVolume: BigInt!
   claimedCount: Int!
   claimedVolume: BigInt!
+  "EURC links sent and claimed, in EURC base units."
+  eurcSentCount: Int!
+  eurcSentVolume: BigInt!
+  eurcClaimedCount: Int!
+  eurcClaimedVolume: BigInt!
 
   firstSeenAt: Int!
   updatedAt: Int!
@@ -239,7 +252,7 @@ type Payment {
   period: Int
   "Settled through PolarisCheckout (a buyer's signature), not a direct call."
   viaCheckout: Boolean!
-  "The account that sent the transaction: the Privy relayer or the CRE transmitter."
+  "The account that sent the transaction: the Privy relayer or the Polaris keeper."
   relayer: String!
   day: Int! @index
   timestamp: Int! @index
@@ -278,7 +291,7 @@ type Order {
 
 """
 A Pay in 4 plan (a PolarisLoanEngine loan opened through PolarisCheckout).
-The CRE collections workflow reads its candidates from here.
+The Polaris keeper reads its collection candidates from here.
 """
 type Plan {
   "The loan id, decimal."
@@ -308,7 +321,7 @@ type Plan {
   "When checkLiquidatable turns true (nextDueAt + grace + 1); null once closed."
   liquidatableAt: Int @index
   """
-  When the collections workflow should next try: nextDueAt, pushed back along
+  When the keeper should next try to collect: nextDueAt, pushed back along
   the dunning ladder after a failed collection. Null once closed.
   """
   nextAttemptAt: Int @index
@@ -320,7 +333,7 @@ type Plan {
   failedAttempts: Int!
   "The engine's error: InsufficientAllowance, InsufficientBalance, ..."
   lastFailureReason: String
-  "allowance_lost (the buyer signs again), insufficient_funds (balance short), other: the CRE workflow's words."
+  "allowance_lost (the buyer signs again), insufficient_funds (balance short), other: the keeper's words."
   lastFailureAction: String
   lastFailureAt: Int
   "Recovered at liquidation (allowance, then collateral)."
@@ -356,7 +369,7 @@ type Installment {
   paidAt: Int
   "Completed within the grace period after its due date."
   onTime: Boolean
-  "BUYER (repay / repayWithSig), CRE (the collections workflow) or KEEPER (anyone else calling collectInstallment)."
+  "BUYER (repay / repayWithSig), KEEPER (the keeper's collections report, through the CollectionsReceiver) or OTHER (anyone else calling collectInstallment)."
   paidBy: String
   paidTxHash: String
   failedAttempts: Int!
@@ -376,7 +389,7 @@ type Repayment {
   "Instalments it completed (a prepayment can complete several)."
   installmentsCompleted: Int!
   onTime: Boolean!
-  "BUYER, CRE or KEEPER."
+  "BUYER, KEEPER or OTHER."
   source: String!
   "The instalment completed on time but earned no score bonus (small plan, or the weekly ration was spent)."
   bonusWithheld: Boolean!
@@ -401,7 +414,7 @@ type SubscriptionPlan {
   subscriptions: [Subscription!]! @derivedFrom(field: "plan")
 }
 
-"A buyer's subscription. The CRE collections workflow charges it when due."
+"A buyer's subscription. The Polaris keeper charges it when due."
 type Subscription {
   "The subscription id, decimal."
   id: ID!
@@ -417,7 +430,7 @@ type Subscription {
   "PolarisPayments.subscriptions(id).nextChargeAt."
   nextChargeAt: Int @index
   """
-  When the collections workflow should next try: nextChargeAt, pushed back
+  When the keeper should next try to charge: nextChargeAt, pushed back
   along the dunning ladder after a failed charge. Null once ended.
   """
   nextAttemptAt: Int @index
@@ -436,11 +449,17 @@ type Subscription {
   payments: [Payment!]! @derivedFrom(field: "subscription")
 }
 
-"Dollars sent as a link (PolarisSend): escrowed until claimed, cancelled or refunded."
+"""
+Money sent as a link: dollars (PolarisSend, USDC) or euros (PolarisSendEURC,
+EURC), escrowed until claimed, cancelled or refunded.
+"""
 type Send {
-  "The link key address (never reused)."
+  "The link key address (never reused, in either currency)."
   id: ID!
+  "USD (PolarisSend, USDC) or EUR (PolarisSendEURC, EURC)."
+  currency: String! @index
   sender: String! @index
+  "In the link's token's base units (6 decimals for both)."
   amount: BigInt!
   expiresAt: Int! @index
   "OPEN, CLAIMED, CANCELLED or REFUNDED."
@@ -451,14 +470,14 @@ type Send {
   closedAt: Int
   sentTxHash: String!
   closedTxHash: String
-  "The account that relayed the send (the sender never holds MON)."
+  "The account that relayed the send (it paid the gas, in USDC; the sender signs only)."
   relayer: String!
 }
 
 """
 Money a merchant moved out of their account to anywhere else: a one-tap or
-automatic payout. Recognised as a stablecoin transfer out of a merchant account
-in a transaction sent to the stablecoin itself (the relayer submitting the
+automatic payout. Recognised as a USDC transfer out of a merchant account
+in a transaction sent to USDC itself (the relayer submitting the
 merchant's signed transferWithAuthorization, or the merchant's own transfer),
 never through a Polaris contract, so paying another merchant at checkout is
 not a payout.
@@ -581,13 +600,18 @@ type ProtocolDay {
   liquidations: Int!
   subscriptionCharges: Int!
   subscriptionVolume: BigInt!
+  "USDC links."
   sendCount: Int!
   sendVolume: BigInt!
   claimCount: Int!
+  "EURC links, in EURC base units."
+  eurcSendCount: Int!
+  eurcSendVolume: BigInt!
+  eurcClaimCount: Int!
   payoutCount: Int!
   payoutVolume: BigInt!
   collectionsRuns: Int!
-  creReports: Int!
+  keeperReports: Int!
   newBuyers: Int!
   newMerchants: Int!
   open: BigInt
@@ -626,7 +650,7 @@ type ScoreEvent {
   txHash: String!
 }
 
-"One CRE underwriting item: applied (a score) or refused (a reason)."
+"One item of the keeper's underwriting report: applied (a score) or refused (a reason)."
 type Underwriting {
   "<txHash>-<buyer>"
   id: ID!
@@ -635,7 +659,7 @@ type Underwriting {
   applied: Boolean!
   score: Int
   declined: Boolean
-  "When the DON observed the facts (ScoreManager.Underwritten.observedAt)."
+  "When the keeper observed the facts (ScoreManager.Underwritten.observedAt)."
   observedAt: Int
   "StaleEvidence, AlreadyHasRecord, WalletAlreadyLinked, InvalidUser, or the raw selector."
   refusal: String
@@ -654,21 +678,21 @@ type LinkedWallet {
   txHash: String!
 }
 
-"One CRE collections report the CollectionsReceiver executed."
+"One collections report the keeper submitted, as the CollectionsReceiver executed it."
 type CollectionRun {
   "<txHash>-<logIndex>"
   id: ID!
   tasks: Int!
   executed: Int!
   skipped: Int!
-  "Who delivered it: the CRE transmitter (simulation) or the DON's forwarder caller."
-  transmitter: String!
+  "The keeper EOA that submitted it (the transaction's sender)."
+  keeper: String!
   timestamp: Int! @index
   blockNumber: Int! @index
   txHash: String! @index
 }
 
-"One task of a CRE collections report: executed, or skipped with the target's reason."
+"One task of a keeper collections report: executed, or skipped with the target's reason."
 type CollectionTask {
   "<txHash>-<logIndex>"
   id: ID!
@@ -684,7 +708,7 @@ type CollectionTask {
   "The decoded revert: InsufficientAllowance, InsufficientBalance, NotDue, LoanNotActive, ..."
   reason: String
   """
-  What the skip means, in the CRE collections workflow's words:
+  What the skip means, in the keeper's words:
   allowance_lost (the buyer must sign a new allowance), insufficient_funds
   (the buyer's balance is short), stale (the candidate was not actionable;
   nobody's fault) or other.
@@ -701,22 +725,50 @@ type CollectionTask {
   txHash: String! @index
 }
 
-"A report Chainlink's forwarder delivered to one of our receivers."
-type CreReport {
-  "<txHash>-<logIndex>"
+"""
+A report the Polaris keeper submitted to one of its receivers
+(CollectionsReceiver or UnderwritingReceiver `submitReport`). The keeper is
+one EOA calling the receiver directly, so a report is its transaction: a
+report the receiver refused reverts and leaves no row.
+"""
+type KeeperReport {
+  "<txHash>-<kind>"
   id: ID!
-  "collections or underwrite."
-  workflow: String! @index
+  "collections or underwriting."
+  kind: String! @index
   receiver: String!
-  forwarder: String!
-  workflowExecutionId: String!
-  reportId: String!
-  "False when the receiver reverted (the simulator still says success)."
-  result: Boolean! @index
-  transmitter: String!
+  "The keeper EOA (the transaction's sender)."
+  keeper: String! @index
+  "Tasks (collections) or underwriting items in the report."
+  items: Int!
   timestamp: Int! @index
   blockNumber: Int!
-  txHash: String!
+  txHash: String! @index
+}
+
+"""
+The credit guard's settings, one row per chain, id "credit-guard". Whether
+credit is paused now is not here: CreditGuard reads the pool live, so ask the
+contract (creditStatus()) or the API (/api/public/credit-guard).
+"""
+type CreditGuard {
+  id: ID!
+  "The CreditGuard contract."
+  address: String!
+  "Least free pool cash before Pay in 4 pauses (USDC base units)."
+  minFreeCash: BigInt
+  "Most unacknowledged bad debt, in bps of lifetime originations."
+  maxBadDebtBps: Int
+  "Lifetime originations below which the bad-debt ratio is not applied."
+  minOriginated: BigInt
+  "NONE, FORCE_RESUME or FORCE_PAUSE (CreditGuardOverridden)."
+  overrideMode: String!
+  "When a forced resume ends (unix seconds); null for the other modes."
+  overrideUntil: Int
+  "Bad debt the owner acknowledged (BadDebtAcknowledged)."
+  badDebtAcknowledged: BigInt!
+  updatedAt: Int!
+  updatedTxHash: String!
 }
 
 """
@@ -791,8 +843,8 @@ type Activity {
 
 """
 A role, setting or signature-nonce change on a Polaris contract: operators,
-writers, the checkout, the forwarder, ownership, pauses. The relayer's exact
-powers can be read from here.
+writers, the checkout, the keeper, the credit guard, ownership, pauses. The
+relayer's and the keeper's exact powers can be read from here.
 """
 type ConfigChange {
   "<txHash>-<logIndex>"
@@ -803,7 +855,7 @@ type ConfigChange {
   subject: String @index
   "Granted (true) or revoked (false), for role changes."
   granted: Boolean
-  "Any other value, as a string (a fee in bps, a nonce, a workflow name)."
+  "Any other value, as a string (a fee in bps, a nonce, the previous keeper, guard thresholds)."
   value: String
   timestamp: Int!
   blockNumber: Int!

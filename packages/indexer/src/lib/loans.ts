@@ -51,7 +51,7 @@ export function dueAt(firstDueAt: number, intervalSeconds: number, index: number
 /**
  * The next collection attempt after `failedAttempts` failures, along the
  * dunning ladder, never later than the moment the plan becomes liquidatable
- * (at which point the workflow liquidates instead).
+ * (at which point the keeper liquidates instead).
  */
 export function nextAttemptAfterFailure(
   failedAt: number,

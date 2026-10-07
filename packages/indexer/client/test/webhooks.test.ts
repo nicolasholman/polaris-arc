@@ -155,7 +155,7 @@ describe("webhook events", () => {
       fee: "0.125",
       currency: "USD",
       txHash: TX,
-      chainId: 10143,
+      chainId: 5042002,
     });
   });
 
@@ -191,7 +191,7 @@ describe("webhook events", () => {
         schedule: undefined,
         currency: "USD",
         txHash: TX,
-        chainId: 10143,
+        chainId: 5042002,
       },
     );
     // The first instalment falls due one interval after opening, as the engine has it.
@@ -213,7 +213,7 @@ describe("webhook events", () => {
       amount: "50.383562",
       remaining: "151.150684",
       txHash: TX,
-      chainId: 10143,
+      chainId: 5042002,
     });
     const failed = toWebhookEvent(rows["installment.failed"], ctx);
     assert.deepEqual(failed.data, {
@@ -224,7 +224,7 @@ describe("webhook events", () => {
       reason: "allowance_lost",
       attempt: 2,
       nextAttemptAt: "2026-09-22T14:13:20.000Z",
-      chainId: 10143,
+      chainId: 5042002,
     });
     // No next attempt: liquidation is next.
     const last = toWebhookEvent({ ...rows["installment.failed"], nextAttemptAt: null }, ctx);
@@ -237,14 +237,14 @@ describe("webhook events", () => {
   });
 
   it("closes plans, charges and ends subscriptions, and pays out, in the SDK's fields", () => {
-    assert.deepEqual(toWebhookEvent(rows["plan.completed"], ctx).data, { planId: "1", orderId: "order-42", total: "201.534246", txHash: TX, chainId: 10143 });
+    assert.deepEqual(toWebhookEvent(rows["plan.completed"], ctx).data, { planId: "1", orderId: "order-42", total: "201.534246", txHash: TX, chainId: 5042002 });
     assert.deepEqual(toWebhookEvent(rows["plan.liquidated"], ctx).data, {
       planId: "1",
       orderId: "order-42",
       outstanding: "100.000076",
       recovered: "20.00",
       txHash: TX,
-      chainId: 10143,
+      chainId: 5042002,
     });
     assert.deepEqual(toWebhookEvent(rows["subscription.charged"], ctx).data, {
       subscriptionId: "2",
@@ -258,7 +258,7 @@ describe("webhook events", () => {
       orderId: "order-42",
       sessionId: null,
       txHash: TX,
-      chainId: 10143,
+      chainId: 5042002,
     });
     assert.deepEqual(toWebhookEvent(rows["subscription.canceled"], ctx).data, {
       subscriptionId: "2",
@@ -267,7 +267,7 @@ describe("webhook events", () => {
       subscriber: "0xfB6916095ca1df60bB79Ce92cE3Ea74c37c5d359",
       canceledBy: "merchant",
       txHash: TX,
-      chainId: 10143,
+      chainId: 5042002,
     });
     assert.deepEqual(toWebhookEvent(rows["payout.paid"], { ...ctx, automatic: true }).data, {
       payoutId: `${TX}-4`,
@@ -275,7 +275,7 @@ describe("webhook events", () => {
       destination: "0xde709f2102306220921060314715629080e2fb77",
       automatic: true,
       txHash: TX,
-      chainId: 10143,
+      chainId: 5042002,
     });
   });
 

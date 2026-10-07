@@ -1,6 +1,6 @@
 /**
- * Rows as the client returns them: BigInt columns as `bigint` (AUSD base
- * units, 6 decimals), timestamps as unix seconds, addresses and hashes as
+ * Rows as the client returns them: BigInt columns as `bigint` (USDC base
+ * units, 6 decimals; EURC for euro links, also 6), timestamps as unix seconds, addresses and hashes as
  * lowercase hex. Each type is exactly its fragment in documents.ts.
  */
 
@@ -12,14 +12,16 @@ export type SubscriptionStatus = "ACTIVE" | "CANCELLED" | "LAPSED";
 export type InstallmentStatus = "PENDING" | "PAID" | "WRITTEN_OFF";
 export type SendStatus = "OPEN" | "CLAIMED" | "CANCELLED" | "REFUNDED";
 export type OrderStatus = "QUOTED" | "PAID";
-/** What a skipped collection asks of the buyer. */
-/** What a skipped task asks of the buyer: the CRE collections workflow's words (polarispay-sdk's InstallmentFailureReason, plus `stale`). */
+/** What a skipped task asks of the buyer, in the Polaris keeper's words (polarispay-sdk's InstallmentFailureReason, plus `stale`). */
 export type ReasonAction = "allowance_lost" | "insufficient_funds" | "stale" | "other";
 /** Why a collection failed, in polarispay-sdk's words (its InstallmentFailureReason). */
 export type InstallmentFailureReason = "insufficient_funds" | "allowance_lost" | "other";
 /** Who ended a subscription, in polarispay-sdk's words. */
 export type CanceledBy = "subscriber" | "merchant" | "lapsed";
-export type PaidBy = "BUYER" | "CRE" | "KEEPER";
+/** BUYER (repay / repayWithSig), KEEPER (the keeper's collections report) or OTHER (anyone else calling collectInstallment). */
+export type PaidBy = "BUYER" | "KEEPER" | "OTHER";
+/** USD: a USDC link (PolarisSend); EUR: a EURC link (PolarisSendEURC). */
+export type SendCurrency = "USD" | "EUR";
 
 export const WEBHOOK_KINDS = [
   "payment.succeeded",
@@ -312,10 +314,16 @@ export type Buyer = {
   paymentCount: number;
   spent: bigint;
   activeSubscriptionCount: number;
+  /** USDC links. */
   sentCount: number;
   sentVolume: bigint;
   claimedCount: number;
   claimedVolume: bigint;
+  /** EURC links, in EURC base units. */
+  eurcSentCount: number;
+  eurcSentVolume: bigint;
+  eurcClaimedCount: number;
+  eurcClaimedVolume: bigint;
   firstSeenAt: number;
   updatedAt: number;
 };
@@ -344,6 +352,7 @@ export type BuyerDay = {
 
 export type Send = {
   id: string;
+  currency: SendCurrency;
   sender: string;
   amount: bigint;
   expiresAt: number;
@@ -377,7 +386,7 @@ export type Protocol = {
   outstanding: bigint;
   repaidVolume: bigint;
   installmentsCompleted: number;
-  creCollections: number;
+  keeperCollections: number;
   liquidationCount: number;
   lossVolume: bigint;
   subscriptionCount: number;
@@ -387,13 +396,16 @@ export type Protocol = {
   sendVolume: bigint;
   claimCount: number;
   claimVolume: bigint;
+  eurcSendCount: number;
+  eurcSendVolume: bigint;
+  eurcClaimCount: number;
+  eurcClaimVolume: bigint;
   payoutCount: number;
   payoutVolume: bigint;
   collectionsRuns: number;
   lastCollectionsRunAt: number | null;
   lastCollectionsRunBlock: number | null;
-  creReports: number;
-  creReportsFailed: number;
+  keeperReports: number;
   underwritings: number;
   updatedAt: number;
 };
@@ -415,10 +427,13 @@ export type ProtocolDay = {
   sendCount: number;
   sendVolume: bigint;
   claimCount: number;
+  eurcSendCount: number;
+  eurcSendVolume: bigint;
+  eurcClaimCount: number;
   payoutCount: number;
   payoutVolume: bigint;
   collectionsRuns: number;
-  creReports: number;
+  keeperReports: number;
   newBuyers: number;
   newMerchants: number;
   open: bigint | null;
@@ -432,7 +447,7 @@ export type CollectionRun = {
   tasks: number;
   executed: number;
   skipped: number;
-  transmitter: string;
+  keeper: string;
   timestamp: number;
   blockNumber: number;
   txHash: string;
@@ -456,18 +471,31 @@ export type CollectionTask = {
   txHash: string;
 };
 
-export type CreReport = {
+/** A report the Polaris keeper submitted (one per transaction and receiver). */
+export type KeeperReport = {
   id: string;
-  workflow: "collections" | "underwrite";
+  kind: "collections" | "underwriting";
   receiver: string;
-  forwarder: string;
-  workflowExecutionId: string;
-  reportId: string;
-  result: boolean;
-  transmitter: string;
+  keeper: string;
+  /** Tasks (collections) or underwriting items in the report. */
+  items: number;
   timestamp: number;
   blockNumber: number;
   txHash: string;
+};
+
+/** The credit guard's settings. Whether credit is paused now is a view on the contract, not indexed. */
+export type CreditGuard = {
+  id: string;
+  address: string;
+  minFreeCash: bigint | null;
+  maxBadDebtBps: number | null;
+  minOriginated: bigint | null;
+  overrideMode: "NONE" | "FORCE_RESUME" | "FORCE_PAUSE";
+  overrideUntil: number | null;
+  badDebtAcknowledged: bigint;
+  updatedAt: number;
+  updatedTxHash: string;
 };
 
 /** Envio's `_meta` for one chain. */

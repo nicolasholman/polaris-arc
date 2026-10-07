@@ -42,7 +42,7 @@ export type Meta = {
   readonly timestamp: number;
   readonly logIndex: number;
   readonly txHash: string;
-  /** The transaction's sender: the relayer, the CRE transmitter, or a keeper. */
+  /** The transaction's sender: the relayer, the Polaris keeper, or anyone calling a contract directly. */
   readonly from: string;
   /** The transaction's target contract. */
   readonly to: string | undefined;
@@ -158,7 +158,7 @@ export class Store {
       outstanding: 0n,
       repaidVolume: 0n,
       installmentsCompleted: 0,
-      creCollections: 0,
+      keeperCollections: 0,
       liquidationCount: 0,
       lossVolume: 0n,
       subscriptionCount: 0,
@@ -168,13 +168,16 @@ export class Store {
       sendVolume: 0n,
       claimCount: 0,
       claimVolume: 0n,
+      eurcSendCount: 0,
+      eurcSendVolume: 0n,
+      eurcClaimCount: 0,
+      eurcClaimVolume: 0n,
       payoutCount: 0,
       payoutVolume: 0n,
       collectionsRuns: 0,
       lastCollectionsRunAt: undefined,
       lastCollectionsRunBlock: undefined,
-      creReports: 0,
-      creReportsFailed: 0,
+      keeperReports: 0,
       underwritings: 0,
       updatedAt: this.m.timestamp,
     }));
@@ -201,10 +204,13 @@ export class Store {
       sendCount: 0,
       sendVolume: 0n,
       claimCount: 0,
+      eurcSendCount: 0,
+      eurcSendVolume: 0n,
+      eurcClaimCount: 0,
       payoutCount: 0,
       payoutVolume: 0n,
       collectionsRuns: 0,
-      creReports: 0,
+      keeperReports: 0,
       newBuyers: 0,
       newMerchants: 0,
       open: undefined,
@@ -291,6 +297,10 @@ export class Store {
       sentVolume: 0n,
       claimedCount: 0,
       claimedVolume: 0n,
+      eurcSentCount: 0,
+      eurcSentVolume: 0n,
+      eurcClaimedCount: 0,
+      eurcClaimedVolume: 0n,
       firstSeenAt: this.m.timestamp,
       updatedAt: this.m.timestamp,
     }));

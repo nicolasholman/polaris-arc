@@ -29,8 +29,8 @@ describe("GraphQL documents", () => {
     });
   }
 
-  it("answers CRE in the shape the collections workflow reads, on the dunning-aware schedule", () => {
-    // polaris-collections parses data.Loan[].loanId and data.Subscription[].subId.
+  it("answers the keeper in the shape parseDueCandidates reads, on the dunning-aware schedule", () => {
+    // parseDueCandidates (src/keeper.ts) reads data.Loan[].loanId and data.Subscription[].subId.
     assert.match(DOCUMENTS.DUE_CANDIDATES, /Loan: Plan\(/);
     assert.match(DOCUMENTS.DUE_CANDIDATES, /\{ loanId liquidatableAt \}/);
     assert.match(DOCUMENTS.DUE_CANDIDATES, /Subscription\(/);

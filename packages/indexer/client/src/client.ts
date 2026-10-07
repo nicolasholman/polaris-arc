@@ -4,19 +4,20 @@
  * case; the indexer stores them lowercase.
  */
 
-import { dueCandidatesRequest, parseDueCandidates, type Task } from "./cre.ts";
 import { decode, type Raw } from "./decode.ts";
 import * as D from "./documents.ts";
 import { createTransport, IndexerError, type Request, type TransportOptions } from "./http.ts";
+import { dueCandidatesRequest, parseDueCandidates, type Task } from "./keeper.ts";
 import type {
   Activity,
   Buyer,
   BuyerDay,
   CollectionRun,
   CollectionTask,
-  CreReport,
+  CreditGuard,
   Customer,
   IndexerStatus,
+  KeeperReport,
   Merchant,
   MerchantDay,
   Order,
@@ -36,7 +37,7 @@ import type {
 import { committed } from "./webhooks.ts";
 
 export type IndexerClientOptions = TransportOptions & {
-  /** The chain whose `_meta` row to read (default 10143, Monad testnet). */
+  /** The chain whose `_meta` row to read (default 5042002, Arc testnet). */
   chainId?: number;
   /** The clock, for "the last N days" windows. Defaults to Date.now. */
   now?: () => number;
@@ -51,7 +52,7 @@ export type IndexerClient = ReturnType<typeof createIndexerClient>;
 
 export function createIndexerClient(options: IndexerClientOptions) {
   const request: Request = createTransport(options);
-  const chainId = options.chainId ?? 10143;
+  const chainId = options.chainId ?? 5042002;
   const nowSeconds = () => Math.floor((options.now ?? Date.now)() / 1000);
   const dayNow = () => Math.floor(nowSeconds() / SECONDS_PER_DAY);
   const page = (p: Page = {}) => ({ limit: p.limit ?? 50, offset: p.offset ?? 0 });
@@ -158,12 +159,21 @@ export function createIndexerClient(options: IndexerClientOptions) {
       }
     },
 
-    async collector(opts: { runs?: number } = {}): Promise<{ protocol: Protocol | null; runs: CollectionRun[]; reports: CreReport[] }> {
-      const data = await request<{ Protocol: Raw[]; CollectionRun: Raw[]; CreReport: Raw[] }>(D.COLLECTOR_STATUS, { runs: opts.runs ?? 5 });
+    /** The keeper's latest collections runs and reports, the totals, and the credit guard's settings. */
+    async collector(opts: { runs?: number } = {}): Promise<{
+      protocol: Protocol | null;
+      runs: CollectionRun[];
+      reports: KeeperReport[];
+      creditGuard: CreditGuard | null;
+    }> {
+      const data = await request<{ Protocol: Raw[]; CollectionRun: Raw[]; KeeperReport: Raw[]; CreditGuard: Raw[] }>(D.COLLECTOR_STATUS, {
+        runs: opts.runs ?? 5,
+      });
       return {
         protocol: one(data.Protocol, decode.protocol),
         runs: decode.rows(data.CollectionRun, decode.collectionRun),
-        reports: decode.rows(data.CreReport, decode.creReport),
+        reports: decode.rows(data.KeeperReport, decode.keeperReport),
+        creditGuard: one(data.CreditGuard, decode.creditGuard),
       };
     },
 
@@ -195,7 +205,7 @@ export function createIndexerClient(options: IndexerClientOptions) {
       return decode.rows(data.Activity, decode.activity);
     },
 
-    /* ── CRE (for scripts and the fallback keeper; the workflow uses ./cre directly) ── */
+    /* ── The Polaris keeper (or a script): collection candidates; see ./keeper ── */
 
     async dueCandidates(now = nowSeconds(), limit = 50): Promise<Task[]> {
       const { query, variables } = dueCandidatesRequest(now, limit);

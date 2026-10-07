@@ -1,13 +1,13 @@
 /**
- * Subscriptions: sign-up through the checkout, renewals charged by the CRE
- * collections workflow, a failed charge, a skipped period, a lapse and a
+ * Subscriptions: sign-up through the checkout, renewals charged by the
+ * Polaris keeper, a failed charge, a skipped period, a lapse and a
  * cancellation, with the merchant's recurring revenue kept exact.
  */
 
 import { encodeErrorResult, parseAbi } from "viem";
 import { describe, expect, it } from "vitest";
 
-import { A, account, RELAYER, SETTINGS, Sim, TRANSMITTER, USD } from "./sim.js";
+import { A, account, RELAYER, SETTINGS, Sim, KEEPER, USD } from "./sim.js";
 
 const merchant = account(0x111);
 const buyer = account(0x222);
@@ -40,7 +40,7 @@ function subscribe(sim: Sim, subId: bigint, planId = 1n) {
 
 function charge(sim: Sim, subId: bigint, period: bigint) {
   sim
-    .tx({ from: TRANSMITTER, to: SETTINGS.creForwarders[0] })
+    .tx({ from: KEEPER, to: A.CollectionsReceiver })
     .transfer(buyer, merchant, price - fee)
     .log("PolarisPayments", "SubscriptionCharged", { subId, amount: price, fee, period })
     .log("CollectionsReceiver", "TaskExecuted", { action: 2n, id: subId, amount: 0n })
@@ -86,7 +86,7 @@ describe("Subscriptions", () => {
     const next = subscribe(sim, 1n);
     sim.wait(PERIOD);
     sim
-      .tx({ from: TRANSMITTER, to: SETTINGS.creForwarders[0] })
+      .tx({ from: KEEPER, to: A.CollectionsReceiver })
       .log("CollectionsReceiver", "TaskSkipped", {
         action: 2n,
         id: 1n,
@@ -100,7 +100,7 @@ describe("Subscriptions", () => {
     // Tried again a minute later, inside the wait: the same miss.
     sim.wait(60);
     sim
-      .tx({ from: TRANSMITTER, to: SETTINGS.creForwarders[0] })
+      .tx({ from: KEEPER, to: A.CollectionsReceiver })
       .log("CollectionsReceiver", "TaskSkipped", {
         action: 2n,
         id: 1n,
@@ -112,7 +112,7 @@ describe("Subscriptions", () => {
 
     // Eight days later chargeDue records a miss and moves to the next boundary.
     sim.wait(8 * 86_400);
-    sim.tx({ from: TRANSMITTER }).log("PolarisPayments", "ChargeMissed", { subId: 1n, misses: 1n, reason: "charge window elapsed" });
+    sim.tx({ from: KEEPER }).log("PolarisPayments", "ChargeMissed", { subId: 1n, misses: 1n, reason: "charge window elapsed" });
     await sim.run();
     const periods = Math.floor((sim.time - next) / PERIOD) + 1;
     sub = await sim.indexer.Subscription.getOrThrow("1");
@@ -125,7 +125,7 @@ describe("Subscriptions", () => {
     plan(sim);
     subscribe(sim, 1n);
     subscribe(sim, 2n);
-    sim.tx({ from: TRANSMITTER }).log("PolarisPayments", "SubscriptionLapsed", { subId: 1n, misses: 3n });
+    sim.tx({ from: KEEPER }).log("PolarisPayments", "SubscriptionLapsed", { subId: 1n, misses: 3n });
     sim.tx({ from: RELAYER }).log("PolarisPayments", "SubscriptionCancelled", { subId: 2n, by: buyer });
     await sim.run();
 

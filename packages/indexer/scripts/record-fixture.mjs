@@ -4,11 +4,10 @@
  *
  *   node scripts/record-fixture.mjs          # needs packages/contracts installed (the workspace)
  *
- * Starts a Hardhat node on 127.0.0.1:3540 (POLARIS_FIXTURE_PORT), deploys the
- * whole contract layer with the same script as testnet, runs the contracts'
- * own end-to-end flows (scripts/e2e-monad-local.js) and then
- * scripts/fixture-scenarios.cjs for the flows it does not cover, and writes
- * test/fixtures/local-chain.json:
+ * Starts a Hardhat node on 127.0.0.1:3540 (POLARIS_FIXTURE_PORT), runs
+ * scripts/fixture-chain.cjs on it (the whole contract layer deployed with the
+ * same code as Arc testnet, then every flow a handler reads, the Polaris
+ * keeper's reports included), and writes test/fixtures/local-chain.json:
  *
  *   - every log the indexer would see, decoded, with its block, timestamp,
  *     log index, transaction hash, sender and target;
@@ -18,14 +17,20 @@
  * test/replay.test.ts replays the log through the real handlers and checks
  * the indexed state against those views. Runs on Windows or Linux.
  *
+ * The chain's deployment record goes to a scratch file (or --deployment-out),
+ * never to packages/contracts/deployments, so a local stack's arc-local.json
+ * is left alone.
+ *
  * Options (for scripts/live.sh, which indexes the same chain over RPC):
- *   --out <file>    write the fixture there instead
- *   --keep-node     leave the Hardhat node running and print its pid
+ *   --out <file>             write the fixture there instead
+ *   --deployment-out <file>  keep the chain's deployment record there
+ *   --keep-node              leave the Hardhat node running and print its pid
  */
 
 import { spawn } from "node:child_process";
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
+import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -40,13 +45,14 @@ const option = (name) => {
   return i >= 0 ? args[i + 1] : undefined;
 };
 const OUT = resolve(option("--out") ?? join(ROOT, "test", "fixtures", "local-chain.json"));
+const DEPLOYMENT_OUT = resolve(option("--deployment-out") ?? join(mkdtempSync(join(tmpdir(), "polaris-fixture-")), "arc-local.json"));
 const KEEP_NODE = flag("--keep-node");
 
 const require = createRequire(join(CONTRACTS, "package.json"));
 const { JsonRpcProvider, Interface, Contract } = require("ethers");
 const HARDHAT = join(dirname(require.resolve("hardhat/package.json")), "internal", "cli", "bootstrap.js");
 
-/** Contracts whose logs the indexer reads, by deployment name, with their ABI file. */
+/** Contracts whose logs the indexer reads, by deployment record name, with their ABI file. */
 const SOURCES = {
   ScoreManager: "ScoreManager",
   PolarisLoanEngine: "PolarisLoanEngine",
@@ -55,11 +61,12 @@ const SOURCES = {
   CollateralVault: "CollateralVault",
   BatchSettlement: "BatchSettlement",
   PolarisSend: "PolarisSend",
+  PolarisSendEURC: "PolarisSend",
   PolarisCheckout: "PolarisCheckout",
   CollectionsReceiver: "CollectionsReceiver",
   UnderwritingReceiver: "UnderwritingReceiver",
-  MockKeystoneForwarder: "MockKeystoneForwarder",
-  Stablecoin: "IAUSD",
+  CreditGuard: "CreditGuard",
+  USDC: "IUSDC",
 };
 
 function abi(name) {
@@ -101,11 +108,11 @@ function plain(value) {
 
 async function dump(url) {
   const provider = new JsonRpcProvider(url, undefined, { staticNetwork: true, batchMaxCount: 1 });
-  const d = JSON.parse(readFileSync(join(CONTRACTS, "deployments", "monad-local.json"), "utf8"));
+  const d = JSON.parse(readFileSync(DEPLOYMENT_OUT, "utf8"));
   const byAddress = new Map();
   for (const [name, abiName] of Object.entries(SOURCES)) {
     const address = d.contracts[name]?.address?.toLowerCase();
-    if (!address) throw new Error(`monad-local.json has no ${name}`);
+    if (!address) throw new Error(`${DEPLOYMENT_OUT} has no ${name}`);
     byAddress.set(address, { name, iface: new Interface(abi(abiName)) });
   }
 
@@ -154,9 +161,11 @@ async function dump(url) {
   const payments = at("PolarisPayments");
   const scores = at("ScoreManager");
   const vault = at("CollateralVault");
-  const token = at("Stablecoin");
+  const token = at("USDC");
   const registry = at("MerchantRegistry");
   const send = at("PolarisSend");
+  const sendEurc = at("PolarisSendEURC");
+  const guard = at("CreditGuard");
   const of = (contract, event, key) => [...new Set(events.filter((e) => e.contract === contract && e.event === event).map((e) => e.params[key]))];
 
   const loans = {};
@@ -218,17 +227,30 @@ async function dump(url) {
     });
   }
   const sends = {};
+  const ZERO = "0x0000000000000000000000000000000000000000";
   for (const k of of("PolarisSend", "Sent", "linkKey")) {
-    sends[k] = { open: (await send.linkOf(k)).sender !== "0x0000000000000000000000000000000000000000" };
+    sends[k] = { currency: "USD", open: (await send.linkOf(k)).sender !== ZERO };
   }
+  for (const k of of("PolarisSendEURC", "Sent", "linkKey")) {
+    sends[k] = { currency: "EUR", open: (await sendEurc.linkOf(k)).sender !== ZERO };
+  }
+  const status = await guard.creditStatus();
+  const creditGuard = plain({
+    minFreeCash: status.thresholds.minFreeCash,
+    maxBadDebtBps: Number(status.thresholds.maxBadDebtBps),
+    minOriginated: status.thresholds.minOriginated,
+    overrideMode: Number(await guard.overrideMode()),
+    badDebtAcknowledged: await guard.badDebtAcknowledged(),
+  });
 
   return {
-    note: "Recorded by scripts/record-fixture.mjs from a local Hardhat chain. Do not edit.",
+    note: "Recorded by scripts/record-fixture.mjs from a local Hardhat chain (scripts/fixture-chain.cjs). Do not edit.",
     chainId: d.chainId,
     graceSeconds: d.config.graceSeconds,
+    keeper: d.roles.keeper.toLowerCase(),
     contracts: Object.fromEntries(Object.keys(SOURCES).map((n) => [n, d.contracts[n].address.toLowerCase()])),
     events,
-    expected: { loans, subscriptions, buyers, merchants, sends },
+    expected: { loans, subscriptions, buyers, merchants, sends, creditGuard },
   };
 }
 
@@ -252,9 +274,11 @@ async function main() {
       if (Date.now() - started > 120_000) throw new Error("hardhat node did not start within 2 minutes");
       await new Promise((r) => setTimeout(r, 500));
     }
-    await hardhat(["run", "scripts/deploy-monad.js", "--network", "monadLocal"]);
-    await hardhat(["run", "scripts/e2e-monad-local.js", "--network", "monadLocal"]);
-    await hardhat(["run", join(ROOT, "scripts", "fixture-scenarios.cjs"), "--network", "monadLocal"], { POLARIS_CONTRACTS_DIR: CONTRACTS });
+    mkdirSync(dirname(DEPLOYMENT_OUT), { recursive: true });
+    await hardhat(["run", join(ROOT, "scripts", "fixture-chain.cjs"), "--network", "arcLocal"], {
+      POLARIS_CONTRACTS_DIR: CONTRACTS,
+      POLARIS_FIXTURE_DEPLOYMENT: DEPLOYMENT_OUT,
+    });
     const fixture = await dump(url);
     mkdirSync(dirname(OUT), { recursive: true });
     writeFileSync(OUT, `${JSON.stringify(fixture, null, 1)}\n`);

@@ -1,6 +1,6 @@
 /**
- * Pay in 4 from origination to the end: the schedule, the CRE collections
- * workflow's skips and collections, dunning and its ladder, prepaying, and
+ * Pay in 4 from origination to the end: the schedule, the Polaris keeper's
+ * skipped and executed collections, dunning and its ladder, prepaying, and
  * liquidation. Every total is checked against what a recount would give.
  */
 
@@ -8,7 +8,7 @@ import { encodeErrorResult, parseAbi } from "viem";
 import { describe, expect, it } from "vitest";
 
 import { interestFor, installmentSlice } from "../src/lib/loans.js";
-import { A, account, RELAYER, SETTINGS, Sim, TRANSMITTER, USD } from "./sim.js";
+import { A, account, KEEPER, RELAYER, SETTINGS, Sim, USD } from "./sim.js";
 
 const merchant = account(0x111);
 const buyer = account(0x222);
@@ -18,6 +18,12 @@ const errors = parseAbi(["error InsufficientBalance(uint256 have, uint256 need)"
 const principal = USD(200);
 const totalOwed = principal + interestFor(principal, 4, WEEK);
 const first = installmentSlice(totalOwed, 4, 0);
+/**
+ * How late the first collection attempt in the dunning tests comes: an hour
+ * before the plan turns liquidatable, so the ladder's first step (6 h) is past
+ * the grace period whatever the deployment's grace is.
+ */
+const LATE = Math.max(0, SETTINGS.graceSeconds - 3_600);
 
 function open(sim: Sim, loanId: bigint, orderKey: string, orderId: string, interval = WEEK) {
   sim.tx({ from: RELAYER, to: A.PolarisCheckout });
@@ -41,18 +47,11 @@ function open(sim: Sim, loanId: bigint, orderKey: string, orderId: string, inter
   return firstDueAt;
 }
 
-/** The events one collections report leaves, simulated here (no CRE workflow or DON runs in this test). */
+/** The events one keeper collections report (submitReport) leaves, simulated here (no keeper runs in this test). */
 function report(sim: Sim, body: (sim: Sim) => void, tasks: number, executed: number) {
-  sim.tx({ from: TRANSMITTER, to: SETTINGS.creForwarders[0] });
+  sim.tx({ from: KEEPER, to: A.CollectionsReceiver });
   body(sim);
-  sim
-    .log("CollectionsReceiver", "CollectionsRun", { tasks: BigInt(tasks), executed: BigInt(executed), skipped: BigInt(tasks - executed) })
-    .log("CreForwarder", "ReportProcessed", {
-      receiver: A.CollectionsReceiver,
-      workflowExecutionId: `0x${"ee".repeat(32)}`,
-      reportId: "0x0001",
-      result: true,
-    });
+  sim.log("CollectionsReceiver", "CollectionsRun", { tasks: BigInt(tasks), executed: BigInt(executed), skipped: BigInt(tasks - executed) });
 }
 
 describe("Pay in 4", () => {
@@ -108,13 +107,13 @@ describe("Pay in 4", () => {
     });
   });
 
-  it("duns a short buyer along the ladder, then clears it when CRE collects", async () => {
+  it("duns a short buyer along the ladder, then clears it when the keeper collects", async () => {
     const sim = new Sim().registerMerchant(merchant);
     const firstDueAt = open(sim, 1n, `0x${"aa".repeat(32)}`, "logo-work");
     await sim.run();
 
-    // Due, and the buyer is short: the receiver skips with the engine's reason.
-    sim.wait(WEEK);
+    // Due (and late), and the buyer is short: the receiver skips with the engine's reason.
+    sim.wait(WEEK + LATE);
     report(
       sim,
       (s) => s.log("CollectionsReceiver", "TaskSkipped", { action: 1n, id: 1n, reason: encodeErrorResult({ abi: errors, errorName: "InsufficientBalance", args: [USD(10), first] }) }),
@@ -146,14 +145,18 @@ describe("Pay in 4", () => {
     expect(failed!.nextAttemptAt).toBeUndefined();
     const [task] = await sim.indexer.CollectionTask.getAll();
     expect(task).toMatchObject({ executed: false, actionName: "COLLECT_INSTALLMENT", reason: "InsufficientBalance", have: USD(10), need: first, plan_id: "1" });
-    expect(await sim.indexer.Protocol.getOrThrow("polaris")).toMatchObject({ collectionsRuns: 1, lastCollectionsRunAt: failedAt, creReports: 1 });
+    expect(await sim.indexer.Protocol.getOrThrow("polaris")).toMatchObject({ collectionsRuns: 1, lastCollectionsRunAt: failedAt, keeperReports: 1 });
+    const [run] = await sim.indexer.CollectionRun.getAll();
+    expect(run).toMatchObject({ keeper: KEEPER, tasks: 1, skipped: 1 });
+    const [keeperReport] = await sim.indexer.KeeperReport.getAll();
+    expect(keeperReport).toMatchObject({ kind: "collections", receiver: A.CollectionsReceiver, keeper: KEEPER, items: 1 });
 
     // A stale candidate changes nothing.
     report(sim, (s) => s.log("CollectionsReceiver", "TaskSkipped", { action: 1n, id: 1n, reason: encodeErrorResult({ abi: errors, errorName: "NotDue" }) }), 1, 0);
     await sim.run();
     expect((await sim.indexer.Plan.getOrThrow("1")).failedAttempts).toBe(1);
 
-    // The buyer topped up; CRE collects instalment 1.
+    // The buyer topped up; the keeper collects instalment 1.
     report(
       sim,
       (s) =>
@@ -177,25 +180,25 @@ describe("Pay in 4", () => {
       nextAttemptAt: firstDueAt + WEEK,
       liquidatableAt: firstDueAt + WEEK + SETTINGS.graceSeconds + 1,
     });
-    expect(await sim.indexer.Installment.getOrThrow("1-0")).toMatchObject({ status: "PAID", paid: first, paidBy: "CRE", onTime: true });
+    expect(await sim.indexer.Installment.getOrThrow("1-0")).toMatchObject({ status: "PAID", paid: first, paidBy: "KEEPER", onTime: true });
     const [repayment] = await sim.indexer.Repayment.getAll();
-    expect(repayment).toMatchObject({ source: "CRE", installmentsCompleted: 1, amount: first });
+    expect(repayment).toMatchObject({ source: "KEEPER", installmentsCompleted: 1, amount: first });
     expect(await sim.indexer.Merchant.getOrThrow(merchant)).toMatchObject({ dunningPlanCount: 0, atRiskOutstanding: 0n, outstanding: totalOwed - first });
     expect(await sim.indexer.Buyer.getOrThrow(buyer)).toMatchObject({ activeDebt: totalOwed - first, onTimeInstallments: 1 });
-    expect(await sim.indexer.Protocol.getOrThrow("polaris")).toMatchObject({ creCollections: 1, installmentsCompleted: 1, outstanding: totalOwed - first });
+    expect(await sim.indexer.Protocol.getOrThrow("polaris")).toMatchObject({ keeperCollections: 1, keeperReports: 3, installmentsCompleted: 1, outstanding: totalOwed - first });
   });
 
   it("counts a skip before the scheduled retry as the same miss, not a new one", async () => {
     const sim = new Sim().registerMerchant(merchant);
     const firstDueAt = open(sim, 1n, `0x${"aa".repeat(32)}`, "logo-work");
     const short = encodeErrorResult({ abi: errors, errorName: "InsufficientBalance", args: [USD(10), first] });
-    sim.wait(WEEK + 10);
+    sim.wait(WEEK + LATE + 10);
     report(sim, (s) => s.log("CollectionsReceiver", "TaskSkipped", { action: 1n, id: 1n, reason: short }), 1, 0);
     await sim.run();
     const retryAt = (await sim.indexer.Plan.getOrThrow("1")).nextAttemptAt!;
     expect(retryAt).toBe(firstDueAt + SETTINGS.graceSeconds + 1);
 
-    // The workflow sweeping the chain (its indexer is down) tries again a minute later.
+    // The keeper sweeping the chain (its indexer is down) tries again a minute later.
     sim.wait(60);
     report(sim, (s) => s.log("CollectionsReceiver", "TaskSkipped", { action: 1n, id: 1n, reason: short }), 1, 0);
     await sim.run();

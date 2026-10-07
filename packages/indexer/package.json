@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Envio HyperIndex indexer for Polaris on Monad: payments, Pay in 4 plans and instalments, subscriptions, sends, payouts, merchants, credit and CRE collections, behind the dashboard, the webhooks and the CRE collections workflow.",
+  "description": "Envio HyperIndex indexer for Polaris on Arc: payments, Pay in 4 plans and instalments, subscriptions, USDC and EURC sends, payouts, merchants, credit, the credit guard and the Polaris keeper's collections, behind the dashboard and the webhooks.",
   "license": "MIT",
   "scripts": {
     "generate": "node scripts/generate.mjs",

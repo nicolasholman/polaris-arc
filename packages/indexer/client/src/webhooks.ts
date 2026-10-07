@@ -20,8 +20,8 @@
  *
  * Only rows at or below the indexer's progress block are returned: Envio
  * writes a block's rows and its progress in one transaction, so a row the
- * dispatcher sees is never taken back. With the config's block_lag of 2
- * (Monad finality), a block is final before it is indexed.
+ * dispatcher sees is never taken back. Arc's finality is deterministic and
+ * sub-second, so a block is final once it is indexed (block_lag 0).
  */
 
 import { checksumAddress, sha256Hex } from "./hash.ts";
@@ -179,7 +179,7 @@ export type WebhookContext = {
   /** The merchant's public id (mer_…), which the API keeps; the SDK refuses anything else. */
   merchantId: string;
   livemode?: boolean;
-  /** Monad testnet (10143) unless given. */
+  /** Arc testnet (5042002) unless given. */
   chainId?: number;
   /** The checkout session the row's order (`orderKey`) came through, if any. */
   session?: WebhookSession | null;
@@ -224,7 +224,7 @@ function need<K extends keyof Activity>(a: Activity, field: K): NonNullable<Acti
 const iso = (seconds: number) => new Date(seconds * 1000).toISOString();
 
 export function toWebhookEvent(a: Activity, ctx: WebhookContext): WebhookEvent {
-  const chainId = ctx.chainId ?? 10143;
+  const chainId = ctx.chainId ?? 5042002;
   const session = ctx.session ?? null;
   const txHash = a.txHash as Hex;
   const merchant = checksumAddress(a.merchant_id);

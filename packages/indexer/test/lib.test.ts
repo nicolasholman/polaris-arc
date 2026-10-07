@@ -197,6 +197,7 @@ describe("generated config", () => {
       "BatchSettlement",
       "CollectionsReceiver",
       "UnderwritingReceiver",
+      "CreditGuard",
     ];
     for (const name of contracts) {
       const abi = JSON.parse(readFileSync(join(abiDir, `${name}.json`), "utf8")) as Array<{ type: string; name: string }>;
@@ -204,6 +205,12 @@ describe("generated config", () => {
         expect(config, `${name}.${e.name}`).toContain(`"${e.name}(`);
       }
     }
+  });
+
+  it("indexes the EURC send contract with PolarisSend's events", () => {
+    const config = readFileSync(join(ROOT, "config.yaml"), "utf8");
+    const block = (name: string) => config.split("\n  - name: ").find((b) => b.startsWith(`${name}\n`))!.replace(/^\w+\n/, "");
+    expect(block("PolarisSendEURC")).toBe(block("PolarisSend"));
   });
 
   it("has a handler for every event config.yaml indexes", () => {

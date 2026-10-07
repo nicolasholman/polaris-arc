@@ -2,11 +2,13 @@
  * Replay a real chain through the real handlers.
  *
  * test/fixtures/local-chain.json is recorded by scripts/record-fixture.mjs: a
- * local Hardhat chain running the deploy script, the contracts' end-to-end
- * flows and scripts/fixture-scenarios.cjs (a failed collection, a
- * liquidation with seized collateral, payouts, a quoted order, cancellations,
- * a batch). Its logs are replayed here at the configured addresses, and the
- * indexed state must equal what the contracts themselves report.
+ * local Hardhat chain running scripts/fixture-chain.cjs (the contract layer
+ * deployed as on Arc testnet, then every flow: the keeper's underwriting and
+ * collections reports, a failed collection, a liquidation with seized
+ * collateral, the credit guard's override, USDC and EURC links, payouts, a
+ * quoted order, cancellations, a batch). Its logs are replayed here at the
+ * configured addresses, and the indexed state must equal what the contracts
+ * themselves report.
  */
 
 import { readFileSync } from "node:fs";
@@ -30,23 +32,34 @@ const RENAME: Record<string, { contract: string; abi: string; address: string }>
   CollateralVault: { contract: "CollateralVault", abi: "CollateralVault", address: A.CollateralVault },
   BatchSettlement: { contract: "BatchSettlement", abi: "BatchSettlement", address: A.BatchSettlement },
   PolarisSend: { contract: "PolarisSend", abi: "PolarisSend", address: A.PolarisSend },
+  PolarisSendEURC: { contract: "PolarisSendEURC", abi: "PolarisSend", address: A.PolarisSendEURC },
   PolarisCheckout: { contract: "PolarisCheckout", abi: "PolarisCheckout", address: A.PolarisCheckout },
   CollectionsReceiver: { contract: "CollectionsReceiver", abi: "CollectionsReceiver", address: A.CollectionsReceiver },
   UnderwritingReceiver: { contract: "UnderwritingReceiver", abi: "UnderwritingReceiver", address: A.UnderwritingReceiver },
-  MockKeystoneForwarder: { contract: "CreForwarder", abi: "MockKeystoneForwarder", address: SETTINGS.creForwarders[0]! },
-  Stablecoin: { contract: "MerchantWallet", abi: "IAUSD", address: A.Stablecoin },
+  CreditGuard: { contract: "CreditGuard", abi: "CreditGuard", address: A.CreditGuard },
+  USDC: { contract: "MerchantWallet", abi: "IUSDC", address: A.USDC },
 };
 
 /** Local contract address -> configured address. */
 const ADDRESS = new Map(Object.entries(fixture.contracts).map(([name, local]) => [local, RENAME[name]!.address]));
 const mapAddress = (a: string) => ADDRESS.get(a) ?? a;
 
-function paramTypes(abiName: string, event: string): Map<string, string> {
+type AbiParam = { name: string; type: string; components?: AbiParam[] };
+
+function paramTypes(abiName: string, event: string): Map<string, AbiParam> {
   const raw = JSON.parse(readFileSync(join(ROOT, "..", "contracts", "abi", `${abiName}.json`), "utf8"));
-  const abi = (Array.isArray(raw) ? raw : raw.abi) as Array<{ type: string; name: string; inputs: Array<{ name: string; type: string }> }>;
+  const abi = (Array.isArray(raw) ? raw : raw.abi) as Array<{ type: string; name: string; inputs: AbiParam[] }>;
   const e = abi.find((x) => x.type === "event" && x.name === event);
   if (!e) throw new Error(`${abiName}.${event} not in the ABI`);
-  return new Map(e.inputs.map((i) => [i.name, i.type]));
+  return new Map(e.inputs.map((i) => [i.name, i]));
+}
+
+/** A recorded value as Envio hands it to a handler: uints as bigint, addresses mapped, structs as tuples. */
+function paramValue(param: AbiParam, value: unknown): unknown {
+  if (param.type === "tuple") return (param.components ?? []).map((c, i) => paramValue(c, (value as unknown[])[i]));
+  if (/^u?int\d+$/.test(param.type)) return BigInt(value as string);
+  if (param.type === "address") return mapAddress(value as string);
+  return value;
 }
 
 /** Which (contract, event) pairs config.yaml indexes. */
@@ -59,7 +72,7 @@ function indexed(contract: string, event: string): boolean {
 /**
  * When each merchant account was registered as a MerchantWallet (mirrors
  * src/handlers/merchantWallet.ts: MerchantRegistered, and nothing else). The
- * simulated source, like HyperSync, only delivers stablecoin transfers that
+ * simulated source, like HyperSync, only delivers USDC transfers that
  * touch one.
  */
 const REGISTERS: Record<string, string> = {
@@ -85,12 +98,7 @@ function simulateItems(offset: number) {
     }
     const types = paramTypes(target.abi, e.event);
     const params: Record<string, unknown> = {};
-    for (const [name, value] of Object.entries(e.params)) {
-      const type = types.get(name)!;
-      if (/^u?int\d+$/.test(type)) params[name] = BigInt(value as string);
-      else if (type === "address") params[name] = mapAddress(value as string);
-      else params[name] = value;
-    }
+    for (const [name, value] of Object.entries(e.params)) params[name] = paramValue(types.get(name)!, value);
     items.push({
       contract: target.contract,
       event: e.event,
@@ -113,5 +121,5 @@ describe("replaying a real local chain", () => {
     await sim.indexer.process({ chains: { [CHAIN]: { simulate: items } } } as never);
   });
 
-  chainChecks(() => sim.indexer, fixture);
+  chainChecks(() => sim.indexer, fixture, A);
 });

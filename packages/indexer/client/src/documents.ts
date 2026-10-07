@@ -1,6 +1,6 @@
 /**
- * Every GraphQL document the dashboard, the webhook dispatcher, the CRE
- * collections workflow and the Polaris app send to the indexer.
+ * Every GraphQL document the dashboard, the webhook dispatcher, the Polaris
+ * keeper and the Polaris app send to the indexer.
  *
  * The API is Envio's Hasura: one root field per entity, named as in
  * schema.graphql, with `where` / `order_by` / `limit` / `offset`. BigInt
@@ -99,7 +99,8 @@ export const BUYER_FIELDS = /* GraphQL */ `
   fragment BuyerFields on Buyer {
     id score hasRecord underwritten declined baseLimit collateral creditLimit activeDebt available linkedWallet
     underwrittenAt lastUnderwritingRefusal onTimeInstallments lateInstallments liquidations planCount activePlanCount
-    paymentCount spent activeSubscriptionCount sentCount sentVolume claimedCount claimedVolume firstSeenAt updatedAt
+    paymentCount spent activeSubscriptionCount sentCount sentVolume claimedCount claimedVolume eurcSentCount
+    eurcSentVolume eurcClaimedCount eurcClaimedVolume firstSeenAt updatedAt
   }
 `;
 
@@ -117,7 +118,7 @@ export const BUYER_DAY_FIELDS = /* GraphQL */ `
 
 export const SEND_FIELDS = /* GraphQL */ `
   fragment SendFields on Send {
-    id sender amount expiresAt status recipient sentAt closedAt sentTxHash closedTxHash relayer
+    id currency sender amount expiresAt status recipient sentAt closedAt sentTxHash closedTxHash relayer
   }
 `;
 
@@ -125,24 +126,24 @@ export const PROTOCOL_FIELDS = /* GraphQL */ `
   fragment ProtocolFields on Protocol {
     id feeBps requireUnderwriting collateralMultiplierBps collateralCountsTowardLimits checkoutPaused
     merchantCount registeredMerchantCount buyerCount paymentCount grossVolume feeVolume payNowCount payNowVolume
-    planCount activePlanCount principalOriginated outstanding repaidVolume installmentsCompleted creCollections
+    planCount activePlanCount principalOriginated outstanding repaidVolume installmentsCompleted keeperCollections
     liquidationCount lossVolume subscriptionCount activeSubscriptionCount subscriptionVolume sendCount sendVolume
-    claimCount claimVolume payoutCount payoutVolume collectionsRuns lastCollectionsRunAt lastCollectionsRunBlock
-    creReports creReportsFailed underwritings updatedAt
+    claimCount claimVolume eurcSendCount eurcSendVolume eurcClaimCount eurcClaimVolume payoutCount payoutVolume
+    collectionsRuns lastCollectionsRunAt lastCollectionsRunBlock keeperReports underwritings updatedAt
   }
 `;
 
 export const PROTOCOL_DAY_FIELDS = /* GraphQL */ `
   fragment ProtocolDayFields on ProtocolDay {
     id day date paymentCount grossVolume feeVolume planCount principalOriginated installmentsCompleted repaidVolume
-    liquidations subscriptionCharges subscriptionVolume sendCount sendVolume claimCount payoutCount payoutVolume
-    collectionsRuns creReports newBuyers newMerchants open high low close
+    liquidations subscriptionCharges subscriptionVolume sendCount sendVolume claimCount eurcSendCount eurcSendVolume
+    eurcClaimCount payoutCount payoutVolume collectionsRuns keeperReports newBuyers newMerchants open high low close
   }
 `;
 
 export const COLLECTION_RUN_FIELDS = /* GraphQL */ `
   fragment CollectionRunFields on CollectionRun {
-    id tasks executed skipped transmitter timestamp blockNumber txHash
+    id tasks executed skipped keeper timestamp blockNumber txHash
   }
 `;
 
@@ -153,9 +154,16 @@ export const COLLECTION_TASK_FIELDS = /* GraphQL */ `
   }
 `;
 
-export const CRE_REPORT_FIELDS = /* GraphQL */ `
-  fragment CreReportFields on CreReport {
-    id workflow receiver forwarder workflowExecutionId reportId result transmitter timestamp blockNumber txHash
+export const KEEPER_REPORT_FIELDS = /* GraphQL */ `
+  fragment KeeperReportFields on KeeperReport {
+    id kind receiver keeper items timestamp blockNumber txHash
+  }
+`;
+
+export const CREDIT_GUARD_FIELDS = /* GraphQL */ `
+  fragment CreditGuardFields on CreditGuard {
+    id address minFreeCash maxBadDebtBps minOriginated overrideMode overrideUntil badDebtAcknowledged updatedAt
+    updatedTxHash
   }
 `;
 
@@ -261,19 +269,21 @@ export const ORDER_STATUS = /* GraphQL */ `
   ${ORDER_FIELDS}
 `;
 
-/** The collector card: when CRE last ran, what it did, and whether reports land. */
+/** The collector card: when the keeper last ran, what it did, its latest reports and the credit guard's settings. */
 export const COLLECTOR_STATUS = /* GraphQL */ `
   query CollectorStatus($runs: Int!) {
     Protocol(limit: 1) { ...ProtocolFields }
     CollectionRun(order_by: { blockNumber: desc }, limit: $runs) { ...CollectionRunFields }
-    CreReport(order_by: { timestamp: desc }, limit: $runs) { ...CreReportFields }
+    KeeperReport(order_by: [{ blockNumber: desc }, { kind: asc }], limit: $runs) { ...KeeperReportFields }
+    CreditGuard(limit: 1) { ...CreditGuardFields }
   }
   ${PROTOCOL_FIELDS}
   ${COLLECTION_RUN_FIELDS}
-  ${CRE_REPORT_FIELDS}
+  ${KEEPER_REPORT_FIELDS}
+  ${CREDIT_GUARD_FIELDS}
 `;
 
-/** Protocol totals and daily rows, for the landing page and the judges' panel. */
+/** Protocol totals and daily rows, for the landing page and the operator's panel. */
 export const PROTOCOL_STATS = /* GraphQL */ `
   query ProtocolStats($fromDay: Int!) {
     Protocol(limit: 1) { ...ProtocolFields }
@@ -316,18 +326,18 @@ export const MERCHANT_ACTIVITY = /* GraphQL */ `
   ${ACTIVITY_FIELDS}
 `;
 
-/* ── The CRE collections workflow ──────────────────────────────────────── */
+/* ── The Polaris keeper ─────────────────────────────────────────────────── */
 
 /**
  * What might be actionable at `$now`: plans whose next attempt has come
  * (the due date, or the next rung of the dunning ladder, never later than the
  * moment the plan turns liquidatable) and subscriptions likewise. Ids only,
- * so the response stays small and identical across DON nodes; the workflow
- * then asks CollectionsReceiver.checkTasks which are actionable on chain.
+ * so the response stays small; the keeper then asks
+ * CollectionsReceiver.checkTasks which are actionable on chain.
  *
- * The lists are aliased `Loan` and `Subscription`, the shape the
- * polaris-collections workflow's parser reads (its `candidates.indexerQuery`),
- * and `liquidatableAt` lets a caller tell a collection from a liquidation.
+ * The lists are aliased `Loan` and `Subscription`, the shape
+ * parseDueCandidates (./keeper.ts) reads, and `liquidatableAt` lets a caller
+ * tell a collection from a liquidation.
  */
 export const DUE_CANDIDATES = /* GraphQL */ `
   query DueCandidates($now: Int!, $limit: Int!) {

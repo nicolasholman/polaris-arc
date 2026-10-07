@@ -34,7 +34,7 @@ describe("indexer client", () => {
               { id: "1", cursor: "12000000010", kind: "payment.succeeded", merchant_id: MERCHANT.toLowerCase(), amount: "25000000", fee: "125000", blockNumber: 1200, logIndex: 1, refId: "0xab", timestamp: 1, txHash: "0x1" },
               { id: "2", cursor: "13000000000", kind: "payout.paid", merchant_id: MERCHANT.toLowerCase(), amount: 5, fee: null, blockNumber: 1300, logIndex: 0, refId: "0xcd", timestamp: 2, txHash: "0x2" },
             ],
-            _meta: [{ chainId: 10143, progressBlock: 1250, isReady: true }],
+            _meta: [{ chainId: 5042002, progressBlock: 1250, isReady: true }],
           },
         };
       }
@@ -99,7 +99,7 @@ describe("indexer client", () => {
     assert.equal(await never.waitForOrder("0xab", { intervalMs: 5, timeoutMs: 20 }), null);
   });
 
-  it("builds CRE tasks from the candidate query", async () => {
+  it("builds the keeper's tasks from the candidate query", async () => {
     const hasura = fakeHasura(() => ({
       data: {
         Loan: [
@@ -139,14 +139,46 @@ describe("indexer client", () => {
     assert.throws(() => createIndexerClient({ url: "localhost:8080", fetch: fakeHasura(() => ({})).fetch }), /http/);
   });
 
+  it("reads the keeper's reports and the credit guard's settings", async () => {
+    const hasura = fakeHasura(() => ({
+      data: {
+        Protocol: [],
+        CollectionRun: [{ id: "0xab-3", tasks: 2, executed: 1, skipped: 1, keeper: "0xc2e", timestamp: 1, blockNumber: 9, txHash: "0xab" }],
+        KeeperReport: [{ id: "0xab-collections", kind: "collections", receiver: "0xc0", keeper: "0xc2e", items: 2, timestamp: 1, blockNumber: 9, txHash: "0xab" }],
+        CreditGuard: [
+          {
+            id: "credit-guard",
+            address: "0xc6",
+            minFreeCash: "1000000000",
+            maxBadDebtBps: 500,
+            minOriginated: "10000000000",
+            overrideMode: "FORCE_PAUSE",
+            overrideUntil: null,
+            badDebtAcknowledged: "0",
+            updatedAt: 1,
+            updatedTxHash: "0xcd",
+          },
+        ],
+      },
+    }));
+    const client = createIndexerClient({ url: URL, fetch: hasura.fetch });
+    const { runs, reports, creditGuard, protocol } = await client.collector({ runs: 3 });
+    assert.equal(protocol, null);
+    assert.equal(runs[0]!.keeper, "0xc2e");
+    assert.deepEqual(reports.map((r) => [r.kind, r.items]), [["collections", 2]]);
+    assert.equal(creditGuard!.minFreeCash, 1_000_000_000n);
+    assert.equal(creditGuard!.badDebtAcknowledged, 0n);
+    assert.equal(creditGuard!.overrideMode, "FORCE_PAUSE");
+  });
+
   it("reads Envio's _meta for the configured chain", async () => {
     const client = createIndexerClient({
       url: URL,
-      chainId: 10143,
-      fetch: fakeHasura(() => ({ data: { _meta: [{ chainId: 1, progressBlock: 5, isReady: false }, { chainId: 10143, progressBlock: 66_000_000, sourceBlock: 66_000_002, isReady: true, readyAt: "2026-10-05T00:00:00Z" }] } })).fetch,
+      chainId: 5042002,
+      fetch: fakeHasura(() => ({ data: { _meta: [{ chainId: 1, progressBlock: 5, isReady: false }, { chainId: 5042002, progressBlock: 66_000_000, sourceBlock: 66_000_002, isReady: true, readyAt: "2026-10-05T00:00:00Z" }] } })).fetch,
     });
     assert.deepEqual(await client.status(), {
-      chainId: 10143,
+      chainId: 5042002,
       progressBlock: 66_000_000,
       sourceBlock: 66_000_002,
       eventsProcessed: null,

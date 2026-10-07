@@ -1,5 +1,5 @@
 /**
- * Decode the revert data the CRE receivers record (TaskSkipped.reason,
+ * Decode the revert data the keeper's receivers record (TaskSkipped.reason,
  * UnderwritingRefused.reason) into a name and what it means for the buyer.
  *
  * The loan engine reports a shortfall before it moves anything, as one of two
@@ -12,11 +12,10 @@
  * NotLiquidatable mean the candidate was not actionable (stale): nobody's
  * fault. Anything else is `other`.
  *
- * The words are the CRE collections workflow's (workflows/src/collections/
- * outcomes.ts `SkipClass`): polarispay-sdk's InstallmentFailureReason plus
- * `stale`, so the indexer, the workflow's callback and the merchant's
- * `installment.failed` webhook say the same thing. workflows/test/dunning.test.ts
- * holds every selector here to the workflow's classification.
+ * The words are polarispay-sdk's InstallmentFailureReason plus `stale`, the
+ * vocabulary the Polaris keeper, its callback to Polaris for Business
+ * (apps/business/src/server/ingest/keeper.ts) and the merchant's
+ * `installment.failed` webhook share, so all of them say the same thing.
  *
  * Selectors are the first four bytes of keccak256(signature); the test suite
  * recomputes every one with viem so a typo cannot hide here.

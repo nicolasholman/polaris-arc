@@ -1,10 +1,11 @@
 /**
- * AUSD amounts. The indexer keeps base units (6 decimals); the dashboard
+ * USDC amounts (and EURC's, which has the same 6 decimals). The indexer
+ * keeps base units; the dashboard
  * works in integer US cents (apps/business/src/lib/data/types.ts). Convert
  * here, once, and never do float maths on a balance.
  */
 
-export const AUSD_DECIMALS = 6;
+export const USDC_DECIMALS = 6;
 const UNITS_PER_CENT = 10_000n;
 
 /** Base units to integer cents, rounding half away from zero. */
@@ -41,7 +42,7 @@ export function formatAmount(units: bigint): string {
   const sign = units < 0n ? "-" : "";
   const abs = units < 0n ? -units : units;
   const whole = abs / 1_000_000n;
-  let frac = (abs % 1_000_000n).toString().padStart(AUSD_DECIMALS, "0").replace(/0+$/, "");
+  let frac = (abs % 1_000_000n).toString().padStart(USDC_DECIMALS, "0").replace(/0+$/, "");
   if (frac.length < 2) frac = frac.padEnd(2, "0");
   return `${sign}${whole}.${frac}`;
 }

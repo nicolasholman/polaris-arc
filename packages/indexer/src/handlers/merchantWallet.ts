@@ -1,10 +1,10 @@
 /**
- * Merchant accounts: the stablecoin moving in and out of them.
+ * Merchant accounts: USDC moving in and out of them.
  *
  * A merchant's account is registered at runtime as a `MerchantWallet` when,
  * and only when, it registers with the MerchantRegistry. The Transfer handler
  * runs in wildcard mode, filtered at the source (HyperSync topics) to
- * transfers from or to those accounts, and keeps only the stablecoin's.
+ * transfers from or to those accounts, and keeps only USDC's.
  *
  * Why only MerchantRegistered. Envio runs `contractRegister` as each
  * contract's query answers, and those answers arrive in any order. When one
@@ -15,14 +15,15 @@
  * account can't race itself. It also means nobody can make the indexer follow
  * an arbitrary account (an exchange's hot wallet) by paying it a cent.
  *
- * So `Merchant.balance` counts every stablecoin transfer from the block the
+ * So `Merchant.balance` counts every USDC transfer from the block the
  * merchant registered (`registeredAt`), which for a Polaris business is
  * before any money. An account paid without ever registering is not
  * followed: its `registeredAt` is null and its balance stays 0 (read
- * AUSD.balanceOf); its payments still count in every volume.
+ * USDC.balanceOf); its payments still count in every volume. EURC is not
+ * followed: merchants are paid in USDC.
  *
- * Payouts: a transfer out of a merchant account in a transaction sent to the
- * stablecoin itself (the relayer carrying the merchant's signed
+ * Payouts: a transfer out of a merchant account in a transaction sent to
+ * USDC itself (the relayer carrying the merchant's signed
  * transferWithAuthorization) is a payout. Money leaving through a Polaris
  * contract (a checkout payment, a send) is not.
  */
@@ -58,14 +59,14 @@ indexer.onEvent(
   async ({ event, context }) =>
     withStore(context, event, async (st) => {
       const { addresses } = st.settings;
-      // Wildcard: any token's Transfer between these accounts arrives; only the stablecoin's counts.
-      if (st.m.srcAddress !== addresses.Stablecoin) return;
+      // Wildcard: any token's Transfer between these accounts arrives; only USDC's counts.
+      if (st.m.srcAddress !== addresses.USDC) return;
       const { from, to, value } = event.params;
       if (from === to || value === 0n) return;
 
       const polaris = new Set<string>(
         Object.entries(addresses)
-          .filter(([name]) => name !== "Stablecoin")
+          .filter(([name]) => name !== "USDC" && name !== "EURC")
           .map(([, address]) => address),
       );
 
@@ -88,7 +89,7 @@ indexer.onEvent(
         payer.updatedAt = st.m.timestamp;
         balanceTick(day, payer.balance);
 
-        const direct = st.m.to === addresses.Stablecoin;
+        const direct = st.m.to === addresses.USDC;
         if (direct && !polaris.has(to)) {
           const id = logId(st.m.txHash, st.m.logIndex);
           st.keep("Payout", {

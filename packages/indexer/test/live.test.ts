@@ -30,5 +30,5 @@ describe.skipIf(!FIXTURE)("indexing a live local chain over RPC", () => {
     expect((await indexer.Payment.getAll()).length).toBeGreaterThan(0);
   }, 300_000);
 
-  chainChecks(() => indexer, fixture);
+  chainChecks(() => indexer, fixture, FIXTURE ? (DEPLOYMENTS[fixture.chainId]?.addresses ?? (undefined as never)) : (undefined as never));
 });

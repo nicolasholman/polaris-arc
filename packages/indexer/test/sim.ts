@@ -8,7 +8,7 @@ import { createTestIndexer, type TestIndexer } from "envio";
 
 import { settingsFor } from "../src/deployment.js";
 
-export const CHAIN = 10143 as const;
+export const CHAIN = 5042002 as const;
 export const SETTINGS = settingsFor(CHAIN);
 export const A = SETTINGS.addresses;
 
@@ -18,7 +18,8 @@ export function account(n: number): `0x${string}` {
 }
 
 export const RELAYER = account(0x7e1a);
-export const TRANSMITTER = account(0xc2e);
+/** The Polaris keeper EOA: the only account that submits reports to the receivers. */
+export const KEEPER = account(0xc2e);
 export const USD = (n: number) => BigInt(Math.round(n * 1e6));
 
 type TxOpts = { from?: string; to?: string; dt?: number };
@@ -76,14 +77,14 @@ export class Sim {
     return this;
   }
 
-  /** A stablecoin Transfer (MerchantWallet is wildcard: the token is the emitter). */
-  transfer(from: string, to: string, value: bigint, token: string = A.Stablecoin): this {
+  /** A USDC Transfer (MerchantWallet is wildcard: the token is the emitter). */
+  transfer(from: string, to: string, value: bigint, token: string = A.USDC): this {
     return this.log("MerchantWallet", "Transfer", { from, to, value }, token);
   }
 
   /**
    * A business registering with the MerchantRegistry, in its own transaction.
-   * Only from then on are its stablecoin transfers fetched (and so may be
+   * Only from then on are its USDC transfers fetched (and so may be
    * simulated): the test indexer drops any other as the source would.
    */
   registerMerchant(merchant: string, name = "Studio Sur", payoutAddress: string = merchant): this {

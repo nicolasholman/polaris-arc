@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # The indexer end to end on a live local chain, with no Docker and no token:
 #
-#   1. a Hardhat node on 127.0.0.1:3541 (POLARIS_FIXTURE_PORT), the contracts
-#      deployed with the testnet script, the contracts' end-to-end flows and
-#      scripts/fixture-scenarios.cjs run on it (scripts/record-fixture.mjs);
+#   1. a Hardhat node on 127.0.0.1:3541 (POLARIS_FIXTURE_PORT) with the
+#      contracts deployed as on Arc testnet and every flow run on it
+#      (scripts/record-fixture.mjs running scripts/fixture-chain.cjs);
 #   2. config.yaml regenerated for that chain (RPC, not HyperSync) in a
 #      scratch copy of this package, so the committed files are untouched;
 #   3. Envio's own runtime indexes the chain over RPC (test/live.test.ts), and
@@ -39,8 +39,8 @@ ln -s "$HERE/node_modules" "$WORK/packages/indexer/node_modules"
 ln -s "$CONTRACTS" "$WORK/packages/contracts"
 cd "$WORK/packages/indexer"
 
-node scripts/record-fixture.mjs --keep-node --out "$WORK/live-chain.json"
-node scripts/generate.mjs --deployment "$CONTRACTS/deployments/monad-local.json" --rpc "http://127.0.0.1:$PORT"
+node scripts/record-fixture.mjs --keep-node --out "$WORK/live-chain.json" --deployment-out "$WORK/arc-local.json"
+node scripts/generate.mjs --deployment "$WORK/arc-local.json" --rpc "http://127.0.0.1:$PORT"
 pnpm exec envio codegen
 RUNS="${POLARIS_LIVE_RUNS:-1}"
 for run in $(seq 1 "$RUNS"); do

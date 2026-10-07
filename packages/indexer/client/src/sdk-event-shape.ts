@@ -14,7 +14,7 @@ import { WEBHOOK_EVENT_TYPES, isWebhookEventType, type WebhookEvent, type Webhoo
  * the payload. This does, for anything that *builds* events: the API's
  * webhook emitter, the indexer's outbox, a mock for your tests. The type
  * system can't catch an amount sent in base units ("25000000" for $25.00),
- * a currency of "ausd", or a mode of "PAY_NOW"; this does.
+ * a currency of "usdc", or a mode of "PAY_NOW"; this does.
  *
  *   const problems = validateWebhookEvent(event);
  *   // [] when it matches; else [{ path: "data.amount", message: "…" }, …]
@@ -37,7 +37,7 @@ const amount: Check = (v) =>
   typeof v === "string" && AMOUNT.test(v)
     ? null
     : `must be a USD decimal string with 2 to 6 decimals ("25.00", "50.383562"), got ${show(v)}${
-        typeof v === "string" && /^\d{7,}$/.test(v) ? ": this looks like AUSD base units" : ""
+        typeof v === "string" && /^\d{7,}$/.test(v) ? ": this looks like USDC base units" : ""
       }`;
 const txHash: Check = (v) => (typeof v === "string" && TX_HASH.test(v) ? null : `must be a 32-byte 0x hash, got ${show(v)}`);
 const address: Check = (v) => (typeof v === "string" && ADDRESS.test(v) ? null : `must be a 0x address, got ${show(v)}`);

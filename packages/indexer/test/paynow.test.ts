@@ -98,7 +98,7 @@ describe("Pay now", () => {
     sim
       .tx({ from: buyer, to: A.PolarisPayments })
       .log("PolarisPayments", "PaymentMade", { paymentId: `0x${"de".repeat(32)}`, payer: buyer, merchant: stranger, amount: 1n, fee: 0n, orderId: "a-cent" });
-    sim.tx({ from: RELAYER, to: A.Stablecoin }).transfer(stranger, account(0x903), USD(1_000));
+    sim.tx({ from: RELAYER, to: A.USDC }).transfer(stranger, account(0x903), USD(1_000));
     await expect(sim.run()).rejects.toThrow(/never reached a handler/);
   });
 
@@ -122,9 +122,9 @@ describe("Pay now", () => {
     expect(d2!.balanceOpen).toBe(d1!.balanceClose);
   });
 
-  it("never even fetches stablecoin transfers between accounts that are not merchants", async () => {
+  it("never even fetches USDC transfers between accounts that are not merchants", async () => {
     const sim = new Sim();
-    sim.tx({ to: A.Stablecoin }).transfer(account(0x901), account(0x902), USD(1_000));
+    sim.tx({ to: A.USDC }).transfer(account(0x901), account(0x902), USD(1_000));
     // The wildcard Transfer's where filter drops it at the source.
     await expect(sim.run()).rejects.toThrow(/never reached a handler/);
   });

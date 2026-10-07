@@ -24,11 +24,13 @@ export type Recorded = {
   txHash: string;
   txFrom: string;
   txTo: string | null;
-  params: Record<string, string | boolean>;
+  params: Record<string, string | boolean | string[]>;
 };
 
 export type Fixture = {
   chainId: number;
+  /** The keeper EOA, the only sender of reports. */
+  keeper: string;
   contracts: Record<string, string>;
   events: Recorded[];
   expected: {
@@ -36,15 +38,19 @@ export type Fixture = {
     subscriptions: Record<string, { status: number; nextChargeAt: number; periodsCharged: number; missedCharges: number }>;
     buyers: Record<string, { score: number; declined: boolean; underwritten: boolean; creditLimit: string; activeDebt: string; collateral: string }>;
     merchants: Record<string, { balance: string; registered: boolean; active: boolean; payoutAddress: string; maxOrderValue: string }>;
-    sends: Record<string, { open: boolean }>;
+    sends: Record<string, { currency: "USD" | "EUR"; open: boolean }>;
+    creditGuard: { minFreeCash: string; maxBadDebtBps: number; minOriginated: string; overrideMode: number; badDebtAcknowledged: string };
   };
 };
 
 const PLAN_STATUS = ["ACTIVE", "REPAID", "LIQUIDATED"];
 const SUB_STATUS = ["ACTIVE", "CANCELLED", "LAPSED"];
 
+/** The contracts as the indexer is configured for them (the replay maps the fixture's addresses onto these). */
+export type Configured = { CollectionsReceiver: string; UnderwritingReceiver: string; CreditGuard: string };
+
 /** Register the shared `it` blocks. `get` returns the indexer once it has run. */
-export function chainChecks(get: () => TestIndexer, fixture: Fixture): void {
+export function chainChecks(get: () => TestIndexer, fixture: Fixture, configured: Configured): void {
   it("agrees with PolarisLoanEngine on every plan", async () => {
     for (const [id, loan] of Object.entries(fixture.expected.loans)) {
       const plan = await get().Plan.getOrThrow(id);
@@ -93,12 +99,39 @@ export function chainChecks(get: () => TestIndexer, fixture: Fixture): void {
     }
   });
 
-  it("agrees with PolarisSend on every link", async () => {
+  it("agrees with PolarisSend and PolarisSendEURC on every link", async () => {
     for (const [key, s] of Object.entries(fixture.expected.sends)) {
-      expect((await get().Send.getOrThrow(key)).status === "OPEN", `link ${key}`).toBe(s.open);
+      const send = await get().Send.getOrThrow(key);
+      expect(send.status === "OPEN", `link ${key}`).toBe(s.open);
+      expect(send.currency, `link ${key}`).toBe(s.currency);
     }
-    const statuses = (await get().Send.getAll()).map((s) => s.status).sort();
-    expect(statuses).toEqual(["CANCELLED", "CLAIMED", "REFUNDED"]);
+    const statuses = (await get().Send.getAll()).map((s) => `${s.currency} ${s.status}`).sort();
+    expect(statuses).toEqual(["EUR CLAIMED", "USD CANCELLED", "USD CLAIMED", "USD REFUNDED"]);
+    const p = await get().Protocol.getOrThrow("polaris");
+    const sum = (currency: string, event: string) =>
+      fixture.events
+        .filter((e) => e.contract === (currency === "EUR" ? "PolarisSendEURC" : "PolarisSend") && e.event === event)
+        .reduce((n, e) => n + BigInt(e.params.amount as string), 0n);
+    expect(p).toMatchObject({
+      sendVolume: sum("USD", "Sent"),
+      claimVolume: sum("USD", "Claimed"),
+      eurcSendVolume: sum("EUR", "Sent"),
+      eurcClaimVolume: sum("EUR", "Claimed"),
+    });
+  });
+
+  it("agrees with CreditGuard on its settings", async () => {
+    const g = fixture.expected.creditGuard;
+    expect(await get().CreditGuard.getOrThrow("credit-guard")).toMatchObject({
+      address: configured.CreditGuard,
+      minFreeCash: BigInt(g.minFreeCash),
+      maxBadDebtBps: g.maxBadDebtBps,
+      minOriginated: BigInt(g.minOriginated),
+      overrideMode: ["NONE", "FORCE_RESUME", "FORCE_PAUSE"][g.overrideMode],
+      badDebtAcknowledged: BigInt(g.badDebtAcknowledged),
+    });
+    const overrides = (await get().ConfigChange.getAll()).filter((c) => c.contract === "CreditGuard" && c.event === "CreditGuardOverridden");
+    expect(overrides).toHaveLength(fixture.events.filter((e) => e.event === "CreditGuardOverridden").length);
   });
 
   it("wrote every kind of webhook, each once per event that caused it", async () => {
@@ -145,18 +178,31 @@ export function chainChecks(get: () => TestIndexer, fixture: Fixture): void {
     expect(skipped).toHaveLength(count("CollectionsReceiver", "TaskSkipped"));
     expect(skipped).toEqual(
       expect.arrayContaining([
-        [2n, "InsufficientAllowance", "allowance_lost"], // the e2e's lost approval, signed again (Reauthorized)
+        [2n, "InsufficientAllowance", "allowance_lost"], // the lost approval, signed again (Reauthorized)
         [3n, "InsufficientBalance", "insufficient_funds"], // buyer2's one-minute plan, then liquidated
         [1n, "LoanNotActive", "stale"],
       ]),
     );
     expect((await get().Installment.getOrThrow("2-0")).failedAttempts).toBe(1);
     expect((await get().Installment.getOrThrow("3-0")).failedAttempts).toBe(1);
-    expect(await get().CollectionRun.getAll()).toHaveLength(count("CollectionsReceiver", "CollectionsRun"));
-    const reports = await get().CreReport.getAll();
-    expect(reports.every((r) => r.result)).toBe(true);
-    const toCollections = (e: Recorded) => String(e.params.receiver).toLowerCase() === fixture.contracts.CollectionsReceiver;
-    expect(reports.filter((r) => r.workflow === "collections")).toHaveLength(count("MockKeystoneForwarder", "ReportProcessed", toCollections));
+    const runs = await get().CollectionRun.getAll();
+    expect(runs).toHaveLength(count("CollectionsReceiver", "CollectionsRun"));
+    expect(runs.every((r) => r.keeper === fixture.keeper)).toBe(true);
+  });
+
+  it("counts one keeper report per submitReport transaction", async () => {
+    const reports = await get().KeeperReport.getAll();
+    const txs = (contract: string, events: string[]) =>
+      new Set(fixture.events.filter((e) => e.contract === contract && events.includes(e.event)).map((e) => e.txHash));
+    const collections = txs("CollectionsReceiver", ["CollectionsRun"]);
+    const underwriting = txs("UnderwritingReceiver", ["UnderwritingApplied", "UnderwritingRefused"]);
+    expect(reports.filter((r) => r.kind === "collections")).toHaveLength(collections.size);
+    expect(reports.filter((r) => r.kind === "underwriting")).toHaveLength(underwriting.size);
+    for (const r of reports) {
+      expect(r.keeper, r.id).toBe(fixture.keeper);
+      expect(r.receiver, r.id).toBe(r.kind === "collections" ? configured.CollectionsReceiver : configured.UnderwritingReceiver);
+    }
+    expect((await get().Protocol.getOrThrow("polaris")).keeperReports).toBe(collections.size + underwriting.size);
   });
 
   it("recognises the gasless payouts, the quoted order and the refused underwriting", async () => {

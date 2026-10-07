@@ -1,18 +1,18 @@
 /**
- * The CRE `polaris-collections` workflow's side of the indexer: the request
- * it sends through the CRE HTTP capability, and the task list it builds from
- * the answer. Pure functions with no dependencies, so they compile into the
- * workflow's WASM unchanged.
+ * Collection candidates from the indexer, for the Polaris keeper
+ * (services/keeper) or any script that builds a collections report: the
+ * request to send, and the task list built from the answer. Pure functions
+ * with no dependencies.
  *
- *   const req = dueCandidatesRequest(scheduledTime, 50);
- *   // http.sendRequest({ url: indexerUrl, method: "POST", body: base64(JSON.stringify(req)), ... })
- *   const tasks = parseDueCandidates(json(resp), scheduledTime); // the indexer proposes
- *   const ready = checkTasks(tasks)                          // CollectionsReceiver.checkTasks, one EVM read
- *   const report = readyTasks(tasks, ready);                 // the chain disposes
+ *   const req = dueCandidatesRequest(now, 50);
+ *   const tasks = parseDueCandidates(await post(indexerUrl, req), now); // the indexer proposes
+ *   const ready = await collectionsReceiver.read.checkTasks([tasks]);   // the chain disposes
+ *   const report = readyTasks(tasks, ready);                            // abi.encode(1, report) -> submitReport
  *
- * Use the cron trigger's scheduled time for `now`, never the node's clock,
- * so every node in the DON sends the identical request and gets the
- * identical answer (consensusIdenticalAggregation).
+ * The indexer only proposes: CollectionsReceiver.checkTasks decides what is
+ * actionable now, and the receiver re-checks every task when the keeper
+ * submits the report, so a stale index costs a skipped task, never a wrong
+ * collection.
  */
 
 import { DUE_CANDIDATES } from "./documents.ts";
@@ -23,12 +23,14 @@ export type CollectionAction = (typeof COLLECTION_ACTION)[keyof typeof COLLECTIO
 
 export type Task = { readonly action: CollectionAction; readonly id: bigint };
 
-/** The report body the receiver decodes: abi.encode(uint8 kind = 1, Task[] tasks). */
+/** The report body CollectionsReceiver.submitReport decodes: abi.encode(uint8 kind = 1, Task[] tasks). */
 export const REPORT_ABI_PARAMETERS = "uint8 kind, (uint8 action, uint256 id)[] tasks";
 export const REPORT_KIND_COLLECTIONS = 1;
 /**
- * The one EVM read per run. CRE caps a read request at 5 KB and each task is
- * two ABI words, so about 72 fit (the collections workflow's measured limit).
+ * The one EVM read per run, and the default cap on the candidates it checks:
+ * each task is two ABI words, so 72 keep the call small for any RPC. The
+ * keeper then submits at most its own report cap of the ready ones
+ * (KEEPER_MAX_TASKS in services/keeper).
  */
 export const CHECK_TASKS_SIGNATURE = "function checkTasks((uint8 action, uint256 id)[] tasks) view returns (bool[] ready)";
 export const MAX_TASKS_PER_READ = 72;
@@ -49,7 +51,7 @@ type CandidateRows = {
  * response, or just its `data`) to the request made at `now`. A plan past
  * its grace period is liquidated, never collected; liquidations come first,
  * then collections, then charges, each sorted by id and deduplicated, so
- * every node builds the same list.
+ * the same answer always builds the same list (and the same report).
  */
 export function parseDueCandidates(response: unknown, now: number, maxTasks = MAX_TASKS_PER_READ): Task[] {
   const body = response as { data?: CandidateRows; errors?: Array<{ message: string }> } & CandidateRows;

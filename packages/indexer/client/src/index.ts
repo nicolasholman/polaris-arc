@@ -1,6 +1,6 @@
 /**
- * @polarispay/indexer-client: typed access to the Polaris Envio indexer for
- * the dashboard, the webhook dispatcher, the CRE collections workflow and the
+ * @polarispay/indexer-client: typed access to the Polaris Envio indexer on
+ * Arc for the dashboard, the webhook dispatcher, the Polaris keeper and the
  * Polaris app. See ../README.md.
  */
 
@@ -19,7 +19,7 @@ export {
   REPORT_KIND_COLLECTIONS,
   type CollectionAction,
   type Task,
-} from "./cre.ts";
+} from "./keeper.ts";
 export {
   committed,
   failureReasonOf,
@@ -45,7 +45,7 @@ export {
   type WebhookSession,
 } from "./webhooks.ts";
 export { assertWebhookEvent, validateWebhookEvent, type WebhookEventProblem } from "./sdk-event-shape.ts";
-export { AUSD_DECIMALS, formatAmount, formatUsd, fromCents, toCents } from "./money.ts";
+export { formatAmount, formatUsd, fromCents, toCents, USDC_DECIMALS } from "./money.ts";
 export { installmentSlice, thresholdFor } from "./loans.ts";
 export { checksumAddress, keccak256Hex, sha256Hex } from "./hash.ts";
 export { availableCredit, baseLimitOf, creditLimitOf, securedOnly, type CreditInputs, type CreditSettings } from "./credit.ts";

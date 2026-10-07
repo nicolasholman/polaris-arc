@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # The indexer serving GraphQL for a local chain that is already running
-# (demo:local's, `wsl.sh live`'s with --keep-node, or any Hardhat or anvil node
-# with the contracts deployed by scripts/deploy-monad.js):
+# (`pnpm --filter @polarispay/contracts node:local` then `deploy:local`, or any
+# Hardhat or anvil node with the contracts deployed by packages/contracts
+# scripts/deploy.js):
 #
 #   bash scripts/wsl.sh local          (from the repo root: pnpm indexer:local)
 #
@@ -15,13 +16,12 @@
 #      containers and the scratch copy; the index lives only as long as this.
 #
 # Then every reader points at http://127.0.0.1:$POLARIS_INDEXER_GRAPHQL_PORT/v1/graphql:
-# POLARIS_INDEXER_URL (Polaris for Business), the webhook outbox
-# (`activityAfter`), the CRE collections workflow (`candidates.indexerUrl`,
-# or POLARIS_LOCAL_INDEXER_URL for workflows' collections:local).
+# POLARIS_INDEXER_URL (Polaris for Business: the insights feed and the
+# webhook outbox's `activityAfter`).
 #
 # Environment:
-#   POLARIS_LOCAL_RPC                the chain (default http://127.0.0.1:8545, demo:local's)
-#   POLARIS_LOCAL_DEPLOYMENT         its record (default ../contracts/deployments/monad-local.json)
+#   POLARIS_LOCAL_RPC                the chain (default http://127.0.0.1:8600, the contracts' node:local)
+#   POLARIS_LOCAL_DEPLOYMENT         its record (default ../contracts/deployments/arc-local.json)
 #   POLARIS_INDEXER_PG_PORT          Postgres on the host (default 15432)
 #   POLARIS_INDEXER_GRAPHQL_PORT     Hasura on the host (default 18080; admin secret `testing`)
 #   POLARIS_INDEXER_METRICS_PORT     the indexer's own HTTP port (default 19898)
@@ -31,8 +31,8 @@ set -euo pipefail
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 CONTRACTS="$(cd "$HERE/../contracts" && pwd)"
-RPC="${POLARIS_LOCAL_RPC:-http://127.0.0.1:8545}"
-DEPLOYMENT="${POLARIS_LOCAL_DEPLOYMENT:-$CONTRACTS/deployments/monad-local.json}"
+RPC="${POLARIS_LOCAL_RPC:-http://127.0.0.1:8600}"
+DEPLOYMENT="${POLARIS_LOCAL_DEPLOYMENT:-$CONTRACTS/deployments/arc-local.json}"
 PG_PORT="${POLARIS_INDEXER_PG_PORT:-15432}"
 GQL_PORT="${POLARIS_INDEXER_GRAPHQL_PORT:-18080}"
 METRICS_PORT="${POLARIS_INDEXER_METRICS_PORT:-19898}"

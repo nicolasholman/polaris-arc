@@ -190,7 +190,9 @@ indexer.onEvent({ contract: "PolarisLoanEngine", event: "InstallmentCollected" }
     const { loanId, caller } = event.params;
     const plan = await st.find("Plan", loanId.toString());
     if (!plan?.lastRepaymentId) return;
-    const source = caller === st.settings.addresses.CollectionsReceiver ? "CRE" : "KEEPER";
+    // KEEPER: the keeper's collections report, through the CollectionsReceiver;
+    // OTHER: anyone else calling collectInstallment directly.
+    const source = caller === st.settings.addresses.CollectionsReceiver ? "KEEPER" : "OTHER";
     const repayment = await st.find("Repayment", plan.lastRepaymentId);
     if (repayment && repayment.txHash === st.m.txHash) repayment.source = source;
     for (let i = 0; i < plan.installmentCount; i++) {

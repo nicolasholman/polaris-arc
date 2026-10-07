@@ -1,5 +1,5 @@
 /**
- * The pure helpers: CRE task building, money, and the credit line and loan
+ * The pure helpers: the keeper's task building, money, and the credit line and loan
  * ladder mirrors (kept equal to the indexer's own copies). Webhook events are
  * in webhooks.test.ts.
  */
@@ -22,7 +22,7 @@ import {
   toCents,
 } from "../src/index.js";
 
-describe("CRE candidates", () => {
+describe("keeper collection candidates", () => {
   it("validates its inputs", () => {
     assert.throws(() => dueCandidatesRequest(0));
     assert.throws(() => dueCandidatesRequest(1_790_000_000, 0));

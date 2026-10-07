@@ -20,7 +20,7 @@ export const WEBHOOK_KINDS = [
 ] as const;
 export type WebhookKind = (typeof WEBHOOK_KINDS)[number];
 
-/** CollectionsReceiver task actions (plan 3.3). */
+/** CollectionsReceiver task actions. */
 export const COLLECTION_ACTION = { COLLECT_INSTALLMENT: 1, CHARGE_SUBSCRIPTION: 2, LIQUIDATE: 3 } as const;
 
 /** Days since the epoch, UTC. */
@@ -49,7 +49,7 @@ export function cursorOf(blockNumber: number, logIndex: number, slot = 0): bigin
 /**
  * polarispay-sdk's InstallmentFailureReason, from what a skipped collection
  * asks of the buyer: top up (insufficient_funds) or sign again
- * (allowance_lost). The API, the SDK, the webhooks and the CRE workflow use
+ * (allowance_lost). The API, the SDK, the webhooks and the Polaris keeper use
  * this vocabulary; a skip's `reasonAction` is already in it, or `stale`.
  */
 export type FailureReason = "insufficient_funds" | "allowance_lost" | "other";
