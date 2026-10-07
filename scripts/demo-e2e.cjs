@@ -8,7 +8,7 @@
 // dev signer) with dollars from the local faucet; Halcyon's
 // bag -> Polaris checkout popup -> Pay now; that purchase's receipt sealed to the buyer's
 // Face ID key (the server holds only ciphertext) and opened in the app; Halcyon -> popup -> Raise your limit (the
-// CRE underwriting workflow, local trigger; without provider keys it opens no line and says so, and the buyer then
+// keeper credit review, local trigger; without provider keys it opens no line and says so, and the buyer then
 // adds enough to Boost in the app, one Face ID, for the line to cover the plan) -> Pay in 4, checked on chain;
 // both shop orders marked paid
 // by Polaris webhooks; while that plan is open, Take out of Boost offers nothing (the vault releases nothing while
@@ -42,7 +42,7 @@ const CONTRACTS = demo.contracts ?? {};
 const ABI_DIR = path.join(__dirname, "..", "packages", "contracts", "abi");
 const ERC20 = viem.parseAbi(["function balanceOf(address) view returns (uint256)", "event Transfer(address indexed from, address indexed to, uint256 value)"]);
 const chain = viem.createPublicClient({ transport: viem.http(RPC) });
-const abiOf = (name) => (name === "Stablecoin" ? ERC20 : JSON.parse(fs.readFileSync(path.join(ABI_DIR, `${name}.json`), "utf8")));
+const abiOf = (name) => (name === "USDC" ? ERC20 : JSON.parse(fs.readFileSync(path.join(ABI_DIR, `${name}.json`), "utf8")));
 const read = (name, functionName, args = []) => chain.readContract({ address: CONTRACTS[name], abi: abiOf(name), functionName, args });
 /** Base units (6 decimals) as the app writes dollars: $1,234.50. */
 const dollars = (units) => `$${(Number(units) / 1e6).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -59,7 +59,7 @@ async function open({ width = 1440, height = 900, profile = PROFILE } = {}) {
     ...(process.env.CHROMIUM ? { executablePath: process.env.CHROMIUM } : {}),
     viewport: { width, height },
   });
-  // A page of `next dev` on a busy machine can take more than Playwright's 30 s to settle (as demo:e2e:chainlink allows).
+  // A page of `next dev` on a busy machine can take more than Playwright's 30 s to settle .
   context.setDefaultNavigationTimeout(180000);
   context.on("page", (p) => watch(p));
   for (const p of context.pages()) watch(p);
@@ -110,7 +110,7 @@ function skip(name, why) {
  */
 async function review(popup) {
   const outcome = await until(
-    "the CRE review's outcome",
+    "the keeper review's outcome",
     async () => {
       if ((await popup.getByText(/Your limit went up|still running/).count()) > 0) return { up: true, message: "" };
       const alert = popup.getByRole("alert").filter({ hasText: /\S/ });
@@ -213,7 +213,7 @@ async function receiptInPopup(popup, name) {
 async function boostState(buyer) {
   const [locked, balance, limit, multiplierBps, profile, requireUnderwriting] = await Promise.all([
     read("CollateralVault", "lockedOf", [buyer]),
-    read("Stablecoin", "balanceOf", [buyer]),
+    read("USDC", "balanceOf", [buyer]),
     read("ScoreManager", "creditLimitOf", [buyer]),
     read("CollateralVault", "creditMultiplierBps"),
     read("ScoreManager", "profileOf", [buyer]),
@@ -333,16 +333,16 @@ async function takeOutWhilePlanOpen(app) {
 }
 
 /**
- * Take out of Boost once the plan is repaid (DEMO_FAST_PLANS: four instalments a minute apart, collected by the CRE
+ * Take out of Boost once the plan is repaid (DEMO_FAST_PLANS: four instalments a minute apart, collected by the keeper
  * collections workflow): a few dollars, in the app's own UI, one Face ID signing CollateralVault's Withdraw, which
  * the relayer carries to withdrawWithSig. Checked on chain at the withdrawal's own block: the vault's lockedOf and
  * its dollars fell by the amount, the buyer's dollars rose by it, the relayer (not the buyer) sent it, and the buyer
- * holds no MON and has sent nothing.
+ * holds no gas and has sent nothing.
  */
 const TAKE_OUT = 25_000_000n;
 async function takeOutAfterRepaid(app) {
   const names = [
-    `Take out: the buyer took ${dollars(TAKE_OUT)} out of Boost with one Face ID; on chain the vault paid the buyer exactly that, the relayer sent it, the buyer holds 0 MON`,
+    `Take out: the buyer took ${dollars(TAKE_OUT)} out of Boost with one Face ID; on chain the vault paid the buyer exactly that, the relayer sent it, the buyer holds no gas`,
     "Take out: the Taken out. screen shows Boost, the Pay later limit and the dollar balance read back from the chain",
   ];
   const buyer = await buyerAddress(app, privateKeyToAccount);
@@ -389,10 +389,10 @@ async function takeOutAfterRepaid(app) {
   const [lockedBefore, lockedAfter, vaultBefore, vaultAfter, buyerBefore, buyerAfter, tx, mon, sent, limit] = await Promise.all([
     readAt("CollateralVault", "lockedOf", [buyer], before),
     readAt("CollateralVault", "lockedOf", [buyer], at),
-    readAt("Stablecoin", "balanceOf", [CONTRACTS.CollateralVault], before),
-    readAt("Stablecoin", "balanceOf", [CONTRACTS.CollateralVault], at),
-    readAt("Stablecoin", "balanceOf", [buyer], before),
-    readAt("Stablecoin", "balanceOf", [buyer], at),
+    readAt("USDC", "balanceOf", [CONTRACTS.CollateralVault], before),
+    readAt("USDC", "balanceOf", [CONTRACTS.CollateralVault], at),
+    readAt("USDC", "balanceOf", [buyer], before),
+    readAt("USDC", "balanceOf", [buyer], at),
     chain.getTransaction({ hash: withdrawn.transactionHash }),
     chain.getBalance({ address: buyer }),
     chain.getTransactionCount({ address: buyer }),
@@ -411,10 +411,10 @@ async function takeOutAfterRepaid(app) {
       mon === 0n &&
       sent === 0,
     `block ${at}: lockedOf ${dollars(lockedBefore)} -> ${dollars(lockedAfter)}, the vault's dollars -${dollars(vaultBefore - vaultAfter)}, ` +
-      `the buyer's +${dollars(buyerAfter - buyerBefore)}; sent by ${tx.from} (withdrawWithSig); the buyer holds ${mon} MON and sent ${sent} transactions`,
+      `the buyer's +${dollars(buyerAfter - buyerBefore)}; sent by ${tx.from} (withdrawWithSig); the buyer holds ${mon} wei of gas and sent ${sent} transactions`,
   );
   const nowLocked = await read("CollateralVault", "lockedOf", [buyer]);
-  const nowBalance = await read("Stablecoin", "balanceOf", [buyer]);
+  const nowBalance = await read("USDC", "balanceOf", [buyer]);
   step(
     names[1],
     Boolean(shown) && screen.includes(dollars(nowLocked)) && screen.includes(dollars(limit)) && screen.includes(dollars(nowBalance)),
@@ -466,7 +466,7 @@ async function payIn4Plan(app, page, popup) {
     const receipt = await chain.getTransactionReceipt({ hash: loan.transactionHash });
     paidFromPool =
       viem
-        .parseEventLogs({ abi: ERC20, logs: receipt.logs.filter((l) => viem.isAddressEqual(l.address, CONTRACTS.Stablecoin)), eventName: "Transfer" })
+        .parseEventLogs({ abi: ERC20, logs: receipt.logs.filter((l) => viem.isAddressEqual(l.address, CONTRACTS.USDC)), eventName: "Transfer" })
         .find((t) => viem.isAddressEqual(t.args.from, CONTRACTS.PolarisLoanEngine) && viem.isAddressEqual(t.args.to, loan.args.merchant)) ?? null;
   }
   const [debtAfter, limit] = buyer ? await Promise.all([read("PolarisLoanEngine", "activeDebtOf", [buyer]), read("ScoreManager", "creditLimitOf", [buyer])]) : [0n, 0n];
@@ -537,7 +537,7 @@ async function payIn4Plan(app, page, popup) {
     payNowSession = (popup.url().match(/\/pay\/(cs_[A-Za-z0-9_]+)/) ?? [])[1] ?? null;
     const payer = await buyerAddress(app, privateKeyToAccount);
     const fromBlock = await chain.getBlockNumber();
-    const balanceBefore = payer ? await read("Stablecoin", "balanceOf", [payer]) : 0n;
+    const balanceBefore = payer ? await read("USDC", "balanceOf", [payer]) : 0n;
     const pay = (await buttons(popup)).find((t) => /^Pay now/.test(t));
     await popup.getByRole("button", { name: pay }).first().click();
     await confirmInPopup(popup, "10-paynow-5");
@@ -554,7 +554,7 @@ async function payIn4Plan(app, page, popup) {
     await shot(page, "10-paynow-7-shop-order-paid");
     step("Pay now: the shop's order is paid", true, page.url().replace(SHOP, ""));
     // On chain: PolarisPayments' PaymentMade for this buyer; the buyer's dollars down by the price, the merchant paid
-    // the price less PolarisPayments' fee in the same transaction, and the buyer still holds no MON (relayed).
+    // the price less PolarisPayments' fee in the same transaction, and the buyer still holds no gas (relayed).
     const session = payNowSession ? ((await (await fetch(`${BUSINESS}/api/public/sessions/${payNowSession}`)).json().catch(() => null))?.data ?? null) : null;
     const price = session ? BigInt(session.amountCents) * 10_000n : null;
     const made = payer
@@ -567,12 +567,12 @@ async function payIn4Plan(app, page, popup) {
       const receipt = await chain.getTransactionReceipt({ hash: made.transactionHash });
       toMerchant =
         viem
-          .parseEventLogs({ abi: ERC20, logs: receipt.logs.filter((l) => viem.isAddressEqual(l.address, CONTRACTS.Stablecoin)), eventName: "Transfer" })
+          .parseEventLogs({ abi: ERC20, logs: receipt.logs.filter((l) => viem.isAddressEqual(l.address, CONTRACTS.USDC)), eventName: "Transfer" })
           .find((t) => viem.isAddressEqual(t.args.to, made.args.merchant)) ?? null;
     }
-    const [balanceAfter, mon] = payer ? await Promise.all([read("Stablecoin", "balanceOf", [payer]), chain.getBalance({ address: payer })]) : [0n, 0n];
+    const [balanceAfter, mon] = payer ? await Promise.all([read("USDC", "balanceOf", [payer]), chain.getBalance({ address: payer })]) : [0n, 0n];
     step(
-      "Pay now: on chain, the buyer's dollars went down by the price, the merchant got it less the 0.5% fee, and the buyer holds no MON",
+      "Pay now: on chain, the buyer's dollars went down by the price, the merchant got it less the 0.5% fee, and the buyer holds no gas",
       Boolean(made) &&
         made.args.amount === price &&
         balanceBefore - balanceAfter === price &&
@@ -580,7 +580,7 @@ async function payIn4Plan(app, page, popup) {
         toMerchant?.args.value === price - made.args.fee &&
         mon === 0n,
       made
-        ? `buyer -${dollars(balanceBefore - balanceAfter)} of ${price === null ? "?" : dollars(price)}; merchant +${toMerchant ? dollars(toMerchant.args.value) : "nothing"}, fee ${dollars(made.args.fee)}; buyer ${mon} wei of MON`
+        ? `buyer -${dollars(balanceBefore - balanceAfter)} of ${price === null ? "?" : dollars(price)}; merchant +${toMerchant ? dollars(toMerchant.args.value) : "nothing"}, fee ${dollars(made.args.fee)}; buyer ${mon} wei of gas`
         : `no PaymentMade for ${payer} since block ${fromBlock}`,
     );
     await page.close();
@@ -669,8 +669,8 @@ async function payIn4Plan(app, page, popup) {
     step("Receipts: the app shows the receipt locked, and Face ID opens it to the line items only the buyer can read", wasLocked && opened && sealedLine);
   }
 
-  // ── Pay in 4, with a credit line: from the CRE workflow, or else from Boost ──
-  // The underwriting review reads Nansen, Zerion and Etherscan live, with the keys the CRE trigger has
+  // ── Pay in 4, with a credit line: from the keeper, or else from Boost ──
+  // The underwriting review reads Nansen, Zerion and Etherscan live, with the keys the keeper has
   // (workflows/.env), or not at all: a review that needs a provider without its key opens no line and says which
   // key is missing. Then the buyer does what the app offers without those keys: Add to Boost (dollars locked in
   // CollateralVault raise the line), and Pay in 4 runs against that line. Without a line either way, the plan's
@@ -694,11 +694,11 @@ async function payIn4Plan(app, page, popup) {
       up = outcome.up;
       const line = await creditLine(await buyerAddress(app, privateKeyToAccount));
       if (up) {
-        step("Pay in 4: Bring your history ran the CRE underwriting workflow and opened a line on chain", line > 0n, `limit $${Number(line) / 1e6}`);
+        step("Pay in 4: Bring your history ran the keeper's credit review and opened a line on chain", line > 0n, `limit $${Number(line) / 1e6}`);
       } else {
         noLineBecause = outcome.message || "the review opened no line";
         step(
-          "Pay in 4: Bring your history ran the CRE underwriting workflow; it says which data provider isn't set up, and no line opens",
+          "Pay in 4: Bring your history ran the keeper's credit review; it says which data provider isn't set up, and no line opens",
           /set up on this server yet/.test(outcome.message) && line === 0n,
           `"${outcome.message}"; on-chain limit $${Number(line) / 1e6}`,
         );
@@ -724,7 +724,7 @@ async function payIn4Plan(app, page, popup) {
         await settle(app, 1500);
         await app.getByText("Get $500 test dollars").first().click();
         await sleep(3500);
-        console.log(`  added $500 test dollars after Boost: balance ${dollars(await read("Stablecoin", "balanceOf", [await buyerAddress(app, privateKeyToAccount)]))}`);
+        console.log(`  added $500 test dollars after Boost: balance ${dollars(await read("USDC", "balanceOf", [await buyerAddress(app, privateKeyToAccount)]))}`);
         const again = await shopCheckout(context, { product: "halcyon-one", mode: "Pay in 4", prefix: "22-payin4-boosted" });
         planOpened = await payIn4Plan(app, again.page, again.popup);
         await again.page.close();
@@ -763,7 +763,7 @@ async function payIn4Plan(app, page, popup) {
         const buyer = await until("the new buyer's account", () => buyerAddress(popup, privateKeyToAccount), 30000, 500).catch(() => null);
         const line = await creditLine(buyer);
         if (outcome.up) {
-          step("New buyer: one tap created the account and the CRE workflow opened a line", Boolean(buyer) && line > 0n, `${buyer}; limit $${Number(line) / 1e6}`);
+          step("New buyer: one tap created the account and the keeper opened a line", Boolean(buyer) && line > 0n, `${buyer}; limit $${Number(line) / 1e6}`);
         } else {
           step(
             "New buyer: one tap created the account (Face ID) and ran the review, which says which provider isn't set up and opens no line",
@@ -778,19 +778,19 @@ async function payIn4Plan(app, page, popup) {
     }
   }
 
-  // ── Collections: the CRE collections workflow collects a due instalment (DEMO_FAST_PLANS=1) ──
+  // ── Collections: the keeper's collections run collects a due instalment (DEMO_FAST_PLANS=1) ──
   if (demo.fastPlans && !planOpened) {
-    skip("Collections: the CRE collections workflow collected the first instalment on chain (a minute after checkout)", "no Pay in 4 plan opened (no credit line)");
+    skip("Collections: the keeper's collections run collected the first instalment on chain (a minute after checkout)", "no Pay in 4 plan opened (no credit line)");
   } else if (demo.fastPlans) {
     const buyer = await buyerAddress(app, privateKeyToAccount);
     const paid = buyer
-      ? await until("an instalment collected by the CRE collections run", async () => {
+      ? await until("an instalment collected by the keeper collections run", async () => {
           const res = await fetch(`${BUSINESS}/api/public/buyers/${buyer}`);
           const plans = (await res.json()).data?.plans ?? [];
           return plans.some((p) => p.installmentsPaid >= 1) ? plans : null;
         }, 300000, 5000).catch(() => null)
       : null;
-    step("Collections: the CRE collections workflow collected the first instalment on chain (a minute after checkout)", Boolean(paid), paid ? `${paid[0].installmentsPaid} of ${paid[0].installments} paid` : "");
+    step("Collections: the keeper's collections run collected the first instalment on chain (a minute after checkout)", Boolean(paid), paid ? `${paid[0].installmentsPaid} of ${paid[0].installments} paid` : "");
   }
 
   // ── Take out of Boost, while the plan it secures is open: nothing to take ──
@@ -996,17 +996,17 @@ async function payIn4Plan(app, page, popup) {
     }
   }
 
-  // ── Take out of Boost, once the plan is repaid: some dollars back, one Face ID, no MON ──
+  // ── Take out of Boost, once the plan is repaid: some dollars back, one Face ID, no gas ──
   if (planOpened) await takeOutAfterRepaid(app);
   else for (const n of [
-    `Take out: the buyer took ${dollars(TAKE_OUT)} out of Boost with one Face ID; on chain the vault paid the buyer exactly that, the relayer sent it, the buyer holds 0 MON`,
+    `Take out: the buyer took ${dollars(TAKE_OUT)} out of Boost with one Face ID; on chain the vault paid the buyer exactly that, the relayer sent it, the buyer holds no gas`,
     "Take out: the Taken out. screen shows Boost, the Pay later limit and the dollar balance read back from the chain",
   ]) skip(n, `no Pay in 4 plan opened (no credit line): ${noLineBecause}`);
 
   // ── Split the bill: four people, one link (scripts/demo-e2e-split.cjs; `pnpm demo:e2e:split` runs it alone) ──
   if (process.env.DEMO_E2E_SPLIT !== "0") {
     const { runSplit } = require("./demo-e2e-split.cjs");
-    const urls = { app: APP, business: BUSINESS, rpc: RPC, stablecoin: demo.contracts?.Stablecoin ?? null };
+    const urls = { app: APP, business: BUSINESS, rpc: RPC, stablecoin: demo.contracts?.USDC ?? null };
     await runSplit({ chromium, urls, out: path.join(OUT, "split"), profile: `${PROFILE}-split`, step }).catch((e) =>
       step("Split: the scenario ran to the end", false, String(e?.message ?? e).slice(0, 200)),
     );

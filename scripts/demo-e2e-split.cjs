@@ -49,7 +49,7 @@ function demoUrls() {
     app: process.env.APP || demo.urls.app || "http://localhost:3000",
     business: process.env.BUSINESS || demo.urls.business || "http://localhost:3100",
     rpc: process.env.RPC || demo.urls.rpc || "http://127.0.0.1:8545",
-    stablecoin: demo.contracts?.Stablecoin ?? null,
+    stablecoin: demo.contracts?.USDC ?? null,
     // Hardhat mode's app signs with the dev signer; fork mode's with passkeys (demo.json devSigner false).
     devSigner: demo.devSigner !== false,
   };
@@ -159,7 +159,7 @@ async function runSplit({ chromium, urls = demoUrls(), out, profile, step }) {
     return body.result;
   }
 
-  /** AUSD (6 decimals) held by `address`, read from the chain, in micro-dollars. */
+  /** USDC (6 decimals) held by `address`, read from the chain, in micro-dollars. */
   async function balanceOf(address) {
     if (!address || !urls.stablecoin) return 0n;
     const data = `0x70a08231${address.slice(2).toLowerCase().padStart(64, "0")}`;
