@@ -1,4 +1,4 @@
-import { concat, encodeFunctionData, parseAbi, type Hex } from "viem";
+import { encodeFunctionData, parseAbi, type Hex } from "viem";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 

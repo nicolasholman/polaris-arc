@@ -15,7 +15,6 @@ import { decodeEventLog, getAddress, type Abi, type Address, type Hex, type Log,
 
 import {
   collectionsReceiverAbi,
-  creditGuardAbi,
   polarisCheckoutAbi,
   polarisLoanEngineAbi,
   polarisPaymentsAbi,

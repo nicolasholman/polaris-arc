@@ -44,7 +44,6 @@ import {
   http,
   keccak256,
   parseEventLogs,
-  stringToHex,
 } from "viem";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 
