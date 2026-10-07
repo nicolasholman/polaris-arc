@@ -75,9 +75,9 @@ describe("the credit guard", () => {
     assert.deepEqual(open.reasons, []);
   });
 
-  it("keeps only the reasons Arc's guard has, and reads an older API's stale states as open", () => {
-    const g = toGuardView({ state: "paused", paused: true, reasons: ["depeg", "owner_pause", "stale_price"], readAt: new Date(NOW).toISOString() });
-    assert.deepEqual(g.reasons, ["owner_pause"]);
+  it("keeps only the reasons Arc's guard has (the Chainlink peg check's included), and reads an older API's stale states as open", () => {
+    const g = toGuardView({ state: "paused", paused: true, reasons: ["depeg", "owner_pause", "stale_price", "attestation_expired"], readAt: new Date(NOW).toISOString() });
+    assert.deepEqual(g.reasons, ["depeg", "owner_pause", "stale_price"]);
     assert.equal(toGuardView({ state: "stale", paused: false, ageSeconds: 4320, readAt: new Date(NOW).toISOString() }).state, "open");
     assert.equal(toGuardView({ state: "unconfigured", paused: false, readAt: new Date(NOW).toISOString() }).state, "unconfigured");
   });

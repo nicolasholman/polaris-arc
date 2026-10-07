@@ -5,7 +5,8 @@ import type { CreditGuardReason, CreditGuardView, PaymentLink } from "./data/typ
  * (`GET /api/public/credit-guard`, and inside every checkout session):
  * CreditGuard on Arc reads the credit pool live and pauses new Pay in 4
  * plans when the pool is short of cash, carries bad debt, or its owner has
- * paused it, as PolarisCheckout.openPlan applies it. While it is paused,
+ * paused it (and, on Arc mainnet, when Chainlink's USDC / USD feed shows a
+ * depeg or goes stale), as PolarisCheckout.openPlan applies it. While it is paused,
  * Pay in 4 is shown as unavailable and Pay now carries on. There is no
  * report to go stale: the guard is a read of the pool, not an attestation.
  */
@@ -13,10 +14,12 @@ import type { CreditGuardReason, CreditGuardView, PaymentLink } from "./data/typ
 /** What the buyer reads wherever Pay in 4 is offered while the guard has paused it. */
 export const GUARD_PAUSED_MESSAGE = "Pay in 4 is paused by our credit guard; pay now works as usual.";
 
-const REASONS: ReadonlySet<CreditGuardReason> = new Set(["low_cash", "bad_debt", "owner_pause"]);
+const REASONS: ReadonlySet<CreditGuardReason> = new Set(["depeg", "low_cash", "bad_debt", "stale_price", "owner_pause"]);
 
 /** Each reason, as the buyer may read it. */
 export const GUARD_REASON_LABELS: Record<CreditGuardReason, string> = {
+  depeg: "USDC is below its peg on Chainlink's price feed",
+  stale_price: "The USDC price feed is out of date",
   low_cash: "The credit pool is low on cash",
   bad_debt: "The credit pool is carrying unpaid plans",
   owner_pause: "Polaris paused new plans",

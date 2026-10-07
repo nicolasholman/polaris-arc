@@ -28,6 +28,19 @@ export type Deployment = {
   circle?: CircleConfig | null;
   /** What the deploy script records about the keeper and its receivers. */
   keeper?: DeploymentKeeper;
+  /** Chainlink CCIP on this Arc network: the router, Arc's selector, the source chains and their senders. */
+  ccip?: DeploymentCcip | null;
+  /** Chainlink Data Feeds on this Arc network (mainnet: USDC / USD, EURC / USD, EUR / USD). */
+  feeds?: { usdcUsd?: Address; eurcUsd?: Address; eurUsd?: Address } | null;
+};
+
+export type DeploymentCcip = {
+  chainSelector: string;
+  router: Address;
+  explorer?: string;
+  receiver?: Address;
+  sources?: Array<{ name: string; chainId: number; selector: string; router: Address; usdc: Address; tokenMessengerV2: Address; cctpDomain: number; rpcUrl: string }>;
+  senders?: Record<string, { name: string; selector: string; address: Address }>;
 };
 
 /** Circle's contracts on Arc, as the deployment record copies them. */
@@ -92,6 +105,10 @@ export type ChainConfig = {
   keeper: DeploymentKeeper | null;
   /** Circle's contracts on this network (CCTP, Memo, EURC, USYC); null on a local node. */
   circle: CircleConfig | null;
+  /** Chainlink CCIP (pay from another chain); null on a local node. */
+  ccip: DeploymentCcip | null;
+  /** Chainlink Data Feeds on Arc (mainnet); null where none are listed. */
+  feeds: { usdcUsd?: Address; eurcUsd?: Address; eurUsd?: Address } | null;
   /** The stablecoin's EIP-712 name and version (USDC on Arc: "USDC", "2"). */
   stablecoinDomain: { name: string; version: string };
   /** EURC's EIP-712 name and version ("EURC", "2"), when the deployment has EURC. */
@@ -354,6 +371,8 @@ function chainFrom(d: Deployment): ChainConfig {
     contracts: contractsFrom(d),
     keeper: d.keeper ?? null,
     circle: d.circle ?? null,
+    ccip: d.ccip ? { ...d.ccip, receiver: d.contracts.PolarisCCIPReceiver?.address ?? d.ccip.receiver } : null,
+    feeds: d.feeds ?? null,
     stablecoinDomain: { name: stable?.name ?? "USDC", version: stable?.version ?? "2" },
     eurcDomain: d.contracts.EURC ? { name: eurc?.name ?? "EURC", version: eurc?.version ?? "2" } : null,
     minIntervalSeconds: d.config?.minInterval ?? 3600,

@@ -4,9 +4,10 @@ import type { IsoDate } from "./types";
  * The credit guard: CreditGuard's answer, as PolarisCheckout.openPlan applies
  * it. When it says credit is paused, new Pay in 4 plans are refused; Pay now,
  * Send and Subscribe never ask it. CreditGuard reads the credit pool itself
- * on every call (USDC is Arc's unit of account, so there is no peg to
- * attest): low free cash or too much bad debt pauses new plans, and the
- * owner can force a pause or a resume.
+ * on every call: low free cash or too much bad debt pauses new plans. Where
+ * Chainlink's USDC / USD Data Feed runs (Arc mainnet), it reads the peg on the
+ * same call: a depeg, or a price too old to trust, pauses them too. The owner
+ * can force a pause or a resume.
  *
  * These are the shapes the API serves (`GET /api/public/credit-guard`, the
  * dashboard's `GET /api/automation`) and the pure helpers that read them, safe
@@ -14,12 +15,14 @@ import type { IsoDate } from "./types";
  */
 
 /** CreditGuard's reason bits, by name. */
-export type GuardReason = "low_cash" | "bad_debt" | "owner_pause";
+export type GuardReason = "depeg" | "low_cash" | "bad_debt" | "stale_price" | "owner_pause";
 
-/** CreditGuard.REASON_*: 2, 4 and the owner's 0x80. */
+/** CreditGuard.REASON_*: 1, 2, 4, 8 and the owner's 0x80. */
 export const GUARD_REASON_BITS: Readonly<Record<GuardReason, number>> = {
+  depeg: 1,
   low_cash: 2,
   bad_debt: 4,
+  stale_price: 8,
   owner_pause: 0x80,
 };
 
@@ -30,6 +33,8 @@ export function reasonsFromMask(mask: number): GuardReason[] {
 
 /** Why credit is paused, in the merchant's words. */
 export const GUARD_REASON_TEXT: Readonly<Record<GuardReason, string>> = {
+  depeg: "USDC traded below its peg floor on Chainlink's USDC / USD feed",
+  stale_price: "Chainlink's USDC / USD price is too old to trust",
   low_cash: "The credit pool's free cash fell below its floor",
   bad_debt: "Bad debt passed its share of everything lent",
   owner_pause: "Polaris paused Pay in 4 by hand",
@@ -48,16 +53,17 @@ export type CreditGuardState = "open" | "paused" | "unconfigured" | "unavailable
 
 export type GuardOverride = "none" | "resume" | "pause";
 
-/** One of the guard's two checks, against today's thresholds, read from the pool now. */
+/** One of the guard's checks, against today's thresholds: the pool's two, and the USDC peg where a feed is set. */
 export type GuardCheck = {
-  key: "cash" | "bad_debt";
+  key: "cash" | "bad_debt" | "peg";
   label: string;
   /** The figure, in words ("$48,210.00", "0.00% of lent"). */
   value: string;
   /** Its limit, in words ("at least $1,000.00"). */
   limit: string;
   ok: boolean;
-  source: "pool";
+  /** "pool": PolarisLoanEngine now. "feed": Chainlink's USDC / USD Data Feed now. */
+  source: "pool" | "feed";
 };
 
 export type CreditGuard = {
@@ -98,6 +104,15 @@ export type CreditGuard = {
     badDebtAcknowledgedUnits: string;
   } | null;
   checks: GuardCheck[];
+  /** The peg check, when CreditGuard reads a USDC / USD feed (Arc mainnet); null without one. */
+  price: {
+    feed: `0x${string}`;
+    /** The feed's latest answer, as a decimal string ("0.99980000"). */
+    usd: string;
+    updatedAt: IsoDate | null;
+    minUsd: string;
+    maxAgeSeconds: number;
+  } | null;
 };
 
 const DOLLARS = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -156,4 +171,23 @@ export function guardChecks(
       source: "pool",
     },
   ];
+}
+
+/**
+ * The peg check in words, from CreditGuard.creditStatus(): `ok: false` exactly
+ * when it sets REASON_DEPEG or REASON_STALE_PRICE. Feed answers have 8 decimals.
+ */
+export function pegCheck(p: { priceReasons: number; price: bigint; priceUpdatedAt: bigint; minPrice: bigint; maxPriceAge: number }, now: Date): GuardCheck {
+  const usd = (v: bigint) => `$${fixed(v, 8, 2)}`;
+  const stale = (p.priceReasons & 8) !== 0;
+  const age = p.priceUpdatedAt > 0n ? Math.max(0, Math.floor(now.getTime() / 1000) - Number(p.priceUpdatedAt)) : null;
+  const hours = (s: number) => `${Math.round((s / 3600) * 10) / 10} h`;
+  return {
+    key: "peg",
+    label: "USDC peg (Chainlink USDC / USD)",
+    value: stale ? (age === null ? "no price" : `${usd(p.price)}, ${hours(age)} old`) : usd(p.price),
+    limit: `at least ${usd(p.minPrice)}, updated within ${hours(p.maxPriceAge)}`,
+    ok: (p.priceReasons & 9) === 0,
+    source: "feed",
+  };
 }

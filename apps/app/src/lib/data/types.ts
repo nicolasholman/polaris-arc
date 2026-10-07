@@ -129,7 +129,7 @@ export type CreditProvenance = {
 };
 
 /** Why the credit guard paused new Pay in 4 plans (CreditGuard's reasons on Arc). */
-export type CreditGuardReason = "low_cash" | "bad_debt" | "owner_pause";
+export type CreditGuardReason = "depeg" | "low_cash" | "bad_debt" | "stale_price" | "owner_pause";
 
 /**
  * The credit guard (CreditGuard on Arc, which reads the credit pool live, as

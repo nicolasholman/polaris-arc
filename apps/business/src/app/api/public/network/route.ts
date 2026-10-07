@@ -3,6 +3,7 @@ import { requireChain } from "@/server/chain/client";
 import { getConfig } from "@/server/env";
 import { ok, methodNotAllowed } from "@/server/http";
 import { cctpSourcesFor } from "@/server/cctp";
+import { arcRates } from "@/server/rates";
 import { polarisDomain } from "@/server/relayer/typed-data";
 
 export const dynamic = "force-dynamic";
@@ -64,6 +65,21 @@ export const GET = withPublic(async () => {
       : null,
     // Pay from any chain (CCTP V2): where a buyer can burn USDC to arrive on Arc. Null on a local node.
     cctp: sources ? { sources, fastTransfer: true, mintPath: "/api/public/cctp/mint" } : null,
+    // Pay a Polaris order from another chain in one call: CCTP moves the USDC, Chainlink CCIP carries
+    // the order to PolarisCCIPReceiver. Only sources whose PolarisCCIPSender is deployed are listed.
+    ccip: chain.ccip?.receiver
+      ? {
+          chainSelector: chain.ccip.chainSelector,
+          router: chain.ccip.router,
+          receiver: chain.ccip.receiver,
+          explorer: chain.ccip.explorer ?? "https://ccip.chain.link",
+          sources: (chain.ccip.sources ?? [])
+            .map((s) => ({ ...s, sender: chain.ccip?.senders?.[String(s.chainId)]?.address ?? null }))
+            .filter((s) => s.sender),
+        }
+      : null,
+    // Chainlink Data Feeds on Arc mainnet (display: what a euro link is worth; the USDC peg the credit guard watches).
+    rates: await arcRates(),
     payIn4: { ...config.payIn4, aprBps: 1000 },
     relayer: { available: config.relayer.mode !== "off" },
   });

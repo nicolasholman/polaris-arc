@@ -4,7 +4,9 @@ import { getAddress, zeroAddress, type Address } from "viem";
 
 import {
   GUARD_PAUSED_MESSAGE,
+  fixed,
   guardChecks,
+  pegCheck,
   reasonsFromMask,
   type CreditGuard,
   type CreditGuardState,
@@ -45,6 +47,13 @@ type RawStatus = {
   badDebtAcknowledged: bigint;
   pool: RawPool;
   thresholds: { minFreeCash: bigint; maxBadDebtBps: number; minOriginated: bigint };
+  /** The USDC / USD peg check (zeros without a feed). */
+  priceReasons: number;
+  priceFeed: Address;
+  price: bigint;
+  priceUpdatedAt: bigint;
+  minPrice: bigint;
+  maxPriceAge: number;
 };
 
 /** Everything one read returns, before it is put in words. */
@@ -80,6 +89,7 @@ export function describeGuard(reads: GuardReads | GateOnly | null, chain: Pick<C
     thresholds: null,
     pool: null,
     checks: [],
+    price: null,
   };
   if (!guardian) return empty;
   if (!reads) return { ...empty, state: "unavailable" };
@@ -106,6 +116,8 @@ export function describeGuard(reads: GuardReads | GateOnly | null, chain: Pick<C
   const state: CreditGuardState = paused ? "paused" : "open";
   const t: GuardThresholds = { minFreeCash: s.thresholds.minFreeCash, maxBadDebtBps: Number(s.thresholds.maxBadDebtBps), minOriginated: s.thresholds.minOriginated };
   const p = s.pool;
+  // Older guards (no peg check) return no price fields.
+  const hasFeed = Boolean(s.priceFeed) && s.priceFeed !== zeroAddress;
   return {
     ...empty,
     state,
@@ -122,7 +134,16 @@ export function describeGuard(reads: GuardReads | GateOnly | null, chain: Pick<C
       totalOriginatedUnits: p.totalOriginated.toString(),
       badDebtAcknowledgedUnits: s.badDebtAcknowledged.toString(),
     },
-    checks: guardChecks(p, t, s.badDebtAcknowledged),
+    checks: hasFeed ? [...guardChecks(p, t, s.badDebtAcknowledged), pegCheck({ ...s, maxPriceAge: Number(s.maxPriceAge), priceReasons: Number(s.priceReasons) }, readAt)] : guardChecks(p, t, s.badDebtAcknowledged),
+    price: hasFeed
+      ? {
+          feed: getAddress(s.priceFeed),
+          usd: fixed(s.price, 8, 2),
+          updatedAt: s.priceUpdatedAt > 0n ? iso(s.priceUpdatedAt) : null,
+          minUsd: fixed(s.minPrice, 8, 2),
+          maxAgeSeconds: Number(s.maxPriceAge),
+        }
+      : null,
   };
 }
 

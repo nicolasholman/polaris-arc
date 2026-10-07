@@ -41,7 +41,10 @@ const POOL = { freeCash: 48_210_000_000n, totalOwed: 1_200_000_000n, badDebt: 0n
 const OTHER_GUARDIAN = "0x00000000000000000000000000000000000060a2";
 
 type Status = GuardReads["status"];
-const STATUS: Status = { paused: false, reasons: 0, poolReasons: 0, overrideMode: 0, overrideUntil: 0n, badDebtAcknowledged: 0n, pool: POOL, thresholds: THRESHOLDS };
+const NO_FEED = { priceReasons: 0, priceFeed: "0x0000000000000000000000000000000000000000" as `0x${string}`, price: 0n, priceUpdatedAt: 0n, minPrice: 0n, maxPriceAge: 0 };
+const STATUS: Status = { paused: false, reasons: 0, poolReasons: 0, overrideMode: 0, overrideUntil: 0n, badDebtAcknowledged: 0n, pool: POOL, thresholds: THRESHOLDS, ...NO_FEED };
+/** Chainlink's USDC / USD feed on Arc mainnet, as CreditGuard reads it (8 decimals). */
+const USDC_USD = "0x84EA90AC252Dc437031461836DB5164219147905" as `0x${string}`;
 
 /** Answer the guard's and the checkout's views on the fake chain. */
 function guardian(over: { gate?: [boolean, number]; status?: Partial<Status>; checkoutGuardian?: string } = {}) {
@@ -69,7 +72,32 @@ describe("the credit guard", () => {
     expect(reasonsFromMask(0)).toEqual([]);
     expect(reasonsFromMask(2 | 4)).toEqual(["low_cash", "bad_debt"]);
     expect(reasonsFromMask(0x80)).toEqual(["owner_pause"]);
-    expect(reasonsFromMask(1 | 8 | 0x40)).toEqual([]);
+    expect(reasonsFromMask(1 | 8)).toEqual(["depeg", "stale_price"]);
+    expect(reasonsFromMask(0x40 | 0x10)).toEqual([]);
+  });
+
+  it("adds the USDC peg check where CreditGuard reads Chainlink's USDC / USD feed", () => {
+    const chain = { contracts: { guardian: ADDR.guardian } as never };
+    const at = new Date(Number(NOW) * 1000);
+    const feed = { priceFeed: USDC_USD, price: 99_980_000n, priceUpdatedAt: NOW - 3600n, minPrice: 98_000_000n, maxPriceAge: 26 * 3600 };
+    const reads = (status: Partial<Status>, gate = { paused: false, reasons: 0 }): GuardReads => ({ checkoutGuardian: ADDR.guardian, gate, status: { ...STATUS, ...feed, ...status } });
+
+    const open = describeGuard(reads({}), chain, at);
+    expect(open.checks.map((c) => c.key)).toEqual(["cash", "bad_debt", "peg"]);
+    expect(open.checks[2]).toMatchObject({ ok: true, source: "feed", value: "$0.9998", limit: "at least $0.98, updated within 26 h" });
+    expect(open.price).toMatchObject({ feed: USDC_USD, usd: "0.9998", minUsd: "0.98", maxAgeSeconds: 93_600 });
+
+    const depeg = describeGuard(reads({ price: 97_000_000n, priceReasons: 1, reasons: 1, paused: true }, { paused: true, reasons: 1 }), chain, at);
+    expect(depeg).toMatchObject({ state: "paused", reasons: ["depeg"] });
+    expect(depeg.checks[2]).toMatchObject({ ok: false, value: "$0.97" });
+
+    const stale = describeGuard(reads({ priceUpdatedAt: NOW - 30n * 3600n, priceReasons: 8, reasons: 8, paused: true }, { paused: true, reasons: 8 }), chain, at);
+    expect(stale).toMatchObject({ state: "paused", reasons: ["stale_price"] });
+    expect(stale.checks[2]).toMatchObject({ ok: false, value: "$0.9998, 30 h old" });
+
+    // Without a feed (Arc testnet): the pool's two checks only.
+    expect(describeGuard(reads(NO_FEED), chain, at)).toMatchObject({ price: null });
+    expect(describeGuard(reads(NO_FEED), chain, at).checks).toHaveLength(2);
   });
 
   it("checks with CreditGuard's formula, at the edges, from the pool now", () => {
