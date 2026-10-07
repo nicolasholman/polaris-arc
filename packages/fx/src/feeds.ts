@@ -1,9 +1,13 @@
 /**
  * Which Chainlink Data Feed gives each local currency, and on which chain.
  *
- * Chainlink does not run on Arc. These feeds are read from Ethereum, Polygon
- * and Base, for display only: Polaris charges and pays in USDC on Arc, and a
- * rate here only prints an indicative local amount under it.
+ * These local-currency display rates are read from Ethereum, Polygon and Base
+ * (keyless public RPCs, 27-second feeds where they exist). Arc mainnet's own
+ * Chainlink Data Feeds (USDC / USD, EURC / USD, EUR / USD) are read where
+ * they matter on Arc: by CreditGuard (the USDC peg) and by Polaris for
+ * Business (the EURC rate on euro links). For display only: Polaris charges
+ * and pays in USDC on Arc, and a rate here only prints an indicative local
+ * amount under it.
  *
  * Pure data (no viem, no network), so the browser can import it too
  * (`@polaris/fx/feeds`), for example to list the currencies that have a rate.

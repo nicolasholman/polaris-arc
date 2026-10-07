@@ -25,7 +25,7 @@ describe("the feed table", () => {
     for (const code of ["EUR", "GBP", "JPY", "CHF", "CAD"]) expect(feedsFor(code)?.sources.length, code).toBe(2);
   });
 
-  it("reads nothing from Arc: Chainlink does not run there", () => {
+  it("keeps local-currency display rates off Arc (Arc's own feeds serve USDC and EURC elsewhere)", () => {
     expect(Object.keys(CHAINS).sort()).toEqual(["base", "ethereum", "polygon"]);
     expect(Object.values(CHAINS).map((c) => c.id)).not.toContain(5042);
   });

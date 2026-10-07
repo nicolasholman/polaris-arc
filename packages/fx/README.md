@@ -4,8 +4,9 @@ Chainlink FX rates for the local-currency line under a dollar amount:
 "≈ ARS 161,241 · Chainlink rate, 3 min ago · indicative".
 
 Polaris charges, pays and settles in USDC on Arc (and EURC for euro send
-links, where one EURC is one euro). Chainlink does not run on Arc: these feeds
-are read from Ethereum, Polygon and Base, for display only. They never price
+links, where one EURC is one euro). These local-currency feeds are read from
+Ethereum, Polygon and Base, for display only (Arc mainnet's own Chainlink feeds
+for USDC / USD and EURC / USD are read by CreditGuard and the business server). They never price
 anything; they print an indicative local amount for a buyer in Buenos Aires,
 Manila or Lagos. They replace the hand-typed `MOCK_FX` table the customer app
 used before (its ARS figure, 1,182 pesos per dollar, was 27% below Chainlink's 1,612).
@@ -117,9 +118,10 @@ rate, so it gets no line either.
 
 ## Honest limits
 
-- **Nothing comes from Arc.** Chainlink does not run on Arc, so every rate is
-  read from Ethereum, Polygon or Base, which Polaris doesn't otherwise touch;
-  the reads are free `eth_call`s.
+- **Display rates come from other chains.** Every local-currency rate here is
+  read from Ethereum, Polygon or Base (free `eth_call`s, 27-second feeds where
+  they exist); Arc mainnet's Data Feeds are used for the USDC peg and the EURC
+  rate, outside this package.
 - **Two different ARS rates.** Chainlink publishes USD / ARS (moves during
   the day, 1,612.41 on 27 Sep) and ARS / USD on Ethereum
   (`0xE41cD2DcC63EB63A9D9e62f2a3D9b49e6d0C0A1d`, updated once a day around
