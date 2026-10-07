@@ -81,7 +81,7 @@ export async function updateMerchant(auth: AuthedMerchant, patch: { businessName
 
 /**
  * One rule for every amount: micro-units on chain, truncated to cents the way
- * AUSD.balanceOf is shown. The net is what reached the merchant's wallet
+ * USDC.balanceOf is shown. The net is what reached the merchant's wallet
  * (347.255 of a \$349 payment is \$347.25, as the balance says), and the fee
  * is what makes up the rest, so gross = net + fee to the cent.
  */
@@ -187,7 +187,7 @@ export async function listPlans(auth: AuthedMerchant): Promise<Plan[]> {
 }
 
 /**
- * The payout wallet's AUSD balance, in cents. Null when the chain read
+ * The payout wallet's USDC balance, in cents. Null when the chain read
  * failed: an unknown balance is never shown as $0.00 (a dead RPC once read
  * as "Nothing to withdraw yet" while the merchant held money).
  */

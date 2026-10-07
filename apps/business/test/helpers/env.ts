@@ -8,7 +8,7 @@ import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 import {
   collateralVaultAbi,
   collectionsReceiverAbi,
-  iausdAbi,
+  iusdcAbi,
   merchantRegistryAbi,
   polarisCheckoutAbi,
   polarisLoanEngineAbi,
@@ -36,7 +36,9 @@ const fixture = JSON.parse(readFileSync(DEPLOYMENT, "utf8")) as { contracts: Rec
 const at = (name: string) => getAddress(fixture.contracts[name]?.address as string);
 
 export const ADDR = {
-  stablecoin: at("Stablecoin"),
+  stablecoin: at("USDC"),
+  eurc: at("EURC"),
+  sendEurc: at("PolarisSendEURC"),
   scoreManager: at("ScoreManager"),
   loanEngine: at("PolarisLoanEngine"),
   payments: at("PolarisPayments"),
@@ -46,11 +48,11 @@ export const ADDR = {
   checkout: at("PolarisCheckout"),
   collections: at("CollectionsReceiver"),
   underwriting: at("UnderwritingReceiver"),
-  guardian: at("GuardianReceiver"),
+  guardian: at("CreditGuard"),
   vault: at("CollateralVault"),
 };
 
-export const ALL_ABIS = [polarisCheckoutAbi, polarisPaymentsAbi, polarisLoanEngineAbi, polarisSendAbi, polarisSplitAbi, merchantRegistryAbi, iausdAbi, collectionsReceiverAbi, collateralVaultAbi] as unknown as Abi[];
+export const ALL_ABIS = [polarisCheckoutAbi, polarisPaymentsAbi, polarisLoanEngineAbi, polarisSendAbi, polarisSplitAbi, merchantRegistryAbi, iusdcAbi, collectionsReceiverAbi, collateralVaultAbi] as unknown as Abi[];
 
 export type TestEnv = {
   chain: FakeChain;

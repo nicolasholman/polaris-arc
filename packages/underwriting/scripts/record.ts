@@ -23,11 +23,12 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { parseArgs } from "node:util";
-import { HISTORY_CHAINS, MONAD_TESTNET } from "../src/core/constants.ts";
+import { ARC_TESTNET, HISTORY_CHAINS } from "../src/core/constants.ts";
 import { toJsonSafe } from "../src/core/evidence.ts";
 import { parseTimestamp } from "../src/core/providers/common.ts";
 import { classifyNansenFailure } from "../src/core/providers/nansen.ts";
 import type { Address } from "../src/core/types.ts";
+import { BlockscoutClient } from "../src/node/blockscout.ts";
 import { EtherscanClient } from "../src/node/etherscan.ts";
 import { DEFAULT_FIXTURES_DIR, locateFixture, type FixtureFile } from "../src/testing/fixtures.ts";
 import { fetchTransport, type HttpRequest, type HttpResponse, type HttpTransport } from "../src/node/http.ts";
@@ -154,7 +155,8 @@ const underwriter = new Underwriter({
     nansen: new NansenClient({ ...live, apiKey: process.env.NANSEN_API_KEY, onResponse: (_s, r) => meter.record(r.headers) }),
     zerion: new ZerionClient({ ...live, apiKey: process.env.ZERION_API_KEY }),
     etherscan: new EtherscanClient({ ...live, apiKey: process.env.ETHERSCAN_API_KEY }),
-    accountRpc: new RpcClient(MONAD_TESTNET.rpcUrl, MONAD_TESTNET.chainId, live),
+    accountRpc: new RpcClient(ARC_TESTNET.rpcUrl, ARC_TESTNET.chainId, live),
+    explorer: new BlockscoutClient(ARC_TESTNET.explorerApiUrl, live),
     historyRpcs: HISTORY_CHAINS.map((c) => new RpcClient(c.rpcUrl, c.chainId, live)),
   },
   creditMeter: meter,
@@ -176,7 +178,7 @@ console.log(`  1. first-funder row as returned: ${JSON.stringify(firstRow ?? nul
 console.log(`     block_timestamp: ${timestampCheck(firstRow?.block_timestamp)}`);
 console.log(`  2. related-wallets relation values: ${[...relations].sort().join(", ") || "(none seen)"}`);
 console.log(`     block_timestamp samples: ${relatedTimestamps.map(timestampCheck).join("; ") || "(none seen)"}`);
-console.log(`  6. Zerion ${MONAD_TESTNET.zerionChainId} rows for the account: ${a.evidence.account.sentCount.value} (${a.evidence.account.sentCount.status})`);
+console.log(`  6. Arc testnet account: age from ${a.evidence.account.firstSeenAt.source} (${a.evidence.account.firstSeenAt.status}), sent ${a.evidence.account.sentCount.value} from ${a.evidence.account.sentCount.source} (${a.evidence.account.sentCount.status})`);
 console.log(`  Nansen credits used: ${a.credits.nansen}`);
 console.log(`  issues: ${a.issues.map((i) => `${i.source}:${i.code}`).join(", ") || "none"}`);
 console.log(`\nfixtures saved under ${dir}`);

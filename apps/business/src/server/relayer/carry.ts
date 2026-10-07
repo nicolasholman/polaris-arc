@@ -3,6 +3,7 @@ import "server-only";
 import { isDuplicateKeyError, newId, type RelayKind, type RelayRecord } from "@polaris/db";
 import type { Address, Hex, TransactionReceipt } from "viem";
 
+import type { CallMemo } from "../chain/circle";
 import { requireChain } from "../chain/client";
 import { getDb } from "../db";
 import { explorerTxUrl, getConfig } from "../env";
@@ -69,6 +70,8 @@ export async function carry(input: {
   sessionId?: string | null;
   merchantId?: string | null;
   waitMs?: number;
+  /** An Arc Memo for the call (the order reference), where Memo is deployed. */
+  memo?: CallMemo | null;
 }): Promise<RelayResult> {
   const db = getDb();
   const role = input.role ?? "relayer";
@@ -109,7 +112,7 @@ export async function carry(input: {
 
   let submitted;
   try {
-    submitted = await submitCall({ signer: account, role, to: input.to, data: input.data, waitMs: input.waitMs ?? getConfig().receiptTimeoutMs });
+    submitted = await submitCall({ signer: account, role, to: input.to, data: input.data, waitMs: input.waitMs ?? getConfig().receiptTimeoutMs, memo: input.memo ?? null });
   } catch (error) {
     const e = error instanceof RelayRejected ? { code: error.error.code, message: error.error.message } : { code: "unavailable", message: (error as Error).message };
     await db.relays.update(id, (r) => ({ ...r, state: "failed", error: e, updatedAt: new Date().toISOString() }));
@@ -118,7 +121,11 @@ export async function carry(input: {
 
   await db.relays.update(id, (r) => ({ ...r, state: "submitted", txHash: submitted.txHash, from: account.address, nonce: submitted.nonce, updatedAt: new Date().toISOString() }));
   const receipt = submitted.receipt;
-  if (receipt) return finish(id, receipt);
+  const memoIds: Record<string, string> = submitted.memo ? { memoId: submitted.memo.id, memo: submitted.memo.text } : {};
+  if (receipt) {
+    const done = await finish(id, receipt);
+    return { ...done, ids: { ...done.ids, ...memoIds } };
+  }
   return fromRecord((await db.relays.get(id)) as RelayRecord);
 }
 

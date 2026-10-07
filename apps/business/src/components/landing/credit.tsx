@@ -8,7 +8,7 @@ import { EASE_REVEAL } from "@/components/motion/tokens";
 import { credit } from "./content";
 import { SectionIntro, Shell } from "./section";
 
-/** "Paid in full today, we carry the credit": settlement, CRE collections, Nansen underwriting. */
+/** "Paid in full today, we carry the credit": settlement, keeper collections, Nansen underwriting. */
 export function Credit() {
   return (
     <section id="credit" aria-labelledby="credit-title" className="relative isolate scroll-mt-24 overflow-hidden py-20 lg:py-28">
@@ -62,7 +62,7 @@ function Flow() {
           A $200 order on <span className="whitespace-nowrap">Pay in 4</span>
         </h3>
         <StatusPill tone="purple" size="sm">
-          Chainlink CRE
+          the Polaris keeper
         </StatusPill>
       </div>
       <ol ref={ref} className="relative mt-5 grid gap-1">

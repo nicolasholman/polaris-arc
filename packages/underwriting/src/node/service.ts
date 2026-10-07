@@ -6,19 +6,27 @@
  *   const a = await uw.assess({ account, linked: { wallet, proof }, purchase: 200_000_000n });
  *   a.decision.payIn4.allowed, a.decision.reasons, a.final, a.report
  *
- * Modes: a provider with its key is live; one without is not configured and
- * is never called (NANSEN_API_KEY, ZERION_API_KEY, ETHERSCAN_API_KEY). Public
- * RPCs need no key and are always live. Nothing answers in a provider's
+ * The Polaris keeper calls `assess` and, when `a.attest` is true, submits
+ * `a.report` to UnderwritingReceiver.submitReport on Arc.
+ *
+ * The account chain is Arc (testnet by default; UNDERWRITING_ACCOUNT_CHAIN_ID,
+ * UNDERWRITING_ACCOUNT_RPC_URL, UNDERWRITING_ACCOUNT_EXPLORER_API_URL and
+ * UNDERWRITING_ACCOUNT_TOKENS change it), read through its public RPC and its
+ * Blockscout explorer, which need no key and are always live. Keyed providers
+ * read a linked history wallet on other chains: with its key a provider is
+ * live; without it, it is not configured and is never called (NANSEN_API_KEY,
+ * ZERION_API_KEY, ETHERSCAN_API_KEY). Nothing answers in a provider's
  * place: what only an unconfigured provider could read is absent, and every
  * assessment says which providers were not configured (`notConfigured`).
  */
 
 import { verifyMessage } from "viem";
-import { FACTS_VERSION, HISTORY_CHAINS, MODEL_VERSION, MONAD_TESTNET, PROVIDER_KEYS } from "../core/constants.ts";
+import { ARC_TESTNET, arcNetwork, FACTS_VERSION, HISTORY_CHAINS, MODEL_VERSION, PROVIDER_KEYS } from "../core/constants.ts";
 import { unknownSubject } from "../core/evidence.ts";
 import { linkMessage, linkProofStaleness } from "../core/link.ts";
 import { notConfiguredProviders } from "../core/recipe.ts";
 import type { Address, Hex, KeyedProvider, ProviderMode, SubjectEvidence } from "../core/types.ts";
+import { BlockscoutClient } from "./blockscout.ts";
 import { underwrite, type UnderwriteOutcome } from "../core/underwrite.ts";
 import { collectAccount, collectLinked, type CollectOptions, type Issue, type Providers } from "./collect.ts";
 import { EtherscanClient } from "./etherscan.ts";
@@ -49,7 +57,7 @@ export interface Assessment extends UnderwriteOutcome {
   /** Unix seconds; also `facts.observedAt`. */
   assessedAt: number;
   /** Each provider on this deployment: live, or not configured. */
-  providers: Record<"nansen" | "zerion" | "etherscan" | "rpc", ProviderMode>;
+  providers: Record<"nansen" | "zerion" | "etherscan" | "rpc" | "blockscout", ProviderMode>;
   /**
    * The providers this assessment needed and could not ask, because their key
    * is not set. What only they read is in `absent`; the UI can say, e.g.,
@@ -118,22 +126,30 @@ export class Underwriter {
     const nansen = new NansenClient({ apiKey: env.NANSEN_API_KEY, onResponse: (_s, res) => meter.record(res.headers) });
     const zerion = new ZerionClient({ apiKey: env.ZERION_API_KEY });
     const etherscan = new EtherscanClient({ apiKey: env.ETHERSCAN_API_KEY });
-    const accountRpc = new RpcClient(env.MONAD_TESTNET_RPC_URL || MONAD_TESTNET.rpcUrl, MONAD_TESTNET.chainId);
+    const account = accountChainFromEnv(env);
+    const accountRpc = new RpcClient(account.rpcUrl, account.chainId);
+    const explorer = account.explorerApiUrl ? new BlockscoutClient(account.explorerApiUrl) : null;
     const historyRpcs = HISTORY_CHAINS.map((c) => new RpcClient(env[`RPC_URL_${c.chainId}`] || c.rpcUrl, c.chainId));
 
     return new Underwriter({
-      providers: { nansen, zerion, etherscan, accountRpc, historyRpcs },
+      providers: { nansen, zerion, etherscan, accountRpc, explorer, historyRpcs },
       allowPartial: env.UNDERWRITING_ALLOW_PARTIAL === "1",
-      collect: { useNansenLabels: env.NANSEN_LABELS === "1" },
+      collect: { useNansenLabels: env.NANSEN_LABELS === "1", accountTokens: account.tokens },
       creditMeter: meter,
       ...overrides,
     });
   }
 
-  /** Each provider: live, or not configured (no key). Public RPCs are always live. */
-  modes(): Record<"nansen" | "zerion" | "etherscan" | "rpc", ProviderMode> {
+  /** Each provider: live, or not configured (no key, or no explorer for the account chain). RPCs are always live. */
+  modes(): Record<"nansen" | "zerion" | "etherscan" | "rpc" | "blockscout", ProviderMode> {
     const p = this.providers;
-    return { nansen: p.nansen.mode, zerion: p.zerion.mode, etherscan: p.etherscan.mode, rpc: p.accountRpc.mode };
+    return {
+      nansen: p.nansen.mode,
+      zerion: p.zerion.mode,
+      etherscan: p.etherscan.mode,
+      rpc: p.accountRpc.mode,
+      blockscout: p.explorer?.mode ?? "not_configured",
+    };
   }
 
   /** The keyed providers without a key on this deployment, with the variable each needs. */
@@ -189,6 +205,50 @@ export class Underwriter {
       credits: { nansen: (this.meter?.total ?? 0) - creditsBefore },
     };
   }
+}
+
+/** Where Polaris accounts live, as `Underwriter.fromEnv` reads it. */
+export interface AccountChain {
+  chainId: number;
+  rpcUrl: string;
+  /** Blockscout's Etherscan-style API, or null when the chain has no explorer (a local chain). */
+  explorerApiUrl: string | null;
+  /** The dollar tokens whose balances count (6 decimals each). */
+  tokens: readonly Address[];
+}
+
+const ADDRESS = /^0x[0-9a-fA-F]{40}$/;
+
+/**
+ * The account chain from the environment:
+ *
+ *   UNDERWRITING_ACCOUNT_CHAIN_ID           5042002 (Arc testnet, the default) or 5042 (Arc mainnet); any other id is a custom chain
+ *   UNDERWRITING_ACCOUNT_RPC_URL            overrides the RPC; required for a custom chain
+ *   UNDERWRITING_ACCOUNT_EXPLORER_API_URL   overrides the Blockscout API; "none" (or unset, on a custom chain) means no explorer
+ *   UNDERWRITING_ACCOUNT_TOKENS             comma-separated 6-decimal dollar tokens; default USDC and EURC on Arc; required for a custom chain
+ */
+export function accountChainFromEnv(env: Record<string, string | undefined>): AccountChain {
+  const raw = env.UNDERWRITING_ACCOUNT_CHAIN_ID?.trim();
+  const chainId = raw ? Number(raw) : ARC_TESTNET.chainId;
+  if (!Number.isSafeInteger(chainId) || chainId <= 0) throw new Error(`UNDERWRITING_ACCOUNT_CHAIN_ID=${raw} is not a chain id`);
+  const arc = arcNetwork(chainId);
+
+  const rpcUrl = env.UNDERWRITING_ACCOUNT_RPC_URL?.trim() || arc?.rpcUrl;
+  if (!rpcUrl) throw new Error(`UNDERWRITING_ACCOUNT_RPC_URL is required: chain ${chainId} is not Arc testnet (5042002) or Arc mainnet (5042)`);
+
+  const explorerRaw = env.UNDERWRITING_ACCOUNT_EXPLORER_API_URL?.trim();
+  const explorerApiUrl = explorerRaw === "none" ? null : explorerRaw || arc?.explorerApiUrl || null;
+
+  const tokensRaw = env.UNDERWRITING_ACCOUNT_TOKENS?.trim();
+  let tokens: Address[];
+  if (tokensRaw) {
+    tokens = tokensRaw.split(",").map((t) => t.trim()).filter(Boolean) as Address[];
+    const bad = tokens.find((t) => !ADDRESS.test(t));
+    if (bad) throw new Error(`UNDERWRITING_ACCOUNT_TOKENS: ${bad} is not an address`);
+  } else if (arc) tokens = [arc.usdc, arc.eurc];
+  else throw new Error(`UNDERWRITING_ACCOUNT_TOKENS is required: chain ${chainId} is not Arc testnet (5042002) or Arc mainnet (5042)`);
+
+  return { chainId, rpcUrl, explorerApiUrl, tokens };
 }
 
 /** Check the EIP-191 signature a linked wallet made over `linkMessage`. */

@@ -11,11 +11,12 @@ export { createPolaris } from "./client.js";
 export type { Polaris, PolarisOptions } from "./client.js";
 
 export {
-  AUSD,
+  ARC,
+  ARC_TESTNET,
   CHAINS,
-  MONAD,
-  MONAD_TESTNET,
+  EURC,
   SEPOLIA,
+  USDC,
   ZERO_ADDRESS,
   assertDeployed,
   chainById,

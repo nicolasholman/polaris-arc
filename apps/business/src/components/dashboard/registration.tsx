@@ -34,7 +34,7 @@ export function RegistrationBadge({ merchant }: { merchant: Merchant }) {
 }
 
 /**
- * Register the business on Monad from the dashboard: the payout wallet signs
+ * Register the business on Arc from the dashboard: the payout wallet signs
  * the Registration, the relayer sends it. Refreshes the merchant after.
  */
 export function useRegisterAction() {
@@ -49,13 +49,13 @@ export function useRegisterAction() {
       const m = await register();
       const state = registrationOf(m);
       toast({
-        title: state === "active" ? "Registered and active" : state === "registered" ? "Registered on Monad" : "Registration sent",
+        title: state === "active" ? "Registered and active" : state === "registered" ? "Registered on Arc" : "Registration sent",
         description:
           state === "active"
             ? "You can take payments and offer Pay in 4."
             : state === "registered"
               ? "You can take payments now. Pay in 4 opens once Polaris activates your account."
-              : "It's on its way to Monad.",
+              : "It's on its way to Arc.",
         tone: "success",
       });
     } catch (err) {
@@ -70,7 +70,7 @@ export function useRegisterAction() {
 
 /**
  * The Overview's registration banner: shown until the business is active on
- * Monad, with the one action it needs (or the reason it can't happen yet).
+ * Arc, with the one action it needs (or the reason it can't happen yet).
  */
 export function RegistrationNotice({ className }: { className?: string }) {
   const { merchant, refresh } = useMerchant();
@@ -94,7 +94,7 @@ export function RegistrationNotice({ className }: { className?: string }) {
         tone="lime"
         icon={<BadgeCheck />}
         className={className}
-        title={`${name} is registered on Monad`}
+        title={`${name} is registered on Arc`}
         action={
           failed && !blocker ? (
             <Button variant="outline" size="sm" loading={busy} onClick={() => void run()}>
@@ -113,7 +113,7 @@ export function RegistrationNotice({ className }: { className?: string }) {
       <Notice
         tone="info"
         className={className}
-        title="Registering on Monad"
+        title="Registering on Arc"
         action={
           <Button variant="outline" size="sm" onClick={refresh}>
             Check again
@@ -128,7 +128,7 @@ export function RegistrationNotice({ className }: { className?: string }) {
     <Notice
       tone={state === "failed" ? "down" : "warn"}
       className={className}
-      title={state === "failed" ? "Your registration didn't go through" : `Register ${name} on Monad to take payments`}
+      title={state === "failed" ? "Your registration didn't go through" : `Register ${name} on Arc to take payments`}
       action={
         blocker ? null : (
           <Button variant="lime" size="sm" loading={busy} onClick={() => void run()}>

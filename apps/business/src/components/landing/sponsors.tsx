@@ -5,7 +5,7 @@ import { LOGO_SPEED } from "@/components/motion/tokens";
 import { sponsors } from "./content";
 
 /**
- * "Built on Monad with …": a pill over an endless row of the names, set as
+ * "Built on Arc with …": a pill over an endless row of the names, set as
  * plain wordmarks. No invented glyphs beside real names: they read as fake
  * logos.
  */

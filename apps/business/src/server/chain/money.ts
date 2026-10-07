@@ -1,9 +1,9 @@
 /**
- * Money conversions. AUSD has 6 decimals; merchants price in cents. Every
+ * Money conversions. USDC has 6 decimals; merchants price in cents. Every
  * conversion is exact integer arithmetic: nothing here touches a float.
  */
 
-export const AUSD_DECIMALS = 6;
+export const USDC_DECIMALS = 6;
 export const UNITS_PER_CENT = 10_000n;
 
 export function centsToUnits(cents: number | bigint): bigint {

@@ -1,6 +1,6 @@
 /**
- * Small constructors for evidence, so the Node collectors and a CRE workflow
- * build `SubjectEvidence` the same way.
+ * Small constructors for evidence, so every collector builds
+ * `SubjectEvidence` the same way.
  */
 
 import type { Address, Evidence, Funder, SubjectEvidence } from "./types.ts";
@@ -19,9 +19,10 @@ export const evidence = {
 };
 
 /**
- * The fields a Polaris account holds by construction. It is new, gasless and
- * on Monad testnet: nobody funded it with gas, it has no lending history, and
- * Nansen cannot see it. These are rules, not reads, so they are never missing.
+ * The fields a Polaris account holds by construction. It is new and lives on
+ * Arc, where Polaris pays its gas (in USDC): nobody funded it with gas, it has
+ * no lending history, and Nansen cannot see it. These are rules, not reads,
+ * so they are never missing.
  */
 export function accountRules(): Pick<
   SubjectEvidence,
@@ -53,7 +54,7 @@ export function unknownSubject(address: Address, role: SubjectEvidence["role"], 
   };
 }
 
-/** Bigints to decimal strings, recursively, for JSON and for CRE consensus logs. */
+/** Bigints to decimal strings, recursively, for JSON and logs. */
 export function toJsonSafe(value: unknown): unknown {
   if (typeof value === "bigint") return value.toString();
   if (Array.isArray(value)) return value.map(toJsonSafe);

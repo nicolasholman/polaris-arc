@@ -1,14 +1,18 @@
 # polarispay-sdk
 
-Stripe's ergonomics for any app on Monad. Create a checkout session on your
-server, send the buyer to Polaris, and get a signed webhook when the money
-lands. The buyer picks **Pay now**, **Pay in 4** on their Polaris credit line,
-or **Subscribe**. You're paid in full, in AUSD, in under a second.
+Stripe's ergonomics for any app on [Arc](https://arc.io), Circle's stablecoin
+chain. Create a checkout session on your server, send the buyer to Polaris, and
+get a signed webhook when the money lands. The buyer picks **Pay now**, **Pay in
+4** on their Polaris credit line, or **Subscribe**. You're paid in full, in
+USDC, final in under a second.
+
+On Arc, gas is paid in USDC and Polaris pays it: buyers hold dollars and nothing
+else. Amounts on chain are USDC base units (6 decimals).
 
 | Entry point | Runs in | What's in it |
 |---|---|---|
 | `polarispay-sdk/server` | your server (Node, edge, Bun, Deno) | `createPolarisServer`: checkout sessions, webhook verification |
-| `polarispay-sdk` | the browser | `createPolaris`: open the hosted checkout, direct wallet pay, Pay in 4 quotes, Monad presets |
+| `polarispay-sdk` | the browser | `createPolaris`: open the hosted checkout, direct wallet pay, Pay in 4 quotes, Arc presets |
 | `polarispay-sdk/react` | React 18 or 19 | `PolarisCheckoutButton`, `PolarisMessaging`, `PolarisPayButton`, `usePolarisCheckout` |
 
 ```bash
@@ -82,7 +86,7 @@ secret key travels in every request), and refuses to run in a browser.
 | Param | Type | |
 |---|---|---|
 | `amount` | `"200.00"` | Total in USD. Optional with `lineItems` (their sum); if both are given they must agree. |
-| `currency` | `"USD"` | The only currency: every payment settles in AUSD. |
+| `currency` | `"USD"` | The only currency: every payment settles in USDC. |
 | `description` | string | One line under your name on the checkout. Required, ≤ 500 chars. |
 | `lineItems` | `{ name, quantity?, unitAmount }[]` | Shown on the checkout and the receipt. |
 | `modes` | `("now" \| "later" \| "subscribe")[]` | What the buyer may choose. Default `["now", "later"]`. |
@@ -108,19 +112,21 @@ success page to show "Paid" without waiting for the webhook.
 
 ### `credit.guard()`
 
-Whether a buyer can start a new Pay in 4 plan right now. Polaris's risk guard
-(a Chainlink CRE workflow that watches the credit pool and the AUSD/USD price)
-pauses new plans on chain when either is unhealthy; Pay now and Subscribe keep
-working, and plans already open keep collecting.
+Whether a buyer can start a new Pay in 4 plan right now. Polaris's credit guard
+(an on-chain contract that reads the credit pool live) pauses new plans when the
+pool is short of free cash or carries bad debt, or when the owner pauses it; Pay
+now and Subscribe keep working, and plans already open keep collecting.
 
 ```ts
 const guard = await polaris.credit.guard();
-// { state: "paused", paused: true, reasons: ["depeg"], message: "Pay in 4 is paused by our risk guard; pay now works as usual.", checkedAt, ageSeconds, readAt }
+// { state: "paused", paused: true, reasons: ["low_cash"], message: "Pay in 4 is paused by our risk guard; pay now works as usual.", checkedAt, ageSeconds, readAt }
 ```
 
 While `paused`, show Pay in 4 as unavailable with `message` (and pass it to
-`<PolarisMessaging paused>`); the hosted checkout does the same. `state` is
-`stale` or `never` when the guard is late: it then blocks nothing.
+`<PolarisMessaging paused>`); the hosted checkout does the same. On Arc the
+guard reads the pool live, so `reasons` are `low_cash`, `bad_debt` and
+`owner_pause`; `stale`, `never`, `depeg` and `stale_price` remain in the types
+for older deployments and are not reported.
 
 ### `splits.retrieve(id)`
 
@@ -211,14 +217,14 @@ a no-op. Every event comes from an indexed chain event, never from a browser.
 | `subscription.canceled` | `subscriptionId, planId, merchant, subscriber, canceledBy, txHash, chainId` |
 | `payout.paid` | `payoutId, amount, destination, automatic, txHash, chainId` |
 
-Amounts are USD decimal strings with 2 to 6 decimals (AUSD's precision):
+Amounts are USD decimal strings with 2 to 6 decimals (USDC's precision):
 `"25.00"`, `"50.383562"`, never base units. The types are exported:
 `WebhookEvent<"plan.opened">`, `PlanOpenedData`, …
 
 **Checking an event's shape.** `verify` proves an event came from Polaris; it
 doesn't re-check the payload. `validateWebhookEvent(event)` does: it returns
 every way an event differs from its type (`[{ path: "data.amount", message:
-"… this looks like AUSD base units" }]`), or `[]`. `assertWebhookEvent` throws
+"… this looks like USDC base units" }]`), or `[]`. `assertWebhookEvent` throws
 instead. Use them in the tests of anything that builds events: a mock of
 Polaris, the API's emitter, an indexer's outbox.
 
@@ -234,8 +240,8 @@ const polaris = createPolaris({ publishableKey: "pk_test_…" });
 
 | Option | |
 |---|---|
-| `publishableKey` | `pk_test_…` defaults to `MONAD_TESTNET`, `pk_live_…` to `MONAD`. A secret key is refused outright. |
-| `chain` | A preset, or your own addresses: `{ ...MONAD_TESTNET, payments: "0x…" }` |
+| `publishableKey` | `pk_test_…` defaults to `ARC_TESTNET`, `pk_live_…` to `ARC`. A secret key is refused outright. |
+| `chain` | A preset, or your own addresses: `{ ...ARC_TESTNET, payments: "0x…" }` |
 | `checkoutOrigin` | Where the hosted checkout lives. Default `https://pay.polarispay.app`, or `http://localhost:3000` when your page is on localhost. Results are accepted only from this origin. |
 | `relayUrl` | Makes `pay()` gasless (below). |
 | `provider` | Any EIP-1193 provider. Default `window.ethereum`. |
@@ -284,16 +290,19 @@ if (result.ok) show(result.explorerUrl); else show(result.error);
 
 1. The wallet signs one ERC-3009 `ReceiveWithAuthorization` naming
    `PolarisPayments` as the payee and `keccak256(merchant, orderId)` as the
-   nonce. The token's EIP-712 domain is read from the token (AUSD's is
-   *"Agora Dollar"*, not its `name()`), and the signature is checked to recover
-   to the payer before anything is sent.
+   nonce. The token's EIP-712 domain is read from the token: USDC has no
+   ERC-5267 `eip712Domain()`, so the SDK builds `{ name: "USDC", version: "2",
+   chainId, verifyingContract }` from `name()` and `version()` and accepts it
+   only if it hashes to the token's `DOMAIN_SEPARATOR()`. The signature is
+   checked to recover to the payer before anything is sent.
 2. **With `relayUrl`** the Polaris relayer submits
-   `PolarisPayments.payWithAuthorization` and pays the gas: the buyer needs AUSD
-   and nothing else. **Without it** the wallet sends the transaction, with the gas
-   limit set from `eth_estimateGas` + 15% (Monad charges gas on the limit).
+   `PolarisPayments.payWithAuthorization` and pays the gas (gas on Arc is paid
+   in USDC, and Polaris pays it): the buyer needs the dollars they spend and
+   nothing else. **Without it** the wallet sends the transaction and pays the
+   gas in USDC, with the gas limit set from `eth_estimateGas` + 15%.
 
 The relayer can't redirect the money: change the merchant or the order and the
-nonce changes, and AUSD rejects the signature. Before signing, `pay()` checks the
+nonce changes, and USDC rejects the signature. Before signing, `pay()` checks the
 order isn't already paid, isn't quoted at another price, and that the buyer has
 the balance, so the buyer isn't asked to sign something that will fail.
 
@@ -302,10 +311,11 @@ It never throws for anything the buyer can cause; it returns
 with `error` written for the buyer ("You cancelled the request.", "This order has
 already been paid."). Configuration mistakes (an undeployed contract, a bad
 address) do throw. The original error is kept as `cause`: a wallet on another
-network that the buyer won't switch reads *"Switch your wallet to Monad Testnet
+network that the buyer won't switch reads *"Switch your wallet to Arc Testnet
 to pay."*, with `cause.code === "wrong_chain"` so you can show a switch step.
 `onStage` reports `connecting → signing → submitting →
-confirming` for your UI, and `getPayment({ merchant, orderId })` reads the
+confirming` for your UI (Arc is final in under a second, so there are no
+confirmations to wait for beyond the receipt), and `getPayment({ merchant, orderId })` reads the
 on-chain record so you can match `payer` and `amount` before fulfilling.
 
 ### Pay in 4 pricing
@@ -415,8 +425,9 @@ de-duplicated on React 19). Override any of these on an ancestor:
 
 ## Test mode
 
-- `pk_test_` / `sk_test_` keys run against **Monad testnet** (chain 10143) and
-  AUSD at `0xa9012a055bd4e0eDfF8Ce09f960291C09D5322dC`. Nothing real moves.
+- `pk_test_` / `sk_test_` keys run against **Arc testnet** (chain 5042002) and
+  USDC at `0x3600000000000000000000000000000000000000`. Nothing real moves.
+  Test USDC comes from Circle's faucet (faucet.circle.com).
 - Local stack: Polaris for Business on `http://localhost:3100` (`baseUrl`), the
   Polaris app and hosted checkout on `http://localhost:3000` (the SDK's default
   `checkoutOrigin` whenever your page runs on localhost).
@@ -436,10 +447,13 @@ de-duplicated on React 19). Override any of these on an ancestor:
 
 ## Chains and deployments
 
-`MONAD_TESTNET` (10143) and `MONAD` (143) carry the RPC, explorer, AUSD and
-every Polaris contract. Contract addresses come from `src/deployments.ts`, which
-is **generated** from `packages/contracts/deployments/monad-testnet.json` and
-`monad.json`:
+`ARC_TESTNET` (5042002, `https://rpc.testnet.arc.io`, `https://explorer.testnet.arc.io`)
+and `ARC` (5042, `https://rpc.mainnet.arc.io`, `https://explorer.arc.io`) carry
+the RPC, explorer, USDC and every Polaris contract. `USDC` and `EURC` export
+Circle's token addresses on both networks. Contract addresses come from
+`src/deployments.ts`, which is **generated** from
+`packages/contracts/deployments/arc-testnet.json` and `arc-mainnet.json`
+(`collector` is the keeper's `CollectionsReceiver`):
 
 ```bash
 pnpm --filter polarispay-sdk gen:deployments   # also runs on every build
@@ -449,7 +463,7 @@ pnpm --filter polarispay-sdk check:deployments # CI: fails if stale
 Until a network has a deployment file its Polaris contracts are the **zero
 address**, and any call that needs one throws `contract_not_deployed` naming the
 contract, rather than signing for a contract that isn't there. The SDK never
-ships a made-up address. Pass your own with `chain: { ...MONAD_TESTNET, payments: "0x…" }`.
+ships a made-up address. Pass your own with `chain: { ...ARC_TESTNET, payments: "0x…" }`.
 
 `SEPOLIA` is the 0.2 deployment, kept for 0.2 integrations.
 
@@ -554,7 +568,7 @@ Content-Type: application/json
 ```json
 {
   "type": "payWithAuthorization",
-  "chainId": 10143,
+  "chainId": 5042002,
   "contract": "0x…PolarisPayments",
   "payer": "0x…",
   "merchant": "0x…",
@@ -567,7 +581,7 @@ Content-Type: application/json
 }
 ```
 
-`amount` is AUSD base units. The relayer must refuse any `contract` but
+`amount` is USDC base units. The relayer must refuse any `contract` but
 PolarisPayments and any `chainId` but its own, recompute the nonce, and submit
 `payWithAuthorization(payer, merchant, amount, orderId, validAfter, validBefore, v, r, s)`.
 **200/201** `{ "data": { "txHash": "0x…", "status": "submitted" | "confirmed", "paymentId"?: "0x…" } }`;
@@ -605,10 +619,10 @@ these messages.
 
 ## Migrating from 0.2
 
-- `createPolaris({ publishableKey })` targets Monad. With neither a key nor a
+- `createPolaris({ publishableKey })` targets Arc. With neither a key nor a
   `chain`, it still targets the 0.2 Sepolia deployment and warns once; pass
   `chain: SEPOLIA` to keep that explicitly. The fallback goes away in 0.4.
-- On Monad, `pay()` is one signature through `payWithAuthorization` (gasless with
+- On Arc, `pay()` is one signature through `payWithAuthorization` (gasless with
   `relayUrl`) instead of approve-then-pay. On `SEPOLIA` it's the 0.2 flow.
 - `contracts` is still accepted as an alias of `chain`, and `PolarisContracts`
   objects are upgraded automatically.
@@ -633,7 +647,8 @@ pnpm --filter polarispay-sdk build        # dist/esm, dist/cjs, dist/types
 pnpm --filter polarispay-sdk test:chain   # the built SDK against PolarisPayments on Hardhat's local network
 ```
 
-`test:chain` compiles `packages/contracts`, deploys `MockAUSD` and
+`test:chain` compiles `packages/contracts`, deploys `MockUSDC` (USDC's domain,
+no ERC-5267) and
 `PolarisPayments` on Hardhat's in-process network, and pays through the built
 SDK twice: once from a wallet, once through a relay for a buyer who holds no gas
 at all. Nothing touches a public network.

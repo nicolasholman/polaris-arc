@@ -217,7 +217,7 @@ function HowItWorks({ className }: { className?: string }) {
         </li>
         <li className="flex gap-2.5">
           <Check aria-hidden size={16} strokeWidth={2.25} className="mt-0.5 shrink-0 text-ui-lime-text" />
-          Chainlink CRE collects each payment and retries a missed one; the risk is ours.
+          the Polaris keeper collects each payment and retries a missed one; the risk is ours.
         </li>
       </ul>
     </PanelCard>
@@ -403,7 +403,7 @@ function PlanDrawer({ plan, onClose }: { plan: Plan | null; onClose: () => void 
             items={[
               { label: "Buyer", value: <Address value={p.buyer} label="buyer's address" /> },
               { label: "Order", value: p.orderId },
-              { label: "Collected by", value: "Chainlink CRE, every minute" },
+              { label: "Collected by", value: "the Polaris keeper, every minute" },
             ]}
           />
         </Drawer.Body>

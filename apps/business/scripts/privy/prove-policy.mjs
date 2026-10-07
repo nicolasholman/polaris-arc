@@ -11,7 +11,7 @@
 
 import { encodeFunctionData, erc20Abi, zeroHash } from "viem";
 
-import { collateralVaultAbi, iausdAbi, polarisCheckoutAbi } from "@polarispay/contracts/abi";
+import { collateralVaultAbi, iusdcAbi, polarisCheckoutAbi } from "@polarispay/contracts/abi";
 import { banner, flag, loadDeployment, loadEnv, privyClient } from "./lib.mjs";
 
 const env = loadEnv();
@@ -29,23 +29,23 @@ const payData = encodeFunctionData({
 const minAmountUnits = BigInt(env.RELAYER_MIN_TRANSFER_UNITS ?? "100000");
 const transferData = (value) =>
   encodeFunctionData({
-    abi: iausdAbi,
+    abi: iusdcAbi,
     functionName: "transferWithAuthorization",
     args: [buyer, merchant, value, 0n, 4_000_000_000n, zeroHash, 27, zeroHash, zeroHash],
   });
 
 const cases = [
   { expect: "allowed", what: "PolarisCheckout.pay (on the list)", tx: { to: addresses.checkout, data: payData } },
-  { expect: "allowed", what: `AUSD transferWithAuthorization of ${minAmountUnits} base units (the minimum)`, tx: { to: addresses.stablecoin, data: transferData(minAmountUnits) } },
-  { expect: "denied", what: "AUSD transferWithAuthorization of 0 (free gas for strangers)", tx: { to: addresses.stablecoin, data: transferData(0n) } },
-  { expect: "denied", what: "the same call carrying 1 wei of MON", tx: { to: addresses.checkout, data: payData, value: "0x1" } },
+  { expect: "allowed", what: `USDC transferWithAuthorization of ${minAmountUnits} base units (the minimum)`, tx: { to: addresses.stablecoin, data: transferData(minAmountUnits) } },
+  { expect: "denied", what: "USDC transferWithAuthorization of 0 (free gas for strangers)", tx: { to: addresses.stablecoin, data: transferData(0n) } },
+  { expect: "denied", what: "the same call carrying 1 wei of USDC (gas)", tx: { to: addresses.checkout, data: payData, value: "0x1" } },
   { expect: "denied", what: "the same call to another contract", tx: { to: buyer, data: payData } },
   {
     expect: "denied",
-    what: "AUSD approve(attacker, max)",
+    what: "USDC approve(attacker, max)",
     tx: { to: addresses.stablecoin, data: encodeFunctionData({ abi: erc20Abi, functionName: "approve", args: [buyer, 2n ** 256n - 1n] }) },
   },
-  { expect: "denied", what: "a plain MON transfer", tx: { to: buyer, value: "0x2386f26fc10000" } },
+  { expect: "denied", what: "a plain USDC (gas) transfer", tx: { to: buyer, value: "0x2386f26fc10000" } },
 ];
 if (addresses.vault) {
   const lock = (amount) =>
@@ -53,7 +53,7 @@ if (addresses.vault) {
   cases.splice(
     2,
     0,
-    { expect: "allowed", what: `CollateralVault.lockWithPermit of ${minAmountUnits} base units (a secured line, no MON)`, tx: { to: addresses.vault, data: lock(minAmountUnits) } },
+    { expect: "allowed", what: `CollateralVault.lockWithPermit of ${minAmountUnits} base units (a secured line, no USDC (gas))`, tx: { to: addresses.vault, data: lock(minAmountUnits) } },
     { expect: "denied", what: "CollateralVault.lockWithPermit of 0", tx: { to: addresses.vault, data: lock(0n) } },
     {
       expect: "denied",
@@ -63,14 +63,14 @@ if (addresses.vault) {
   );
 }
 
-// Take out of Boost: only where the vault has withdrawWithSig (a vault redeployed for it; not Monad testnet's
+// Take out of Boost: only where the vault has withdrawWithSig (a vault redeployed for it; not Arc testnet's
 // today), so a proof against today's testnet policy isn't asked about a call its vault can't take.
 if (addresses.vault && vaultWithdraw) {
   const take = (amount) => encodeFunctionData({ abi: collateralVaultAbi, functionName: "withdrawWithSig", args: [buyer, amount, 4_000_000_000n, "0x"] });
   cases.splice(
     2,
     0,
-    { expect: "allowed", what: `CollateralVault.withdrawWithSig of ${minAmountUnits} base units (take out of Boost, no MON)`, tx: { to: addresses.vault, data: take(minAmountUnits) } },
+    { expect: "allowed", what: `CollateralVault.withdrawWithSig of ${minAmountUnits} base units (take out of Boost, no USDC (gas))`, tx: { to: addresses.vault, data: take(minAmountUnits) } },
     { expect: "denied", what: "CollateralVault.withdrawWithSig of 0", tx: { to: addresses.vault, data: take(0n) } },
     {
       expect: "denied",

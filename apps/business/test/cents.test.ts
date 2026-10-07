@@ -9,7 +9,7 @@ import { json, params, request, setupServer, type TestEnv } from "./helpers/env"
 import { merchantWithKeys, type Merchant } from "./helpers/flows";
 
 /**
- * One rule for every amount on the dashboard: AUSD micro-units, truncated to
+ * One rule for every amount on the dashboard: USDC micro-units, truncated to
  * cents the way the balance is. A 0.5% fee on $349 leaves 347.255 on chain:
  * the net is $347.25 (what the balance card shows), the fee $1.75, and the
  * 'today' chip is the balance's own change, never a cent off it.

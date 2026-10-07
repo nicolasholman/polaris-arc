@@ -1,4 +1,4 @@
-import type { ChainlinkOverview } from "./chainlink";
+import type { KeeperOverview } from "./keeper";
 import type { CreditGuard } from "./guard";
 import { DataError, isSessionEnded, type DashboardData, type PayoutRun } from "./source";
 import type {
@@ -106,7 +106,7 @@ export function createHttpData(getAccessToken: TokenSource, options: HttpDataOpt
     getRegistration: () => call<RegistrationStep>("/api/merchant/registration"),
     submitRegistration: (input) => call<{ merchant: Merchant }>("/api/merchant/registration", { method: "POST", body: input }),
     getOverview: () => call<Overview>("/api/overview"),
-    getChainlink: () => call<ChainlinkOverview>("/api/chainlink"),
+    getAutomation: () => call<KeeperOverview>("/api/automation"),
     getCreditGuard: () => call<CreditGuard>("/api/public/credit-guard"),
     listLinks: () => call<PaymentLink[]>("/api/links"),
     createLink: (input) => call<PaymentLink>("/api/links", { method: "POST", body: input }),

@@ -1,5 +1,5 @@
 import { withPreflight, withPublic } from "@/server/auth";
-import { creditGuard } from "@/server/cre/guardian";
+import { creditGuard } from "@/server/keeper/guard";
 import { methodNotAllowed, ok } from "@/server/http";
 
 export const dynamic = "force-dynamic";
@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 /**
  * The credit guard: whether new Pay in 4 plans can open right now
  * (PolarisCheckout.creditPaused, which openPlan applies), why not, and when
- * the Chainlink CRE guardian workflow last checked the pool. Public chain
+ * the credit guard reads them from the pool, live. Public chain
  * state only. The Polaris app, the hosted checkout and merchants' shops read
  * it to say "Pay in 4 is paused by our risk guard; pay now works as usual"
  * instead of letting a buyer sign a plan that would revert.

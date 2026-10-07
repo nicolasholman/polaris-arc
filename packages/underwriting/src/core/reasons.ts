@@ -23,7 +23,7 @@ export type ExplainContext = Partial<
 
 function providerOf(source: string): Provider {
   const p = source.split(".")[0];
-  return p === "nansen" || p === "zerion" || p === "etherscan" || p === "rpc" ? p : "polaris";
+  return p === "nansen" || p === "zerion" || p === "etherscan" || p === "rpc" || p === "blockscout" ? p : "polaris";
 }
 
 function line(
@@ -192,6 +192,7 @@ export const PROVIDER_NAMES: Readonly<Record<Provider, string>> = {
   zerion: "Zerion",
   etherscan: "Etherscan",
   rpc: "public RPC",
+  blockscout: "Arc explorer",
   polaris: "Polaris",
 };
 
@@ -212,7 +213,7 @@ export interface ProviderCredit {
 export function poweredBy(reasons: ReadonlyArray<Pick<CreditReason, "id" | "provider">>): ProviderCredit[] {
   const out: ProviderCredit[] = [];
   for (const r of reasons) {
-    if (r.provider === "polaris" || r.provider === "rpc") continue;
+    if (r.provider === "polaris" || r.provider === "rpc" || r.provider === "blockscout") continue;
     let credit = out.find((c) => c.provider === r.provider);
     if (!credit) {
       credit = { provider: r.provider, name: PROVIDER_NAMES[r.provider], reasons: [] };

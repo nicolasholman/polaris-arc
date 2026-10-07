@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { LIQUIDATION_POOLS } from "../src/core/constants.ts";
+import { ARC_TESTNET, LIQUIDATION_POOLS } from "../src/core/constants.ts";
 import { nansenRequests } from "../src/core/providers/nansen.ts";
 import { fixtureTransport } from "../src/testing/fixtures.ts";
 import { ProviderError } from "../src/node/http.ts";
@@ -96,15 +96,9 @@ describe("NansenClient against fixtures", () => {
 describe("ZerionClient against fixtures", () => {
   const { zerion } = fixtureProviders();
 
-  it("reads the Polaris account's testnet history with X-Env", async () => {
-    const page = await zerion.transactions(ACCOUNT.fresh, { testnet: true, chainIds: ["monad-test-v2"], pageSize: 100 });
-    assert.equal(page.rows.length, 2);
-    assert.equal(page.hasNext, false);
-  });
-
   it("pages like the API: page[size] and links.next", async () => {
-    const page = await zerion.transactions(ACCOUNT.regular, { testnet: true, pageSize: 10 });
-    assert.equal(page.rows.length, 10);
+    const page = await zerion.transactions(LINKED.strong, { pageSize: 3 });
+    assert.equal(page.rows.length, 3);
     assert.equal(page.hasNext, true);
   });
 
@@ -170,6 +164,26 @@ describe("EtherscanClient and RpcClient against fixtures", () => {
   it("reads nonces and balances", async () => {
     const counts = await Promise.all(historyRpcs.map((c) => c.transactionCount(LINKED.strong)));
     assert.deepEqual(counts, [540, 290, 70]);
-    assert.equal(await accountRpc.balanceOf("0xa9012a055bd4e0eDfF8Ce09f960291C09D5322dC", ACCOUNT.fresh), 37_600_000n);
+    assert.equal(await accountRpc.balanceOf(ARC_TESTNET.usdc, ACCOUNT.fresh), 37_600_000n);
+    assert.equal(await accountRpc.balanceOf(ARC_TESTNET.eurc, ACCOUNT.regular), 35_000_000n);
+    assert.equal(await accountRpc.transactionCount(ACCOUNT.selfPaying), 3);
+  });
+});
+
+describe("BlockscoutClient against fixtures", () => {
+  const { explorer } = fixtureProviders();
+
+  it("is keyless, so always live", () => {
+    assert.equal(explorer?.mode, "live");
+    assert.equal(explorer?.keyVariable, null);
+  });
+
+  it("reads an account's first transaction and its transfers", async () => {
+    assert.equal(await explorer!.firstTransactionAt(ACCOUNT.fresh), null, "a relayed account has sent no transaction itself");
+    assert.equal(await explorer!.firstTransactionAt(ACCOUNT.selfPaying), NOW - 12 * 3600 - 45 * DAY);
+    const recent = await explorer!.transfers(ACCOUNT.regular, "desc", 100);
+    assert.equal(recent.count, 100);
+    assert.equal(recent.full, true);
+    assert.equal(recent.sent, 67);
   });
 });

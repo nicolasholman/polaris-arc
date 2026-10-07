@@ -292,7 +292,7 @@ function short(value: string, head = 6, tail = 4) {
 
 function PaymentBlock({ order, checkoutOrigin }: { order: Order; checkoutOrigin: string | null }) {
   const { polarisConfig } = useShop();
-  // Where a receipt's transaction can be seen: Monad testnet's explorer, or none on a local chain.
+  // Where a receipt's transaction can be seen: Arc testnet's explorer, or none on a local chain.
   const explorer = chainFor(polarisConfig).explorer;
   const paid = order.status === "paid";
   const manageUrl = checkoutOrigin ? `${checkoutOrigin}/insights?view=plans` : null;
@@ -426,7 +426,7 @@ function PaymentBlock({ order, checkoutOrigin }: { order: Order; checkoutOrigin:
         </dl>
       ) : (
         <p className="mt-5 flex items-center gap-2.5 text-[0.95rem] text-muted">
-          <Spinner size={16} /> {order.payment.method === "wallet" ? "Waiting for the payment to land on Monad." : "Waiting for Polaris to confirm."}
+          <Spinner size={16} /> {order.payment.method === "wallet" ? "Waiting for the payment to land on Arc." : "Waiting for Polaris to confirm."}
         </p>
       )}
 

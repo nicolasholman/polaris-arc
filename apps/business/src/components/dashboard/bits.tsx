@@ -70,7 +70,7 @@ export function Address({ value, label, explorer = true }: { value: string; labe
           href={explorerAddress(value)}
           target="_blank"
           rel="noreferrer"
-          aria-label={`Open the ${label} in the Monad explorer`}
+          aria-label={`Open the ${label} in the Arc explorer`}
           title="Open in the explorer"
           className="grid size-8 place-items-center rounded-full text-ui-muted transition-colors hover:bg-ui-surface-1 hover:text-ui-lime-active"
         >

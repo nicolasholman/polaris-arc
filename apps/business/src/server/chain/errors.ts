@@ -4,7 +4,7 @@ import { BaseError, ContractFunctionRevertedError, decodeErrorResult, type Abi, 
 
 import {
   collectionsReceiverAbi,
-  iausdAbi,
+  iusdcAbi,
   merchantRegistryAbi,
   polarisCheckoutAbi,
   polarisLoanEngineAbi,
@@ -12,7 +12,7 @@ import {
   polarisSendAbi,
   polarisSplitAbi,
 } from "./abis";
-import { mockAUSDAbi } from "@polarispay/contracts/abi";
+import { mockUSDCAbi } from "@polarispay/contracts/abi";
 
 import { GUARD_PAUSED_MESSAGE } from "@/lib/data/guard";
 
@@ -21,7 +21,7 @@ import { GUARD_PAUSED_MESSAGE } from "@/lib/data/guard";
  *
  * The relayer simulates every call before it spends gas; when the simulation
  * reverts, the contract's custom error is decoded against every Polaris ABI
- * (and both AUSD and MockAUSD's) and mapped to a stable `code` and a message
+ * (and both USDC and MockUSDC's) and mapped to a stable `code` and a message
  * written for the buyer, in the words of docs/plan.md ("Words the buyer never
  * sees"): no wallet, no gas, no token names.
  */
@@ -38,8 +38,8 @@ const ABIS: Abi[] = [
   polarisSplitAbi,
   merchantRegistryAbi,
   collectionsReceiverAbi,
-  iausdAbi,
-  mockAUSDAbi,
+  iusdcAbi,
+  mockUSDCAbi,
 ] as unknown as Abi[];
 
 /** Decode revert data against every ABI we know. */
@@ -111,7 +111,7 @@ const MESSAGES: Record<string, { status: number; code: string; message: string }
   PlanNotActive: { status: 409, code: "plan_unavailable", message: "This subscription isn't available any more." },
   AlreadySubscribed: { status: 409, code: "already_subscribed", message: "You're already subscribed." },
   MerchantNotEligible: { status: 409, code: "merchant_not_eligible", message: "This business can't offer Pay in 4 for this amount yet. Pay now instead." },
-  // The CRE guardian paused new Pay in 4 plans (PolarisCheckout.openPlan); Pay now, Send and Subscribe carry on.
+  // The credit guard paused new Pay in 4 plans (PolarisCheckout.openPlan); Pay now, Send and Subscribe carry on.
   CreditPausedByGuardian: { status: 503, code: "credit_paused", message: GUARD_PAUSED_MESSAGE },
   // PolarisCheckout.reauthorize: signing again for instalments already owed.
   NothingOwed: { status: 409, code: "nothing_owed", message: "You don't owe anything on Pay in 4 right now." },
@@ -166,7 +166,7 @@ export function buyerErrorFromThrown(error: unknown): BuyerError {
   return buyerErrorFor(decodeRevert(revertDataOf(error)));
 }
 
-/** A revert reason a CRE collections report recorded (`TaskSkipped.reason`). */
+/** A revert reason a keeper collections report recorded (`TaskSkipped.reason`). */
 export function failureReasonOf(reason: Hex): "insufficient_funds" | "allowance_lost" | "stale" | "other" {
   const revert = decodeRevert(reason);
   switch (revert?.name) {

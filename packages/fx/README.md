@@ -3,7 +3,9 @@
 Chainlink FX rates for the local-currency line under a dollar amount:
 "≈ ARS 161,241 · Chainlink rate, 3 min ago · indicative".
 
-Polaris charges, pays and settles in dollars only. These rates never price
+Polaris charges, pays and settles in USDC on Arc (and EURC for euro send
+links, where one EURC is one euro). Chainlink does not run on Arc: these feeds
+are read from Ethereum, Polygon and Base, for display only. They never price
 anything; they print an indicative local amount for a buyer in Buenos Aires,
 Manila or Lagos. They replace the hand-typed `MOCK_FX` table the customer app
 used before (its ARS figure, 1,182 pesos per dollar, was 27% below Chainlink's 1,612).
@@ -12,7 +14,7 @@ used before (its ARS figure, 1,182 pesos per dollar, was 27% below Chainlink's 1
 |---|---|---|
 | `@polaris/fx` | server | Everything below, plus `createFxService()` (reads feeds with viem) and `handleFxRequest()` (the `/api/fx` route) |
 | `@polaris/fx/feeds` | anywhere | The verified feed table, `hasFxFeed()`, `NO_FEED` |
-| `@polaris/fx/display` | anywhere | `formatLocalAmount()`, `rateAgeText()`, `isFreshRate()`, `parseFxLookup()` |
+| `@polaris/fx/display` | anywhere | `formatLocalAmount()`, `rateAgeText()`, `isFreshRate()`, `parseFxLookup()`, `eurcToUsd()` (an EURC amount in dollars at the EUR rate) |
 
 The package ships TypeScript source (erasable syntax only): Next.js
 transpiles it (`transpilePackages`), and Node runs its scripts directly.
@@ -51,8 +53,8 @@ For each lookup the service:
    style pairs, so `perUsd` is always local units per dollar.
 4. Treats a rate older than its own feed's limit as missing (twice the
    feed's heartbeat, or its heartbeat plus 10 minutes, whichever is longer,
-   and never more than **26 hours**: 14 min for Monad's 240 s feeds, 26 h for
-   Ethereum's 24 h ones) and tries the next feed, a different chain carrying the
+   and never more than **26 hours**: about 10 min for Polygon's 27 s feeds,
+   26 h for Ethereum's 24 h ones) and tries the next feed, a different chain carrying the
    same pair. If every feed answered but all were too old, the result is
    `stale`; if none could be read, `unavailable`.
 5. Caches the result for **5 minutes** (`unavailable` for 30 s), shares one
@@ -68,7 +70,7 @@ request)`: 400 for anything but a three-letter code, otherwise the lookup as
 JSON (200 even with no rate), `Cache-Control: public, max-age=60` for a rate.
 The customer app's route is `apps/app/src/app/api/fx/route.ts`.
 
-Options (all optional): `rpcUrls`, `env` (for `FX_RPC_MONAD`,
+Options (all optional): `rpcUrls`, `env` (for
 `FX_RPC_ETHEREUM`, `FX_RPC_POLYGON`, `FX_RPC_BASE`, each a comma-separated
 list of URLs), `transport` (tests replay recorded answers through it), `now`,
 `cacheMs`, `errorCacheMs`, `maxAgeSeconds`, `timeoutMs`, `deadlineMs`, `feeds`,
@@ -76,19 +78,19 @@ list of URLs), `transport` (tests replay recorded answers through it), `now`,
 
 ## The feeds
 
-Read on chain on 27 Sep 2026, 22:37 UTC, through this service
-(`check:live`): every `description()` matched, every `decimals()` matched,
-every feed had a fresh answer. Addresses come from Chainlink's feed directory
+Read on chain through this service (`check:live`), last on 7 Oct 2026: every
+`description()` matched, every `decimals()` matched, every feed had a fresh
+answer. Addresses come from Chainlink's feed directory
 (the JSON that docs.chain.link's tables load; URLs in `src/feeds.ts`).
-Per USD is what the feed said then.
+Per USD is what the first feed said on 27 Sep 2026 (EUR to CAD: 7 Oct 2026).
 
 | Currency | First feed | Fallback | Per USD |
 |---|---|---|---|
-| EUR | Monad mainnet `0x00D7E359c8CE46168eFDD4D65b708fFb16c4b99a` EUR / USD | Polygon `0x73366Fe0AA0Ded304479862808e02506FE556a98` | 0.8787 |
-| GBP | Monad mainnet `0x1ffC8B75a16FFfbd7879F042B580F7607Dcf5C30` GBP / USD | Polygon `0x099a2540848573e94fb1Ca0Fa420b00acbBc845a` | 0.7559 |
-| JPY | Monad mainnet `0xF64664Ea54cE47eCC7a1816C49d1Bc6deF828927` JPY / USD | Ethereum `0xBcE206caE7f0ec07b545EddE332A47C2F75bbeb3` | 157.67 |
-| CHF | Monad mainnet `0x6DBa7f3A7B5B7c1079337104caD14D19150F6B8d` CHF / USD | Polygon `0xc76f762CedF0F78a439727861628E0fdfE1e70c2` | 0.8296 |
-| CAD | Monad mainnet `0x3293eA5650E9f8c4091642b7EB1C46CFEe5197cA` CAD / USD | Polygon `0xACA44ABb8B04D07D883202F99FA5E3c53ed57Fb5` | 1.4152 |
+| EUR | Polygon `0x73366Fe0AA0Ded304479862808e02506FE556a98` EUR / USD | Ethereum `0xb49f677943BC038e9857d61E7d053CaA2C1734C1` | 0.8946 |
+| GBP | Polygon `0x099a2540848573e94fb1Ca0Fa420b00acbBc845a` GBP / USD | Ethereum `0x5c0Ab2d9b5a7ed9f470386e82BB36A3613cDd4b5` | 0.7577 |
+| JPY | Ethereum `0xBcE206caE7f0ec07b545EddE332A47C2F75bbeb3` JPY / USD | Polygon `0xD647a6fC9BC6402301583C91decC5989d8Bc382D` | 158.35 |
+| CHF | Polygon `0xc76f762CedF0F78a439727861628E0fdfE1e70c2` CHF / USD | Ethereum `0x449d117117838fFA61263B61dA6301AA2a88B13A` | 0.8332 |
+| CAD | Polygon `0xACA44ABb8B04D07D883202F99FA5E3c53ed57Fb5` CAD / USD | Ethereum `0xa34317DB73e77d453b1B8d04550c44D10e981C8e` | 1.4261 |
 | ARS | Ethereum `0xBb65fa58BDb7d33e4a3D1A40a7A9BD99E746367b` USD / ARS | Base `0x9eb8a54d0590798880C665C7A6d51B95f4078Ad7` | 1,612.41 |
 | BRL | Base `0x0b0E64c05083FdF9ED7C5D3d8262c4216eFc9394` BRL / USD | Polygon `0xB90DA3ff54C3ED09115abf6FbA0Ff4645586af2c` | 5.1863 |
 | MXN | Base `0x9e8Ee77c76d4fa41306056D1C3196AF5da1600bd` MXN / USD | Polygon `0x171b16562EA3476F5C61d1b8dad031DbA0768545` | 17.722 |
@@ -108,17 +110,16 @@ Per USD is what the feed said then.
 | AUD | Polygon `0x062Df9C4efd2030e243ffCc398b652e8b8F95C6f` AUD / USD | Ethereum `0x77F9710E7d0A19669A13c055F62cd80d313dF022` | 1.4260 |
 | NZD | Ethereum `0x3977CFc9e4f29C184D4675f4EB8e0013236e5f3e` NZD / USD | Polygon `0xa302a0B8a499fD0f00449df0a490DedE21105955` | 1.7657 |
 
-**No feed anywhere we looked** (Monad, Ethereum, Polygon, Base): CLP, PEN,
+**No feed anywhere we looked** (Ethereum, Polygon, Base): CLP, PEN,
 NOK, PKR, VND, MYR, KES, GHS, EGP and AED. The app shows no local amount for
 them. AED is pegged at 3.6725, but a number we type in is not a Chainlink
 rate, so it gets no line either.
 
 ## Honest limits
 
-- **Only five currencies come from Monad.** Monad mainnet carries EUR, GBP,
-  JPY, CHF and CAD against USD (240 s heartbeat). Monad testnet has no FX
-  feeds at all. Everything else is read from Ethereum, Polygon or Base, which
-  Polaris doesn't otherwise touch; the reads are free `eth_call`s.
+- **Nothing comes from Arc.** Chainlink does not run on Arc, so every rate is
+  read from Ethereum, Polygon or Base, which Polaris doesn't otherwise touch;
+  the reads are free `eth_call`s.
 - **Two different ARS rates.** Chainlink publishes USD / ARS (moves during
   the day, 1,612.41 on 27 Sep) and ARS / USD on Ethereum
   (`0xE41cD2DcC63EB63A9D9e62f2a3D9b49e6d0C0A1d`, updated once a day around
@@ -131,6 +132,5 @@ rate, so it gets no line either.
 - **Indicative only.** Rates come from public RPCs with no quorum of our own:
   we trust the RPC to return the chain's state, check the chain id and the
   pair, and never use the number for money.
-- **Server-side, not CRE.** Nothing on chain consumes these rates, so a CRE
-  workflow would add a report nobody reads (decision 16). CRE reads a feed
-  where a contract acts on it: the planned guardian workflow's AUSD/USD check.
+- **Display only.** Nothing on chain consumes these rates: no contract on Arc
+  reads them, and the credit guard reads only the pool.

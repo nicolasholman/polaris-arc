@@ -20,11 +20,11 @@ import { REPO_DIR, flag, loadDeployment, loadEnv, parseEnvFile } from "./privy/l
 
 const env = { ...parseEnvFile(`${REPO_DIR}/.env`), ...loadEnv() };
 const deployment = loadDeployment(env);
-const rpc = env.POLARIS_RPC_URL ?? (deployment.chainId === 10143 ? "https://testnet-rpc.monad.xyz" : "http://127.0.0.1:8545");
+const rpc = env.POLARIS_RPC_URL ?? (deployment.chainId === 10143 ? "https://rpc.testnet.arc.io" : "http://127.0.0.1:8545");
 if (!env.NEW_OWNER) throw new Error("Set NEW_OWNER to the registry admin's address.");
 const newOwner = getAddress(env.NEW_OWNER);
 
-const chain = defineChain({ id: deployment.chainId, name: `chain ${deployment.chainId}`, nativeCurrency: { name: "MON", symbol: "MON", decimals: 18 }, rpcUrls: { default: { http: [rpc] } } });
+const chain = defineChain({ id: deployment.chainId, name: `chain ${deployment.chainId}`, nativeCurrency: { name: "USDC (gas)", symbol: "USDC (gas)", decimals: 18 }, rpcUrls: { default: { http: [rpc] } } });
 const client = createPublicClient({ chain, transport: http(rpc) });
 const current = await client.readContract({ address: deployment.addresses.registry, abi: merchantRegistryAbi, functionName: "owner" });
 console.log(`MerchantRegistry ${deployment.addresses.registry}\n  owner now   ${current}\n  new owner   ${newOwner}`);
@@ -32,7 +32,7 @@ if (getAddress(current) === newOwner) {
   console.log("Already done.");
   process.exit(0);
 }
-if (deployment.chainId === 143) throw new Error("Refusing Monad mainnet.");
+if (deployment.chainId === 143) throw new Error("Refusing Arc mainnet.");
 if (!flag("apply")) {
   console.log("\nNothing sent. Re-run with --apply.");
   process.exit(0);

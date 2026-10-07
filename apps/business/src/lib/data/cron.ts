@@ -1,5 +1,5 @@
 /**
- * The CRE cron trigger's schedules (six fields: second minute hour
+ * The keeper cron trigger's schedules (six fields: second minute hour
  * day-of-month month day-of-week, UTC), in words and with their next fire.
  * Only what the Polaris workflows use is understood: `*`, `*\/n`, a number
  * and a comma list in the first three fields, `*` in the last three.

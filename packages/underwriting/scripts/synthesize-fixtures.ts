@@ -6,7 +6,8 @@
  * No Nansen, Zerion or Etherscan key existed when this package was built, so
  * these fixtures are SYNTHESIZED, not recorded: every body follows the
  * provider's documented response schema (docs/research/data.md §2.5, §3.3,
- * §4.3), and every file says so in its `fixture` block. The addresses are
+ * §4.3; Arc's Blockscout API as checked against explorer.testnet.arc.io), and
+ * every file says so in its `fixture` block. The addresses are
  * synthetic (runs of zeros) so no real person's wallet is described. Once
  * keys exist, `pnpm --filter @polarispay/underwriting record <address>` saves
  * real responses in the same format, marked `recorded: true`.
@@ -48,9 +49,7 @@ const T = {
   usdcBase: { name: "USD Coin", symbol: "USDC", decimals: 6, chain: "base", address: "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913", verified: true, price: 1 },
   daiEth: { name: "Dai Stablecoin", symbol: "DAI", decimals: 18, chain: "ethereum", address: "0x6b175474e89094c44da98b954eedeac495271d0f", verified: true, price: 1 },
   eth: { name: "Ethereum", symbol: "ETH", decimals: 18, chain: "ethereum", address: null, verified: true, price: 3120.4 },
-  mon: { name: "Monad", symbol: "MON", decimals: 18, chain: "monad", address: null, verified: true, price: 0.42 },
   fakeUsdc: { name: "USDC Airdrop (visit claim site)", symbol: "USDC", decimals: 6, chain: "ethereum", address: "0x00000000000000000000000000000000000f4ce0", verified: false, price: 0.0001 },
-  ausdTest: { name: "AUSD", symbol: "AUSD", decimals: 6, chain: "monad-test-v2", address: "0xa9012a055bd4e0eDfF8Ce09f960291C09D5322dC", verified: true, price: 1 },
 } satisfies Record<string, Fungible>;
 
 function fungibleInfo(t: Fungible) {
@@ -354,106 +353,164 @@ function etherscanLogs(owner: string, chainId: number, logs: Array<{ emitter: st
   });
 }
 
-function etherscanTokenTx(owner: string, chainId: number, rows: Array<{ days: number; incoming: boolean; amount: string }>, persona: string) {
-  write(`etherscan/tokentx/${owner}.${chainId}.json`, {
-    fixture: meta("etherscan", `GET /v2/api?chainid=${chainId}&module=account&action=tokentx&address=${owner}`, "Etherscan V2 tokentx response (docs.etherscan.io/api-reference/endpoint/tokentx)", persona, "The fixture transport applies sort and offset."),
+// ------------------------------------------------------------------ Blockscout (Arc's explorer)
+
+const ARC_TESTNET_USDC = "0x3600000000000000000000000000000000000000";
+const ARC_TESTNET_EURC = "0x89b50855aa3be2f677cd6303cec089b5f319d72a";
+const EXPLORER = "explorer.testnet.arc.io";
+
+type Move = { days: number; incoming: boolean; amount: string };
+
+function blockscoutTxList(owner: string, rows: Move[], persona: string) {
+  write(`blockscout/txlist/${owner}.json`, {
+    fixture: meta("blockscout", `GET https://${EXPLORER}/api?module=account&action=txlist&address=${owner}`, "Blockscout Etherscan-style txlist response (checked against explorer.testnet.arc.io/api)", persona, "The fixture transport applies sort and offset."),
     status: 200,
     headers: {},
     body: {
-      status: rows.length ? "1" : "0",
       message: rows.length ? "OK" : "No transactions found",
       result: rows.map((r, i) => ({
-        blockNumber: String(40_000_000 + i * 1_000),
-        timeStamp: String(ago(r.days, i * 17)),
-        hash: hash(`${persona}:tokentx:${i}`),
-        nonce: "0",
-        blockHash: hash(`${persona}:block:${i}`),
-        from: r.incoming ? addr("5e", i + 1) : owner,
-        contractAddress: T.ausdTest.address!.toLowerCase(),
-        to: r.incoming ? owner : addr("5e", i + 1),
-        value: quantity(r.amount, 6).int,
-        tokenName: "AUSD",
-        tokenSymbol: "AUSD",
-        tokenDecimal: "6",
-        transactionIndex: "0",
-        gas: "120000",
-        gasPrice: "52000000000",
-        gasUsed: "61234",
-        cumulativeGasUsed: "61234",
-        input: "deprecated",
+        blockHash: hash(`${persona}:txblock:${i}`),
+        blockNumber: String(8_000_000 + i * 1_000),
         confirmations: "1200",
+        contractAddress: "",
+        cumulativeGasUsed: "21000",
+        from: r.incoming ? addr("5e", i + 1) : owner,
+        gas: "21000",
+        gasPrice: "20000000000",
+        gasUsed: "21000",
+        hash: hash(`${persona}:tx:${i}`),
+        input: "0x",
+        isError: "0",
+        methodId: "0x",
+        nonce: String(i),
+        timeStamp: String(ago(r.days)),
+        to: r.incoming ? owner : addr("5e", i + 1),
+        transactionIndex: "0",
+        txreceipt_status: "1",
+        value: quantity(r.amount, 18).int,
       })),
+      status: rows.length ? "1" : "0",
+    },
+  });
+}
+
+function blockscoutTokenTx(owner: string, rows: Move[], persona: string) {
+  write(`blockscout/tokentx/${owner}.json`, {
+    fixture: meta("blockscout", `GET https://${EXPLORER}/api?module=account&action=tokentx&address=${owner}`, "Blockscout Etherscan-style tokentx response (checked against explorer.testnet.arc.io/api)", persona, "The fixture transport applies sort and offset."),
+    status: 200,
+    headers: {},
+    body: {
+      message: rows.length ? "OK" : "No token transfers found",
+      result: rows.map((r, i) => ({
+        value: quantity(r.amount, 6).int,
+        blockHash: hash(`${persona}:block:${i}`),
+        blockNumber: String(8_000_000 + i * 1_000),
+        confirmations: "1200",
+        contractAddress: ARC_TESTNET_USDC,
+        cumulativeGasUsed: "61234",
+        from: r.incoming ? addr("5e", i + 1) : owner,
+        functionName: "",
+        gas: "120000",
+        gasPrice: "20000000000",
+        gasUsed: "61234",
+        hash: hash(`${persona}:tokentx:${i}`),
+        input: "0x",
+        methodId: "",
+        nonce: "0",
+        timeStamp: String(ago(r.days, i * 17)),
+        to: r.incoming ? owner : addr("5e", i + 1),
+        tokenDecimal: "6",
+        tokenName: "USDC",
+        tokenSymbol: "USDC",
+        transactionIndex: "0",
+      })),
+      status: rows.length ? "1" : "0",
     },
   });
 }
 
 // ------------------------------------------------------------------ RPC
 
-const HOSTS = { eth: "ethereum-rpc.publicnode.com", base: "mainnet.base.org", monad: "rpc.monad.xyz", testnet: "testnet-rpc.monad.xyz" };
-const AUSD_TESTNET = "0xa9012a055bd4e0edff8ce09f960291c09d5322dc";
-const USDC_TESTNET = "0x534b2f3a21130d7a60830c2df862319e593943a3";
+const HOSTS = { eth: "ethereum-rpc.publicnode.com", base: "mainnet.base.org", arc: "rpc.mainnet.arc.io", arcTestnet: "rpc.testnet.arc.io" };
 const hex = (n: bigint | number) => `0x${BigInt(n).toString(16)}`;
 const word = (n: bigint) => `0x${n.toString(16).padStart(64, "0")}`;
 
-function rpcNonces(owner: string, nonces: { eth: number; base: number; monad: number }, persona: string) {
+function rpcNonces(owner: string, nonces: { eth: number; base: number; arc: number }, persona: string) {
   write(`rpc/${owner}.json`, {
-    fixture: meta("rpc", "eth_getTransactionCount on Ethereum, Base and Monad", "JSON-RPC results; the transport wraps each in {jsonrpc, id, result}", persona),
+    fixture: meta("rpc", "eth_getTransactionCount on Ethereum, Base and Arc", "JSON-RPC results; the transport wraps each in {jsonrpc, id, result}", persona),
     calls: {
       [`${HOSTS.eth}:eth_getTransactionCount`]: hex(nonces.eth),
       [`${HOSTS.base}:eth_getTransactionCount`]: hex(nonces.base),
-      [`${HOSTS.monad}:eth_getTransactionCount`]: hex(nonces.monad),
+      [`${HOSTS.arc}:eth_getTransactionCount`]: hex(nonces.arc),
     },
   });
 }
 
-function rpcBalances(owner: string, ausd: bigint, usdc: bigint, persona: string) {
+/** A Polaris account on Arc testnet: its USDC and EURC balances (6 decimals) and its nonce. */
+function rpcAccount(owner: string, usdc: bigint, eurc: bigint, nonce: number, persona: string) {
   write(`rpc/${owner}.json`, {
-    fixture: meta("rpc", "eth_call balanceOf on Monad testnet AUSD and USDC", "JSON-RPC results; the transport wraps each in {jsonrpc, id, result}", persona),
+    fixture: meta("rpc", "eth_call balanceOf on Arc testnet USDC and EURC; eth_getTransactionCount on Arc testnet", "JSON-RPC results; the transport wraps each in {jsonrpc, id, result}", persona),
     calls: {
-      [`${HOSTS.testnet}:balanceOf:${AUSD_TESTNET}`]: word(ausd),
-      [`${HOSTS.testnet}:balanceOf:${USDC_TESTNET}`]: word(usdc),
+      [`${HOSTS.arcTestnet}:balanceOf:${ARC_TESTNET_USDC}`]: word(usdc),
+      [`${HOSTS.arcTestnet}:balanceOf:${ARC_TESTNET_EURC}`]: word(eurc),
+      [`${HOSTS.arcTestnet}:eth_getTransactionCount`]: hex(nonce),
     },
   });
 }
 
 // ------------------------------------------------------------------ personas
 
-const A = { fresh: addr("acc", 1), regular: addr("acc", 2), zerionBlind: addr("acc", 3) };
+const A = { fresh: addr("acc", 1), regular: addr("acc", 2), selfPaying: addr("acc", 3) };
 const L = { strong: addr("b0b", 1), modest: addr("b0b", 2), liquidated: addr("b0b", 3), sybil: addr("b0b", 4), tainted: addr("b0b", 5), noFunder: addr("b0b", 6), infra: addr("b0b", 7), exchangeWallet: addr("b0b", 8) };
 const F = { coinbase: addr("c0ba5e", 2), binance: addr("b1a4ce", 14), peer: addr("feed", 2), sybil: addr("feed", 4), tornado: addr("7c", 1), faucet: addr("feed", 7) };
 
 // Files are overwritten, never deleted: a real recording (record.ts) of another address survives a re-run.
 
-// Polaris accounts on Monad testnet ------------------------------------------
+// Polaris accounts on Arc testnet ---------------------------------------------
 
-zerionTransactions(A.fresh, [
-  { days: 3, op: "receive", token: T.ausdTest, amount: "50", chain: "monad-test-v2" },
-  { days: 1, op: "send", token: T.ausdTest, amount: "12.40", chain: "monad-test-v2" },
-], "fresh-account", true);
-rpcBalances(A.fresh, 37_600_000n, 0n, "fresh-account");
+// Fresh: opened three days ago with a $50 claim link. Polaris relays what it
+// signs, so it has sent no transaction itself: only token transfers.
+blockscoutTxList(A.fresh, [], "fresh-account");
+blockscoutTokenTx(A.fresh, [
+  { days: 3, incoming: true, amount: "50" },
+  { days: 1, incoming: false, amount: "12.40" },
+], "fresh-account");
+rpcAccount(A.fresh, 37_600_000n, 0n, 0, "fresh-account");
 
-zerionTransactions(A.regular, Array.from({ length: 120 }, (_, i): Tx => ({
+// Regular: four months of use, 120 transfers (more than the 100-row page the
+// sent count reads), and a few transactions it paid for itself.
+blockscoutTokenTx(A.regular, Array.from({ length: 120 }, (_, i): Move => ({
   days: 130 - i * 1.07,
-  op: i % 3 === 0 ? "receive" : "send",
-  token: T.ausdTest,
+  incoming: i % 3 === 0,
   amount: i % 3 === 0 ? "120" : "18.75",
-  chain: "monad-test-v2",
-})), "regular-account", true);
-rpcBalances(A.regular, 420_000_000n, 35_000_000n, "regular-account");
+})), "regular-account");
+blockscoutTxList(A.regular, [
+  { days: 100, incoming: false, amount: "0" },
+  { days: 60, incoming: false, amount: "0" },
+  { days: 30, incoming: false, amount: "0" },
+  { days: 5, incoming: false, amount: "0" },
+], "regular-account");
+rpcAccount(A.regular, 420_000_000n, 35_000_000n, 4, "regular-account");
 
-// Zerion has no file for this one (as if it did not index the account); Etherscan does.
-etherscanTokenTx(A.zerionBlind, 10143, [
+// Self-paying: sends its own transactions (gas in USDC); its nonce outnumbers the transfers it signed.
+blockscoutTxList(A.selfPaying, [
+  { days: 45, incoming: true, amount: "25" },
+  { days: 30, incoming: false, amount: "0" },
+  { days: 20, incoming: false, amount: "10" },
+  { days: 10, incoming: false, amount: "0" },
+], "self-paying-account");
+blockscoutTokenTx(A.selfPaying, [
   { days: 45, incoming: true, amount: "25" },
   { days: 20, incoming: false, amount: "10" },
   { days: 2, incoming: true, amount: "5" },
-], "zerion-blind-account");
-rpcBalances(A.zerionBlind, 15_000_000n, 0n, "zerion-blind-account");
+], "self-paying-account");
+rpcAccount(A.selfPaying, 15_000_000n, 0n, 3, "self-paying-account");
 
 // Linked history wallets (mainnet) --------------------------------------------
 
 // Strong: exchange-funded 3+ years ago, active, holds dollars, trades, never liquidated.
 nansenFirstFunder(L.strong, { funder: F.coinbase, name: "Coinbase: Hot Wallet 2", chain: "ethereum", days: 1210 }, "strong");
-rpcNonces(L.strong, { eth: 540, base: 290, monad: 70 }, "strong");
+rpcNonces(L.strong, { eth: 540, base: 290, arc: 70 }, "strong");
 zerionPositions(L.strong, [
   { token: T.usdcEth, amount: "3100.25" },
   { token: T.usdcBase, amount: "850" },
@@ -493,7 +550,7 @@ for (const id of [1, 42161, 137]) etherscanLogs(L.strong, id, [], "strong");
 // Modest: peer-funded seven months ago on Base, a small circle of six accounts.
 nansenFirstFunder(L.modest, { funder: F.peer, name: null, chain: "base", days: 200 }, "modest");
 nansenRelated(F.peer, "base", [L.modest, ...Array.from({ length: 6 }, (_, i) => addr("5b", i + 1))], "modest");
-rpcNonces(L.modest, { eth: 0, base: 64, monad: 11 }, "modest");
+rpcNonces(L.modest, { eth: 0, base: 64, arc: 11 }, "modest");
 zerionPositions(L.modest, [{ token: T.usdcBase, amount: "640" }], "modest");
 zerionTransactions(L.modest, [
   { days: 200, op: "receive", token: { ...T.eth, chain: "base" }, amount: "0.02", chain: "base" },
@@ -505,7 +562,7 @@ for (const id of [1, 42161, 137]) etherscanLogs(L.modest, id, [], "modest");
 
 // Liquidated twice by Aave, plus one spoofed event from a contract that is not a pool.
 nansenFirstFunder(L.liquidated, { funder: F.binance, name: "Binance 14", chain: "ethereum", days: 1100 }, "liquidated");
-rpcNonces(L.liquidated, { eth: 310, base: 12, monad: 0 }, "liquidated");
+rpcNonces(L.liquidated, { eth: 310, base: 12, arc: 0 }, "liquidated");
 zerionPositions(L.liquidated, [{ token: T.usdcEth, amount: "95" }], "liquidated");
 zerionTransactions(L.liquidated, [
   { days: 1100, op: "receive", token: T.eth, amount: "2", chain: "ethereum" },
@@ -519,21 +576,21 @@ etherscanLogs(L.liquidated, 137, [], "liquidated");
 // Sybil: one funder, thirty sibling accounts, funded forty days ago.
 nansenFirstFunder(L.sybil, { funder: F.sybil, name: null, chain: "ethereum", days: 40 }, "sybil");
 nansenRelated(F.sybil, "ethereum", [L.sybil, ...Array.from({ length: 30 }, (_, i) => addr("51b", i + 1))], "sybil");
-rpcNonces(L.sybil, { eth: 3, base: 0, monad: 0 }, "sybil");
+rpcNonces(L.sybil, { eth: 3, base: 0, arc: 0 }, "sybil");
 zerionPositions(L.sybil, [{ token: T.usdcEth, amount: "20" }], "sybil");
 zerionTransactions(L.sybil, [{ days: 40, op: "receive", token: T.eth, amount: "0.01", chain: "ethereum" }], "sybil", false);
 for (const id of [1, 42161, 137]) etherscanLogs(L.sybil, id, [], "sybil");
 
 // Tainted: first funded through a mixer.
 nansenFirstFunder(L.tainted, { funder: F.tornado, name: "Tornado Cash: Router", chain: "ethereum", days: 900 }, "tainted");
-rpcNonces(L.tainted, { eth: 800, base: 0, monad: 0 }, "tainted");
+rpcNonces(L.tainted, { eth: 800, base: 0, arc: 0 }, "tainted");
 zerionPositions(L.tainted, [{ token: T.usdcEth, amount: "9000" }], "tainted");
 zerionTransactions(L.tainted, [{ days: 900, op: "receive", token: T.eth, amount: "10", chain: "ethereum" }, { days: 850, op: "trade", token: T.usdcEth, amount: "9000", chain: "ethereum", dapp: "Uniswap V3" }], "tainted", false);
 for (const id of [1, 42161, 137]) etherscanLogs(L.tainted, id, [], "tainted");
 
 // No first funder on record: Zerion probes date it instead.
 nansenFirstFunder(L.noFunder, null, "no-funder");
-rpcNonces(L.noFunder, { eth: 120, base: 30, monad: 0 }, "no-funder");
+rpcNonces(L.noFunder, { eth: 120, base: 30, arc: 0 }, "no-funder");
 zerionPositions(L.noFunder, [{ token: T.usdcEth, amount: "310" }], "no-funder");
 zerionTransactions(L.noFunder, [
   { days: 400, op: "receive", token: T.usdcEth, amount: "500", chain: "ethereum" },
@@ -545,14 +602,14 @@ for (const id of [1, 42161, 137]) etherscanLogs(L.noFunder, id, [], "no-funder")
 // Funded by a faucet that has funded more than a page of wallets: infrastructure, not a cluster.
 nansenFirstFunder(L.infra, { funder: F.faucet, name: "Community Faucet", chain: "ethereum", days: 260 }, "infra-funded");
 nansenRelated(F.faucet, "ethereum", Array.from({ length: 100 }, (_, i) => addr("fa0", i + 1)), "infra-funded", false);
-rpcNonces(L.infra, { eth: 90, base: 5, monad: 0 }, "infra-funded");
+rpcNonces(L.infra, { eth: 90, base: 5, arc: 0 }, "infra-funded");
 zerionPositions(L.infra, [{ token: T.usdcEth, amount: "180" }], "infra-funded");
 zerionTransactions(L.infra, [{ days: 260, op: "receive", token: T.eth, amount: "0.05", chain: "ethereum" }, { days: 120, op: "trade", token: T.usdcEth, amount: "60", chain: "ethereum", dapp: "Uniswap V3" }], "infra-funded", false);
 for (const id of [1, 42161, 137]) etherscanLogs(L.infra, id, [], "infra-funded");
 
 // An exchange deposit address someone linked: Zerion cannot track it; Nansen still answers.
 nansenFirstFunder(L.exchangeWallet, { funder: F.coinbase, name: "Coinbase: Hot Wallet 2", chain: "ethereum", days: 500 }, "exchange-wallet");
-rpcNonces(L.exchangeWallet, { eth: 2, base: 0, monad: 0 }, "exchange-wallet");
+rpcNonces(L.exchangeWallet, { eth: 2, base: 0, arc: 0 }, "exchange-wallet");
 zerionNotTrackable(L.exchangeWallet, "positions", "exchange-wallet");
 zerionNotTrackable(L.exchangeWallet, "transactions", "exchange-wallet");
 nansenCurrentBalance(L.exchangeWallet, [{ token: T.usdcEth, amount: 1250.5 }], "exchange-wallet");
@@ -564,9 +621,9 @@ for (const id of [1, 42161, 137]) etherscanLogs(L.exchangeWallet, id, [], "excha
 write("personas.json", {
   fixture: { label: LABEL, recorded: false, synthesizedFor: iso(REF), notes: "Addresses are synthetic. Ages are measured from each fixture's timestamps, so they grow with the real date; tests pin now to 2026-09-26T12:00:00Z." },
   accounts: [
-    { persona: "fresh-account", address: A.fresh, about: "A Polaris account opened three days ago with a $50 claim link; $37.60 on hand." },
-    { persona: "regular-account", address: A.regular, about: "A Polaris account used for four months: 120 transfers (more than one page, so it is dated with probes), $455 on hand." },
-    { persona: "zerion-blind-account", address: A.zerionBlind, about: "Zerion has no record of it; Etherscan's token transfers date it instead." },
+    { persona: "fresh-account", address: A.fresh, about: "A Polaris account on Arc opened three days ago with a $50 claim link; $37.60 on hand; it has sent no transaction itself." },
+    { persona: "regular-account", address: A.regular, about: "A Polaris account used for four months: 120 transfers (more than the 100-row page), 4 transactions of its own, $420 USDC and 35 EURC on hand." },
+    { persona: "self-paying-account", address: A.selfPaying, about: "Pays its own gas in USDC: its nonce (3) outnumbers the transfers it signed (1)." },
   ],
   linked: [
     { persona: "strong", address: L.strong, about: "Funded from Coinbase 3+ years ago; 900 transactions; $4,200 in dollars; trading for 2 years; never liquidated." },

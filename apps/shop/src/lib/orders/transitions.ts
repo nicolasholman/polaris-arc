@@ -35,7 +35,7 @@ export type ApplyOptions = {
 };
 
 /**
- * Webhook amounts are decimal dollars with 2 to 6 decimals (AUSD's
+ * Webhook amounts are decimal dollars with 2 to 6 decimals (USDC's
  * precision): "349.00", "50.383562". Parsed exactly, as micro-dollars.
  */
 export function micros(amount: unknown): bigint | null {
@@ -122,7 +122,7 @@ export function applyEvent(order: Order, event: WebhookEvent, now: Date = new Da
       if (principal !== order.total) {
         return flag(`A plan for ${show(data.principal)} doesn't match the order total of ${formatUsd(order.total)}.`);
       }
-      // Instalment amounts arrive in AUSD's six decimals ("50.383562"). Each
+      // Instalment amounts arrive in USDC's six decimals ("50.383562"). Each
       // is shown as the step between two rounded running totals, so the rows
       // always add up to the plan's rounded total, as the SDK quotes them.
       const rows = [...data.schedule].sort((a, b) => a.index - b.index);

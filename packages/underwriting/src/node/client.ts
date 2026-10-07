@@ -5,8 +5,8 @@
  * There are two modes and no third. A keyed provider (Nansen, Zerion,
  * Etherscan) with its key is live; without one it is `not_configured`: every
  * call fails at once with a `not_configured` ProviderError naming the missing
- * variable, nothing is sent, and nothing answers in its place. Public RPCs
- * need no key and are always live.
+ * variable, nothing is sent, and nothing answers in its place. Public RPCs and
+ * Arc's Blockscout explorer need no key and are always live.
  */
 
 import { PROVIDER_KEYS } from "../core/constants.ts";
@@ -35,7 +35,7 @@ export interface ClientOptions {
   clock?: Clock;
   /** Minimum gap between request starts. */
   minIntervalMs?: number;
-  /** How long successful responses are reused. 0 disables. Default 10 minutes, CRE's cache cap. */
+  /** How long successful responses are reused. 0 disables. Default 10 minutes. */
   cacheTtlMs?: number;
   random?: () => number;
   /** Observes every response, for credit accounting and logs. */
@@ -44,27 +44,27 @@ export interface ClientOptions {
 
 export abstract class ProviderClient {
   readonly mode: ProviderMode;
-  readonly provider: KeyedProvider | "rpc";
+  readonly provider: KeyedProvider | "rpc" | "blockscout";
   protected readonly apiKey: string | undefined;
   private readonly transport: HttpTransport;
   private readonly limiter: RateLimiter;
   private readonly cache: TtlCache;
   private readonly opts: ClientOptions;
 
-  protected constructor(opts: ClientOptions, defaults: { minIntervalMs: number; provider: KeyedProvider | "rpc" }) {
+  protected constructor(opts: ClientOptions, defaults: { minIntervalMs: number; provider: KeyedProvider | "rpc" | "blockscout" }) {
     this.opts = opts;
     this.provider = defaults.provider;
     this.apiKey = opts.apiKey && opts.apiKey.trim() !== "" ? opts.apiKey.trim() : undefined;
-    this.mode = defaults.provider === "rpc" || this.apiKey ? "live" : "not_configured";
+    this.mode = defaults.provider === "rpc" || defaults.provider === "blockscout" || this.apiKey ? "live" : "not_configured";
     const clock = opts.clock ?? systemClock;
     this.transport = opts.transport ?? fetchTransport;
     this.limiter = new RateLimiter(opts.minIntervalMs ?? defaults.minIntervalMs, clock);
     this.cache = new TtlCache(opts.cacheTtlMs ?? 10 * 60_000, clock);
   }
 
-  /** The variable that holds this provider's key, or null for a public RPC. */
+  /** The variable that holds this provider's key, or null for a keyless one. */
   get keyVariable(): string | null {
-    return this.provider === "rpc" ? null : PROVIDER_KEYS[this.provider];
+    return this.provider === "rpc" || this.provider === "blockscout" ? null : PROVIDER_KEYS[this.provider];
   }
 
   /** Add this provider's secret to a request. */

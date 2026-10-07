@@ -15,7 +15,7 @@ import { decodeEventLog, getAddress, type Abi, type Address, type Hex, type Log,
 
 import {
   collectionsReceiverAbi,
-  guardianReceiverAbi,
+  creditGuardAbi,
   polarisCheckoutAbi,
   polarisLoanEngineAbi,
   polarisPaymentsAbi,
@@ -32,7 +32,7 @@ import { chargeReceipt, instalmentReceipt, paymentReceipt, planReceipt, scrubSes
 import { periodSeconds } from "../sessions/params";
 import { emitEvent } from "../webhooks/events";
 import { recordSharePaid, recordSplitClosed, recordSplitCreated } from "../split";
-import { onCollectionsReport, onGuardianReport, onReauthorized, onUnderwritingItem } from "./cre";
+import { onCollectionsReport, onReauthorized, onUnderwritingItem } from "./keeper";
 
 /**
  * Chain events in, records and webhooks out.
@@ -41,13 +41,13 @@ import { onCollectionsReport, onGuardianReport, onReauthorized, onUnderwritingIt
  * in a block (plan §5.6), never from what a client says. Two paths feed it:
  * the receipt of a transaction the relayer just sent (so the merchant's
  * webhook goes out in the same second), and the chain sync (so events the
- * relayer didn't send (CRE collections, renewals, liquidations, another
+ * relayer didn't send (the keeper's collections, renewals, liquidations, another
  * wallet's direct payment) arrive too). Both can see the same log; each log
  * is claimed once (`processed_logs`), and released again if handling fails
  * so the next sync retries it.
  */
 
-type Contract = "payments" | "checkout" | "loanEngine" | "collections" | "underwriting" | "guardian" | "split";
+type Contract = "payments" | "checkout" | "loanEngine" | "collections" | "underwriting" | "split";
 
 type Decoded = {
   contract: Contract;
@@ -65,7 +65,6 @@ const ABIS: Record<Contract, Abi> = {
   loanEngine: polarisLoanEngineAbi as unknown as Abi,
   collections: collectionsReceiverAbi as unknown as Abi,
   underwriting: underwritingReceiverAbi as unknown as Abi,
-  guardian: guardianReceiverAbi as unknown as Abi,
   split: polarisSplitAbi as unknown as Abi,
 };
 
@@ -76,9 +75,8 @@ export function watchedContracts(chain: ChainConfig): Record<Contract, Address |
     checkout: chain.contracts.checkout,
     loanEngine: chain.contracts.loanEngine,
     collections: chain.contracts.collections,
-    // The other CRE receivers' reports, for the Chainlink page (./cre.ts).
+    // The keeper's credit reviews, for the Automation page (./keeper.ts).
     underwriting: chain.contracts.underwriting,
-    guardian: chain.contracts.guardian,
     // Split-the-bill links: who paid which share and when (../split.ts). Null before PolarisSplit is deployed.
     split: chain.contracts.split,
   };
@@ -259,10 +257,6 @@ async function handle(log: Decoded, ctx: Ctx): Promise<number> {
     case "underwriting.UnderwritingApplied":
     case "underwriting.UnderwritingRefused":
       await onUnderwritingItem(log, await blockTime(ctx, log.blockNumber));
-      return 0;
-    case "guardian.CreditGuardUpdated":
-    case "guardian.AttestationRefused":
-      await onGuardianReport(log, await blockTime(ctx, log.blockNumber));
       return 0;
     case "split.SplitCreated": {
       const a = log.args;
@@ -696,11 +690,11 @@ async function onLoanClosed(log: Decoded, ctx: Ctx, how: "repaid" | "liquidated"
 }
 
 /**
- * The dunning ladder (packages/keeperhub/src/dunning.ts): after a miss, the
+ * The dunning ladder (services/keeper/src/backoff.ts): after a miss, the
  * next attempt that counts is 6 h, 24 h, 72 h, then 168 h later; after that
- * the plan is a liquidation candidate. CRE's collections workflow runs every
- * minute and reports a skip each time, so a skip inside the current wait is
- * the same miss, not a new one, and sends no second webhook.
+ * the plan is a liquidation candidate. The keeper's collections run may
+ * report a skip more than once inside a wait, so a skip inside the current
+ * wait is the same miss, not a new one, and sends no second webhook.
  */
 export const DUNNING_HOURS = [6, 24, 72, 168] as const;
 

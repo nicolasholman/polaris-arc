@@ -3,12 +3,12 @@ import { invalidRequest } from "./errors.js";
 /**
  * Dollar amounts, in integers.
  *
- * The API speaks decimal strings ("200.00"), the chain speaks AUSD base units
+ * The API speaks decimal strings ("200.00"), the chain speaks USDC base units
  * (6 decimals), and the buyer reads "$50.38". Nothing in between is a float:
  * 0.1 + 0.2 is not a price.
  */
 
-/** AUSD and USDC both use 6 decimals. */
+/** USDC (and EURC) use 6 decimals. */
 export const STABLECOIN_DECIMALS = 6;
 const MICROS_PER_DOLLAR = 1_000_000n;
 const MICROS_PER_CENT = 10_000n;
@@ -181,7 +181,7 @@ export type PayIn4Installment = {
    * to the displayed `total`, and each is within a cent of `amountBaseUnits`.
    */
   amount: string;
-  /** Exact, in AUSD base units: what the loan engine will draw (`thresholdFor(index) - thresholdFor(index - 1)`). */
+  /** Exact, in USDC base units: what the loan engine will draw (`thresholdFor(index) - thresholdFor(index - 1)`). */
   amountBaseUnits: bigint;
   /**
    * Seconds from checkout until it's due: `index × intervalSeconds`, as

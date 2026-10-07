@@ -7,7 +7,7 @@
  *   a.decision.headline            "You can pay in 4 for up to $600.00."
  *   a.decision.reasons             each line with its points and `provider` ("nansen", ...)
  *   poweredBy(a.decision.reasons)  [{ provider: "nansen", name: "Nansen", reasons: ["age", "exchange", ...] }, ...]
- *   a.attest && a.report           the report the CRE workflow will attest, or a thin file / a preview
+ *   a.attest && a.report           the report the Polaris keeper will submit, or a thin file / a preview
  *
  * It is a thin, typed wrapper over the HTTP API that `apps/gateway` serves
  * (and `createFetchHandler` mounts): `/health`, `/v1/underwrite`,
@@ -175,7 +175,7 @@ export function createUnderwritingClient(opts: UnderwritingClientOptions) {
       });
     },
 
-    /** Explain facts already on chain, e.g. what the DON attested for this buyer. */
+    /** Explain facts already on chain, e.g. what the keeper reported for this buyer. */
     explainFacts(facts: Facts, o: ExplainOptions = {}): Promise<WireExplanation> {
       return call<WireExplanation>("/v1/explain", {
         method: "POST",

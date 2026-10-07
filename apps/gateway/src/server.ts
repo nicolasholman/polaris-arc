@@ -4,12 +4,14 @@
  *   pnpm --filter @polarispay/gateway start        # http://127.0.0.1:3510
  *
  * Reads its configuration from the environment (and `apps/gateway/.env` when
- * present; see .env.example). Each provider is live with its key
+ * present; see .env.example). A buyer's Polaris account is read from Arc
+ * (UNDERWRITING_ACCOUNT_*; its RPC and Blockscout explorer need no key). Each
+ * keyed provider for a linked history wallet is live with its key
  * (NANSEN_API_KEY, ZERION_API_KEY, ETHERSCAN_API_KEY) or not configured
  * without it, and says so on every start, in `/health` (`modes`,
  * `notConfigured`) and in every underwriting (`providers`, `notConfigured`,
  * `absent`). A provider that is not configured is never called and nothing
- * answers in its place; public RPCs need no key and are always live.
+ * answers in its place.
  *
  * Without UNDERWRITING_API_TOKEN it serves loopback only: a HOST that is not
  * loopback (0.0.0.0, a LAN address, a public name) makes it refuse to start.
@@ -35,6 +37,8 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   const { url, underwriter } = await startGateway();
   const modes = underwriter.modes();
   console.log(`polaris gateway listening on ${url}`);
+  const p = underwriter.providers;
+  console.log(`  account chain ${p.accountRpc.chainId}: rpc ${p.accountRpc.url}, explorer ${p.explorer?.apiUrl ?? "none"}`);
   console.log(`  providers: ${Object.entries(modes).map(([k, v]) => `${k}=${v}`).join(" ")}`);
   for (const { provider, env } of underwriter.notConfigured()) {
     console.log(`  ${provider} is not configured (set ${env}): it is never called, and what only it reads counts for nothing.`);

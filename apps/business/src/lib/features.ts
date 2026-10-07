@@ -31,7 +31,7 @@ export type Readiness = {
   autoPayouts: string | null;
   /** Null when buyers can open this merchant's links. */
   links: string | null;
-  /** Null when the business can be registered on Monad. */
+  /** Null when the business can be registered on Arc. */
   registration: string | null;
 };
 
@@ -51,18 +51,18 @@ export function readiness(caps: Capabilities | null | undefined, failed = false)
 
   const noChain = caps.chain
     ? null
-    : "This server isn't connected to Monad yet, so nothing can move.";
+    : "This server isn't connected to Arc yet, so nothing can move.";
   const noRelayer = caps.relayer ? null : "Polaris's relayer isn't running on this server yet. It pays the network fee, so nothing can be sent until it is.";
   const noSigner =
     caps.automaticPayouts && PAYOUT_SIGNER_ID ? null : "Automatic payouts switch on once the Privy payout signer is set up on this server.";
 
   const noCheckout = caps.checkoutOrigin ? null : "Links go live once the checkout origin is configured on this server.";
-  const noPublicUrl = caps.registrationUrl ? null : "Registration on Monad opens once this server's public URL is configured.";
+  const noPublicUrl = caps.registrationUrl ? null : "Registration on Arc opens once this server's public URL is configured.";
 
   return {
     withdraw: noChain ?? noRelayer,
     autoPayouts: noChain ?? noRelayer ?? noSigner,
-    links: noChain ? "Buyers can open links once this server is connected to Monad." : (noRelayer ?? noCheckout),
-    registration: noChain ? "Registration on Monad opens once this server is connected to it." : (noRelayer ?? noPublicUrl),
+    links: noChain ? "Buyers can open links once this server is connected to Arc." : (noRelayer ?? noCheckout),
+    registration: noChain ? "Registration on Arc opens once this server is connected to it." : (noRelayer ?? noPublicUrl),
   };
 }

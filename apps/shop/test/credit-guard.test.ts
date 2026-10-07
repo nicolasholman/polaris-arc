@@ -4,7 +4,7 @@ import { creditGuard, resetCreditGuardCache } from "@/lib/polaris";
 import { pausedMessage } from "@/lib/polaris-config";
 
 /**
- * Halcyon reads Polaris's risk guard (polarispay-sdk `credit.guard()`, GET
+ * Halcyon reads Polaris's credit guard (on chain, it reads the pool live; polarispay-sdk `credit.guard()`, GET
  * /api/public/credit-guard) when it serves a page: while it has paused new
  * Pay in 4 plans, the product line, the bag, the home band and the checkout
  * say "Pay in 4 is paused by our risk guard; pay now works as usual." and
@@ -16,7 +16,7 @@ const API = "http://localhost:3100";
 const PAUSED = {
   state: "paused",
   paused: true,
-  reasons: ["depeg"],
+  reasons: ["low_cash"],
   message: "Pay in 4 is paused by our risk guard; pay now works as usual.",
   checkedAt: "2026-10-02T12:00:00.000Z",
   ageSeconds: 42,

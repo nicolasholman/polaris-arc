@@ -5,10 +5,11 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
 import {
-  AUSD,
-  MONAD,
-  MONAD_TESTNET,
+  ARC,
+  ARC_TESTNET,
+  EURC,
   SEPOLIA,
+  USDC,
   ZERO_ADDRESS,
   assertDeployed,
   chainById,
@@ -22,26 +23,42 @@ import { DEPLOYMENTS } from "../src/deployments.js";
 const sdkRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
 
 describe("chain presets", () => {
-  it("describe Monad testnet and mainnet, with Agora's AUSD", () => {
-    expect(MONAD_TESTNET).toMatchObject({
-      key: "monad-testnet",
-      chainId: 10143,
-      rpcUrl: "https://testnet-rpc.monad.xyz",
-      explorer: "https://testnet.monadvision.com",
-      stablecoinSymbol: "AUSD",
+  it("describe Arc testnet and mainnet, with Circle's USDC as the dollar and the gas token", () => {
+    expect(ARC_TESTNET).toMatchObject({
+      key: "arc-testnet",
+      chainId: 5042002,
+      name: "Arc Testnet",
+      rpcUrl: "https://rpc.testnet.arc.io",
+      explorer: "https://explorer.testnet.arc.io",
+      testnet: true,
+      stablecoinSymbol: "USDC",
       stablecoinDecimals: 6,
-      nativeCurrency: { symbol: "MON", decimals: 18 },
+      nativeCurrency: { name: "USDC", symbol: "USDC", decimals: 18 },
       features: { payWithAuthorization: true },
     });
-    expect(MONAD).toMatchObject({ key: "monad", chainId: 143, rpcUrl: "https://rpc.monad.xyz", testnet: false });
-    expect(MONAD_TESTNET.stablecoin).toBe(DEPLOYMENTS.monadTestnet.stablecoin ?? AUSD.monadTestnet);
-    expect(MONAD.stablecoin).toBe(DEPLOYMENTS.monad.stablecoin ?? AUSD.monad);
+    expect(ARC).toMatchObject({
+      key: "arc",
+      chainId: 5042,
+      name: "Arc",
+      rpcUrl: "https://rpc.mainnet.arc.io",
+      explorer: "https://explorer.arc.io",
+      testnet: false,
+      stablecoinSymbol: "USDC",
+      nativeCurrency: { symbol: "USDC", decimals: 18 },
+    });
+    expect(ARC_TESTNET.stablecoin).toBe(DEPLOYMENTS.arcTestnet.stablecoin ?? USDC.arcTestnet);
+    expect(ARC.stablecoin).toBe(DEPLOYMENTS.arc.stablecoin ?? USDC.arc);
+  });
+
+  it("export Circle's USDC and EURC addresses on Arc", () => {
+    expect(USDC).toEqual({ arcTestnet: "0x3600000000000000000000000000000000000000", arc: "0x3600000000000000000000000000000000000000" });
+    expect(EURC).toEqual({ arcTestnet: "0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a", arc: "0xbEf5f6d51CB62b58e6A8f77868681825C6fe21c1" });
   });
 
   it("take Polaris addresses from the generated deployments file, and nothing else", () => {
     for (const [preset, record] of [
-      [MONAD_TESTNET, DEPLOYMENTS.monadTestnet],
-      [MONAD, DEPLOYMENTS.monad],
+      [ARC_TESTNET, DEPLOYMENTS.arcTestnet],
+      [ARC, DEPLOYMENTS.arc],
     ] as const) {
       for (const [name, address] of Object.entries(record.contracts)) {
         expect(preset[name as keyof typeof record.contracts]).toBe(address);
@@ -51,14 +68,15 @@ describe("chain presets", () => {
   });
 
   it("are not deployed until packages/contracts has a deployment file, and say so", () => {
-    if (DEPLOYMENTS.monadTestnet.source !== null) return; // deployed: covered by the test above
-    expect(MONAD_TESTNET.payments).toBe(ZERO_ADDRESS);
-    expect(isDeployed(MONAD_TESTNET, ["payments"])).toBe(false);
-    expect(() => assertDeployed(MONAD_TESTNET, ["payments"])).toThrow(
-      /PolarisPayments is not deployed on Monad Testnet yet: its address in polarispay-sdk's deployments\.ts is the zero placeholder/,
+    if (DEPLOYMENTS.arcTestnet.source !== null) return; // deployed: covered by the test above
+    expect(ARC_TESTNET.payments).toBe(ZERO_ADDRESS);
+    expect(isDeployed(ARC_TESTNET, ["payments"])).toBe(false);
+    expect(() => assertDeployed(ARC_TESTNET, ["payments"])).toThrow(
+      /PolarisPayments is not deployed on Arc Testnet yet: its address in polarispay-sdk's deployments\.ts is the zero placeholder/,
     );
-    // The token is Agora's and always real.
-    expect(isDeployed(MONAD_TESTNET, ["stablecoin"])).toBe(true);
+    expect(() => assertDeployed(ARC_TESTNET, ["collector"])).toThrow(/CollectionsReceiver is not deployed on Arc Testnet/);
+    // The token is Circle's and always real.
+    expect(isDeployed(ARC_TESTNET, ["stablecoin"])).toBe(true);
   });
 
   it("keep the 0.2 Sepolia deployment working", () => {
@@ -91,17 +109,19 @@ describe("chain presets", () => {
   });
 
   it("look up by chain id and build explorer links", () => {
-    expect(chainById(10143)).toBe(MONAD_TESTNET);
+    expect(chainById(5042002)).toBe(ARC_TESTNET);
+    expect(chainById(5042)).toBe(ARC);
     expect(chainById(1)).toBeUndefined();
-    expect(explorerTxUrl(MONAD, "0xabc")).toBe("https://monadvision.com/tx/0xabc");
+    expect(explorerTxUrl(ARC, "0xabc")).toBe("https://explorer.arc.io/tx/0xabc");
+    expect(explorerTxUrl(ARC_TESTNET, "0xabc")).toBe("https://explorer.testnet.arc.io/tx/0xabc");
   });
 });
 
 describe("createPolaris chain selection", () => {
-  it("picks Monad testnet for a test key and Monad for a live key", () => {
-    expect(createPolaris({ publishableKey: "pk_test_51Hx8yQfT3sLk2Pz" }).chain).toBe(MONAD_TESTNET);
+  it("picks Arc testnet for a test key and Arc for a live key", () => {
+    expect(createPolaris({ publishableKey: "pk_test_51Hx8yQfT3sLk2Pz" }).chain).toBe(ARC_TESTNET);
     const live = createPolaris({ publishableKey: "pk_live_51Hx8yQfT3sLk2Pz" });
-    expect(live.chain).toBe(MONAD);
+    expect(live.chain).toBe(ARC);
     expect(live.livemode).toBe(true);
   });
 
@@ -112,7 +132,7 @@ describe("createPolaris chain selection", () => {
   });
 
   it("lets an explicit chain win", () => {
-    const custom = { ...MONAD_TESTNET, payments: "0x5FbDB2315678afecb367f032d93F642f64180aa3" as const };
+    const custom = { ...ARC_TESTNET, payments: "0x5FbDB2315678afecb367f032d93F642f64180aa3" as const };
     expect(createPolaris({ publishableKey: "pk_live_51Hx8yQfT3sLk2Pz", chain: custom }).chain).toBe(custom);
   });
 });

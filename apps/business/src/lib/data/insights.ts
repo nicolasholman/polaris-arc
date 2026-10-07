@@ -5,14 +5,14 @@ import type { Cents, CollectorStatus, Insights, IsoDate, Plan, WebhookEventType 
  *
  * | Panel | Service | Function |
  * |---|---|---|
- * | Collections | Chainlink CRE `collections` workflow | `getCollectionsRun` |
- * | Indexed events | Envio HyperIndex on Monad | `getIndexedEvents` |
+ * | Collections | the Polaris keeper `collections` workflow | `getCollectionsRun` |
+ * | Indexed events | Envio HyperIndex on Arc | `getIndexedEvents` |
  * | Credit exposure reasons | Nansen wallet history (underwriting) | `getUnderwritingReasons` |
  *
  * The collections workflow's runs reach this server through the chain sync
  * (its heartbeat is `Overview.collector`); the indexer feed and the
  * underwriting reasons come with the Overview (`Overview.insights`, built by
- * server/insights.ts from @polarispay/indexer-client and the CRE decisions).
+ * server/insights.ts from @polarispay/indexer-client and the keeper decisions).
  * Each function returns `{ source: "live" }` with `via` naming where the
  * data came from when it isn't the service itself, or
  * `{ source: "not_connected" }` with the reason when the service is silent,
@@ -25,7 +25,7 @@ export type Sourced<T> =
 
 const MINUTE = 60_000;
 
-/* ── Chainlink CRE: the collections workflow ────────────────────────────── */
+/* ── the Polaris keeper: the collections workflow ────────────────────────────── */
 
 export type CollectionsRun = {
   workflow: string;
@@ -50,7 +50,7 @@ export type CollectionsRun = {
   history: number[];
 };
 
-/** The collections card, from collectorStatus in server/services.ts (the chain's CollectionsRun events and the CRE runner's heartbeat). */
+/** The collections card, from collectorStatus in server/services.ts (the chain's CollectionsRun events and the keeper runner's heartbeat). */
 export function getCollectionsRun({ plans, collector }: { plans: Plan[]; collector?: CollectorStatus }): Sourced<CollectionsRun> {
   if (collector?.lastPassAt) {
     // The workflow's last report to this server. It runs every minute.
@@ -70,7 +70,7 @@ export function getCollectionsRun({ plans, collector }: { plans: Plan[]; collect
   }
   return {
     source: "not_connected",
-    reason: "The collections workflow runs on Chainlink CRE every minute once it's deployed. Its runs appear here when it starts reporting.",
+    reason: "The collections workflow runs on the Polaris keeper every minute once it's deployed. Its runs appear here when it starts reporting.",
   };
 }
 
@@ -93,11 +93,11 @@ export function getIndexedEvents({ insights }: { insights?: Insights }): Sourced
   if (feed?.source === "envio") return { source: "live", data: feed.events };
   if (feed?.source === "chain-sync" && feed.events.length) return { source: "live", data: feed.events, via: "chain-sync" };
   if (feed?.source === "envio-error") {
-    return { source: "not_connected", reason: `The Envio indexer didn't answer (${feed.error}). Your payments and plans still come straight from Monad, through this server's own chain sync.` };
+    return { source: "not_connected", reason: `The Envio indexer didn't answer (${feed.error}). Your payments and plans still come straight from Arc, through this server's own chain sync.` };
   }
   return {
     source: "not_connected",
-    reason: "The Envio indexer for Polaris isn't connected to this server (POLARIS_INDEXER_URL). Your payments and plans already come straight from Monad, through this server's own chain sync.",
+    reason: "The Envio indexer for Polaris isn't connected to this server (POLARIS_INDEXER_URL). Your payments and plans already come straight from Arc, through this server's own chain sync.",
   };
 }
 
@@ -121,11 +121,11 @@ export type Underwriting = {
   averageLineCents: Cents;
 };
 
-/** Why buyers got credit, from server/insights.ts (the CRE underwriting decisions). */
+/** Why buyers got credit, from server/insights.ts (the keeper underwriting decisions). */
 export function getUnderwritingReasons({ insights }: { insights?: Insights }): Sourced<Underwriting> {
   if (insights?.underwriting) return { source: "live", data: insights.underwriting };
   return {
     source: "not_connected",
-    reason: "When a buyer picks Pay in 4, Chainlink CRE nodes fetch their wallet history from Nansen and the score is computed on chain. The reasons behind your buyers' lines show here once underwriting reports.",
+    reason: "When a buyer picks Pay in 4, the Polaris keeper nodes fetch their wallet history from Nansen and the score is computed on chain. The reasons behind your buyers' lines show here once underwriting reports.",
   };
 }

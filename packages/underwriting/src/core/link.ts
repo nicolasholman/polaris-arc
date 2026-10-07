@@ -6,8 +6,7 @@
  * $1,000 line on it. The message names both accounts, so a signature for one
  * Polaris account cannot be replayed for another, and carries its issue time,
  * so an old one cannot be reused later. It is an EIP-191 personal message;
- * the Node service checks it with viem's `verifyMessage`, and the CRE workflow
- * can do the same. This module only builds and dates the text, so it stays
+ * the Node service checks it with viem's `verifyMessage`. This module only builds and dates the text, so it stays
  * dependency-free.
  *
  * One linked wallet should back one Polaris account. That is enforced where

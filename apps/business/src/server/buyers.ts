@@ -14,7 +14,7 @@ import { walletMoves } from "./wallet-moves";
  * the chain sync keeps (every one of them came from a chain event), and
  * every other dollar in or out of the address (`moves`: money added,
  * transfers, send links made, claimed or taken back, instalments), read
- * from the chain's AUSD and PolarisSend logs (wallet-moves.ts).
+ * from the chain's USDC and PolarisSend logs (wallet-moves.ts).
  *
  * Public by address, so only what the chain already shows: amounts,
  * schedules, the merchant's name and address, transaction hashes. Never a
@@ -64,7 +64,7 @@ export async function buyerBook(address: Address) {
         lastFailure: p.lastFailure,
         /**
          * The loan engine's approval is gone: the buyer signs once more
-         * (`POST /api/relay` type "reauthorize") and the CRE collections run
+         * (`POST /api/relay` type "reauthorize") and the keeper collections run
          * that follows collects the instalment.
          */
         needsSignature: p.state === "dunning" && p.lastFailure?.reason === "allowance_lost" && !p.reauthorized,
@@ -92,7 +92,7 @@ export async function buyerBook(address: Address) {
         txHash: p.txHash,
         createdAt: p.createdAt,
       })),
-    /** Every AUSD transfer to or from the address, classified; `payment` rows are the transfers inside a payment above. */
+    /** Every USDC transfer to or from the address, classified; `payment` rows are the transfers inside a payment above. */
     moves: moves.map((m) => ({
       id: m.id,
       kind: m.kind,

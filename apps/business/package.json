@@ -12,16 +12,11 @@
     "typecheck": "node scripts/ensure-deps.mjs && tsc --noEmit",
     "test": "node scripts/ensure-deps.mjs && vitest run",
     "e2e:local": "node scripts/e2e-local.mjs",
-    "smoke:testnet": "node scripts/smoke-testnet.mjs",
-    "smoke:testnet:verify": "node scripts/verify-testnet-results.mjs",
     "dev:merchant": "node scripts/dev-merchant.mjs",
     "privy:setup-relayer": "node scripts/privy/setup-relayer.mjs",
     "privy:setup-payouts": "node scripts/privy/setup-payouts.mjs",
     "privy:prove-policy": "node scripts/privy/prove-policy.mjs",
     "privy:update-relayer-policy": "node scripts/privy/update-relayer-policy.mjs",
-    "privy:smoke": "node scripts/privy/smoke-monad.mjs",
-    "privy:smoke:harness": "node scripts/privy/smoke-harness.mjs",
-    "privy:fund": "node scripts/privy/fund-testnet.mjs",
     "privy:show": "node scripts/privy/show-live.mjs"
   },
   "dependencies": {

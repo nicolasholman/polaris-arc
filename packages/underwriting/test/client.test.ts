@@ -69,7 +69,7 @@ describe("the underwriting client", () => {
     assert.equal(a.decision.limit, "1000000000");
     assert.equal(a.decision.payIn4.allowed, true);
     assert.equal(a.decision.payIn4.quote?.principal, "600000000");
-    assert.deepEqual(a.providers, { nansen: "live", zerion: "live", etherscan: "live", rpc: "live" });
+    assert.deepEqual(a.providers, { nansen: "live", zerion: "live", etherscan: "live", rpc: "live", blockscout: "live" });
     assert.deepEqual(a.notConfigured, []);
 
     const nansen = poweredBy(a.decision.reasons).find((c) => c.provider === "nansen");
@@ -87,11 +87,11 @@ describe("the underwriting client", () => {
     assert.equal(a.decision.limit, "0");
     assert.deepEqual(a.decision.thinFile, [
       { fact: "walletAgeDays", have: 3, need: 90 },
-      { fact: "txCount", have: 2, need: 10 },
+      { fact: "txCount", have: 1, need: 10 },
     ]);
   });
 
-  it("explains what the DON attested, from the facts or from the report itself, with base-unit purchases", async () => {
+  it("explains what the keeper reported, from the facts or from the report itself, with base-unit purchases", async () => {
     const uw = createUnderwritingClient({ baseUrl: "http://gateway.test", fetch: mounted().fetch });
     const byFacts = await uw.explainFacts(onChain, { purchase: 400_000_000n });
     assert.equal(byFacts.breakdown.score, 520 + 48 + 12 + 12 + 10);

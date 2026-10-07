@@ -13,7 +13,7 @@
  *     "status": 200, "headers": { ... }, "body": { ...exactly the documented shape... } }
  *
  * Where the real API filters (Zerion's `max_mined_at` probes, Nansen's date
- * ranges, page sizes), this transport applies the same filter to the file's
+ * ranges, Blockscout's sort and page sizes), this transport applies the same filter to the file's
  * rows, so a fixture answers a probe for any "now" the way the API would.
  * A request with no file is a failure (`not_found`, "no fixture recorded"), never an empty
  * answer: a fixture must not invent that a wallet has no history.
@@ -106,10 +106,12 @@ export function locateFixture(req: HttpRequest): { provider: string; endpoint: s
       const borrower = `0x${(q.get("topic3") ?? "").slice(-40)}`.toLowerCase();
       return { provider: "etherscan", endpoint: "logs", rel: `etherscan/logs/${borrower}.${chainId}.json` };
     }
-    if (q.get("action") === "tokentx") {
-      return { provider: "etherscan", endpoint: "tokentx", rel: `etherscan/tokentx/${lower(q.get("address"))}.${chainId}.json` };
-    }
     throw missing("etherscan", q.get("action") ?? "unknown", url.search);
+  }
+  if (isBlockscout(url)) {
+    const action = url.searchParams.get("action") ?? "";
+    if (action !== "txlist" && action !== "tokentx") throw missing("blockscout", action || "unknown", url.search);
+    return { provider: "blockscout", endpoint: action, rel: `blockscout/${action}/${lower(url.searchParams.get("address"))}.json` };
   }
   const call = JSON.parse(req.body ?? "{}") as { method?: string; params?: unknown[] };
   const params = call.params ?? [];
@@ -122,16 +124,22 @@ export function locateFixture(req: HttpRequest): { provider: string; endpoint: s
   return { provider: "rpc", endpoint, rel: `rpc/${lower(params[0])}.json`, rpcKey: `${url.hostname}:${call.method}` };
 }
 
+/** Arc's Blockscout explorer API (any host): `.../api?module=account&action=...`. */
+function isBlockscout(url: URL): boolean {
+  return url.pathname.replace(/\/+$/, "").endsWith("/api") && url.searchParams.get("module") === "account";
+}
+
 export function fixtureTransport(dir: string = DEFAULT_FIXTURES_DIR): HttpTransport {
   return async (req: HttpRequest): Promise<HttpResponse> => fixtureResponse(req, dir);
 }
 
-/** The same answer, synchronously: for driving a recipe the way CRE does (see core/recipe.ts). */
+/** The same answer, synchronously: for driving a recipe with `runSync` (see core/recipe.ts). */
 export function fixtureResponse(req: HttpRequest, dir: string = DEFAULT_FIXTURES_DIR): HttpResponse {
   const url = new URL(req.url);
   if (url.hostname === "api.nansen.ai") return nansen(dir, url, req);
   if (url.hostname === "api.zerion.io") return zerion(dir, url, req);
   if (url.hostname === "api.etherscan.io") return etherscan(dir, url, req);
+  if (isBlockscout(url)) return blockscout(dir, url, req);
   return rpc(dir, req);
 }
 
@@ -218,17 +226,24 @@ function zerion(dir: string, url: URL, req: HttpRequest): HttpResponse {
 
 // ---------------------------------------------------------------- Etherscan
 
-function etherscan(dir: string, url: URL, req: HttpRequest): HttpResponse {
+function etherscan(dir: string, _url: URL, req: HttpRequest): HttpResponse {
   const { endpoint, rel } = locateFixture(req);
-  const f = load(dir, rel, "etherscan", endpoint);
-  if (endpoint !== "tokentx") return respond(f);
+  return respond(load(dir, rel, "etherscan", endpoint));
+}
+
+// ---------------------------------------------------------------- Blockscout
+
+function blockscout(dir: string, url: URL, req: HttpRequest): HttpResponse {
+  const { endpoint, rel } = locateFixture(req);
+  const f = load(dir, rel, "blockscout", endpoint);
   const q = url.searchParams;
-  const body = f.body as { status: string; message: string; result: Array<Record<string, string>> | string };
-  if (!Array.isArray(body.result)) return respond(f);
+  const body = f.body as { status: string; message: string; result: Array<Record<string, string>> | null };
+  if ((f.status ?? 200) !== 200 || !Array.isArray(body.result)) return respond(f);
   const sort = q.get("sort") === "desc" ? -1 : 1;
   const offset = Number(q.get("offset") ?? 100);
   const rows = [...body.result].sort((a, b) => sort * (Number(a.timeStamp) - Number(b.timeStamp))).slice(0, offset);
-  return respond(f, { ...body, result: rows });
+  if (rows.length === 0) return respond(f, { message: "No transactions found", result: [], status: "0" });
+  return respond(f, { message: "OK", result: rows, status: "1" });
 }
 
 // ---------------------------------------------------------------- JSON-RPC

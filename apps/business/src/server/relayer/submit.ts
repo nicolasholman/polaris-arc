@@ -2,6 +2,7 @@ import "server-only";
 
 import { decodeFunctionData, getAddress, type Address, type Hex, type TransactionReceipt } from "viem";
 
+import { wrapInMemo, type CallMemo } from "../chain/circle";
 import { buyerErrorFromThrown, type BuyerError } from "../chain/errors";
 import { publicClient, requireChain } from "../chain/client";
 import { getConfig, type ChainConfig } from "../env";
@@ -17,8 +18,12 @@ import type { RelayerAccount } from "./signer";
  * - It is simulated with `eth_call` from the relayer's address. A revert
  *   comes back as the contract's own error, mapped to a message for the
  *   buyer, and no gas is spent.
- * - The gas limit is `eth_estimateGas` + 15%: Monad charges for the limit,
- *   not for gas used (plan §5.3), so a blanket limit would be paid in full.
+ * - On Arc a checkout call goes through Arc's Memo contract with the order's
+ *   reference (`memo`), so the payment carries it on chain; the relayer stays
+ *   msg.sender of the inner call. Where Memo isn't deployed (a local node), or
+ *   the wrapped call won't simulate, the call goes direct.
+ * - The gas limit is `eth_estimateGas` + 15%, and the fee is priced at or
+ *   above Arc's 20 gwei floor. Gas is USDC: the relayer holds nothing else.
  * - Nonces are assigned under a per-signer lock, from the larger of our own
  *   count and the node's pending count, so concurrent requests never collide.
  */
@@ -41,7 +46,10 @@ export class RelayUnavailable extends Error {
   }
 }
 
-export type SubmitResult = { txHash: Hex; receipt: TransactionReceipt | null; gasLimit: bigint; nonce: number };
+export type SubmitResult = { txHash: Hex; receipt: TransactionReceipt | null; gasLimit: bigint; nonce: number; memo: CallMemo | null };
+
+/** Arc's mempool floor for maxFeePerGas (20 gwei of native USDC). */
+export const ARC_MIN_FEE_WEI = 20_000_000_000n;
 
 export function relayerAddresses(chain: ChainConfig): RelayerAddresses {
   const c = chain.contracts;
@@ -49,11 +57,14 @@ export function relayerAddresses(chain: ChainConfig): RelayerAddresses {
     checkout: c.checkout,
     payments: c.payments,
     send: c.send,
+    sendEurc: c.sendEurc,
     split: c.split,
     loanEngine: c.loanEngine,
     registry: c.registry,
     stablecoin: c.stablecoin,
     vault: c.vault,
+    messageTransmitter: chain.circle?.messageTransmitterV2 ?? null,
+    memo: chain.circle?.memo ?? null,
   };
 }
 
@@ -128,10 +139,14 @@ export async function submitCall(input: {
   data: Hex;
   /** How long to wait for the receipt; 0 returns right after broadcast. */
   waitMs: number;
+  /** Attach this memo through Arc's Memo contract, where it is deployed. */
+  memo?: CallMemo | null;
 }): Promise<SubmitResult> {
   const chain = requireChain();
   const client = publicClient();
-  const { signer, to, data } = input;
+  const { signer } = input;
+  let to = input.to;
+  let data = input.data;
 
   const limits = getConfig().relayerLimits;
   if (input.role === "relayer") {
@@ -146,6 +161,22 @@ export async function submitCall(input: {
     throw new RelayUnavailable("rpc_unavailable", "We couldn't reach the network. Nothing was charged; try again.", { cause: error });
   }
 
+  // The memo: only once the plain call is known to succeed, and only where
+  // the wrapped call simulates too (the policy was checked on the inner call).
+  let memo: CallMemo | null = null;
+  const memoContract = chain.circle?.memo ?? null;
+  if (input.memo && memoContract && input.role === "relayer") {
+    const wrapped = wrapInMemo(to, data, input.memo);
+    try {
+      await client.call({ account: signer.address, to: memoContract, data: wrapped });
+      to = memoContract;
+      data = wrapped;
+      memo = input.memo;
+    } catch (error) {
+      console.warn(`[relay] Memo wrap didn't simulate; sending the call direct: ${(error as Error).message?.split("\n")[0]}`);
+    }
+  }
+
   let gasLimit: bigint;
   let fees: { maxFeePerGas: bigint; maxPriorityFeePerGas: bigint };
   try {
@@ -154,13 +185,17 @@ export async function submitCall(input: {
       client.estimateFeesPerGas({ chain: undefined, type: "eip1559" }),
     ]);
     gasLimit = withHeadroom(estimate);
-    fees = { maxFeePerGas: estimatedFees.maxFeePerGas, maxPriorityFeePerGas: estimatedFees.maxPriorityFeePerGas };
+    const floor = chain.local ? 0n : ARC_MIN_FEE_WEI;
+    fees = {
+      maxFeePerGas: estimatedFees.maxFeePerGas > floor ? estimatedFees.maxFeePerGas : floor,
+      maxPriorityFeePerGas: estimatedFees.maxPriorityFeePerGas,
+    };
   } catch (error) {
     const buyer = buyerErrorFromThrown(error);
     if (buyer.revert) throw new RelayRejected(buyer);
     throw new RelayUnavailable("rpc_unavailable", "We couldn't reach the network. Nothing was charged; try again.", { cause: error });
   }
-  // Monad bills the whole limit at the fee: a call that needs more, or a network that asks more, waits.
+  // Caps on what one call may cost the relayer, in gas and in fee.
   if (gasLimit > limits.maxGas) {
     throw new PolicyViolation("RELAYER_MAX_GAS", `This call needs ${gasLimit} gas; the relayer pays for at most ${limits.maxGas}.`);
   }
@@ -214,5 +249,5 @@ export async function submitCall(input: {
       receipt = null; // still pending: the caller reports "submitted" and the chain sync finishes the job
     }
   }
-  return { txHash, receipt, gasLimit, nonce };
+  return { txHash, receipt, gasLimit, nonce, memo };
 }

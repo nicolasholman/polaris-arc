@@ -60,7 +60,7 @@ function amountCents(value: unknown, param: string): number {
 
 export function parseCreateSession(body: Record<string, unknown>): CreateSessionInput {
   const currency = body.currency ?? "USD";
-  if (currency !== "USD") invalid("invalid_currency", 'currency must be "USD": every Polaris payment settles in AUSD, a dollar.', "currency");
+  if (currency !== "USD") invalid("invalid_currency", 'currency must be "USD": every Polaris payment settles in USDC, a dollar.', "currency");
 
   const description = body.description;
   if (typeof description !== "string" || description.trim() === "" || description.length > 500) {

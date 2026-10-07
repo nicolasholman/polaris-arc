@@ -9,7 +9,7 @@ import type { Address } from "@/lib/data/types";
 import { ChainNotConfigured } from "./chain/client";
 import { getDb } from "./db";
 import { getConfig } from "./env";
-import { verifyCreSignature } from "./credit/callback-signature";
+import { verifyKeeperSignature } from "./credit/callback-signature";
 import { clientIp, corsHeaders, failFrom, fail, HttpError, newRequestId, preflight, readText, type CorsPolicy } from "./http";
 import { PolicyViolation } from "./policy/relayer";
 import { getPrivy } from "./privy";
@@ -276,7 +276,7 @@ export async function authenticateSecretKey(req: Request): Promise<KeyContext> {
   if (parsed.kind === "publishable") {
     throw new HttpError(403, "secret_key_required", "This call needs your secret key (sk_test_…). Publishable keys are for the browser.");
   }
-  if (parsed.mode === "live") throw new HttpError(401, "invalid_api_key", "Live keys aren't enabled yet: use your sk_test_ key on Monad testnet.");
+  if (parsed.mode === "live") throw new HttpError(401, "invalid_api_key", "Live keys aren't enabled yet: use your sk_test_ key on Arc testnet.");
   const db = getDb();
   const key = await db.apiKeys.findOne({ secretHash: hashKey(presented) });
   if (!key || key.revokedAt) throw INVALID_KEY();
@@ -437,17 +437,17 @@ export function withCron<Ctx = unknown>(handler: Handler<null, Ctx>) {
 }
 
 /**
- * The CRE workflows' signed callbacks: `Polaris-Signature: t=<unix>,v1=<hex
- * HMAC-SHA256(POLARIS_CRE_CALLBACK_SECRET, "<t>.<body>")>`, within 300 s
- * (the scheme in @polaris/cre-workflows/callback). The handler gets the raw
+ * The keeper's signed callbacks: `Polaris-Signature: t=<unix>,v1=<hex
+ * HMAC-SHA256(POLARIS_KEEPER_CALLBACK_SECRET, "<t>.<body>")>`, within 300 s
+ * (services/keeper/src/callback.ts signs them). The handler gets the raw
  * body it was verified over. Closed when the secret is unset.
  */
-export function withCreCallback<Ctx = unknown>(handler: (req: Request, body: string, ctx: Ctx, meta: { requestId: string }) => Promise<Response>) {
+export function withKeeperCallback<Ctx = unknown>(handler: (req: Request, body: string, ctx: Ctx, meta: { requestId: string }) => Promise<Response>) {
   return wrap<string, Ctx>(async (req) => {
-    const secret = getConfig().cre.callbackSecret;
-    if (!secret) throw new HttpError(503, "not_configured", "POLARIS_CRE_CALLBACK_SECRET isn't set, so CRE callbacks are closed.");
+    const secret = getConfig().keeper.callbackSecret;
+    if (!secret) throw new HttpError(503, "not_configured", "POLARIS_KEEPER_CALLBACK_SECRET isn't set, so keeper callbacks are closed.");
     const body = await readText(req);
-    const check = verifyCreSignature(secret, body, req.headers.get("polaris-signature"), Math.floor(Date.now() / 1000));
+    const check = verifyKeeperSignature(secret, body, req.headers.get("polaris-signature"), Math.floor(Date.now() / 1000));
     if (!check.ok) throw new HttpError(401, "bad_signature", `The callback's signature didn't verify: ${check.reason}.`);
     return body;
   }, handler, { limit: LIMITS.publicPerIp });

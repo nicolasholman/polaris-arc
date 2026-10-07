@@ -22,7 +22,7 @@ import type {
   Payout,
 } from "./types";
 
-import type { ChainlinkOverview } from "./chainlink";
+import type { KeeperOverview } from "./keeper";
 import type { CreditGuard } from "./guard";
 
 /** What "Pay out now" did: paid, skipped (nothing to send) or failed, in words. */
@@ -48,11 +48,11 @@ export interface DashboardData {
   getOverview(): Promise<Overview>;
 
   /**
-   * The Chainlink page: the CRE workflows, their latest reports on Monad and
+   * The Automation page: the keeper, its latest reports on Arc and
    * the credit guard. On a server with nothing deployed, `deployed: false`
    * and no workflows.
    */
-  getChainlink(): Promise<ChainlinkOverview>;
+  getAutomation(): Promise<KeeperOverview>;
   /** The credit guard now: whether new Pay in 4 plans are paused, and why. */
   getCreditGuard(): Promise<CreditGuard>;
 

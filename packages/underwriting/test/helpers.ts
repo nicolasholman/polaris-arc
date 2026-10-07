@@ -4,8 +4,9 @@
  * that fail on cue.
  */
 
-import { HISTORY_CHAINS, MONAD_TESTNET } from "../src/core/constants.ts";
+import { ARC_TESTNET, HISTORY_CHAINS } from "../src/core/constants.ts";
 import type { Address, KeyedProvider } from "../src/core/types.ts";
+import { BlockscoutClient } from "../src/node/blockscout.ts";
 import type { Providers } from "../src/node/collect.ts";
 import { EtherscanClient } from "../src/node/etherscan.ts";
 import { fixtureTransport } from "../src/testing/fixtures.ts";
@@ -20,7 +21,7 @@ export const NOW = Date.UTC(2026, 8, 26, 12, 0, 0) / 1000;
 export const ACCOUNT = {
   fresh: "0xacc0000000000000000000000000000000000001",
   regular: "0xacc0000000000000000000000000000000000002",
-  zerionBlind: "0xacc0000000000000000000000000000000000003",
+  selfPaying: "0xacc0000000000000000000000000000000000003",
 } as const satisfies Record<string, Address>;
 
 export const LINKED = {
@@ -109,11 +110,12 @@ export function fixtureProviders(
     nansen: new NansenClient({ ...opts, apiKey: key("nansen") }),
     zerion: new ZerionClient({ ...opts, apiKey: key("zerion") }),
     etherscan: new EtherscanClient({ ...opts, apiKey: key("etherscan") }),
-    accountRpc: new RpcClient(MONAD_TESTNET.rpcUrl, MONAD_TESTNET.chainId, opts),
+    accountRpc: new RpcClient(ARC_TESTNET.rpcUrl, ARC_TESTNET.chainId, opts),
+    explorer: new BlockscoutClient(ARC_TESTNET.explorerApiUrl, opts),
     historyRpcs: HISTORY_CHAINS.map((c) => new RpcClient(c.rpcUrl, c.chainId, opts)),
   };
 }
 
 /** Words the buyer never sees (plan §2), plus the credit jargon this package could leak. */
 export const JARGON =
-  /\b(wallets?|address(es)?|seed|passkeys?|sign(ed|ing|ature)?|approv(e|al)|transactions?|gas|MON|AUSD|USDC|tokens?|blockchain|on-?chain|monad|crypto|defi|liquidat\w*|sybil|stablecoins?|nonces?|protocols?|collateral|smart contract|nansen|zerion|etherscan)\b/i;
+  /\b(wallets?|address(es)?|seed|passkeys?|sign(ed|ing|ature)?|approv(e|al)|transactions?|gas|USDC|EURC|tokens?|blockchain|on-?chain|arc|crypto|defi|liquidat\w*|sybil|stablecoins?|nonces?|protocols?|collateral|smart contract|nansen|zerion|etherscan)\b/i;

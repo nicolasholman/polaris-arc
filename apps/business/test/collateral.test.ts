@@ -1,5 +1,5 @@
 /**
- * POST /api/relay type=lockCollateral: a secured Pay in 4 line with no MON.
+ * POST /api/relay type=lockCollateral: a secured Pay in 4 line with no gas of their own.
  * The borrower signs one ERC-2612 permit (spender CollateralVault, value the
  * amount) and the relayer sends CollateralVault.lockWithPermit, which puts it
  * in the borrower's own position.
@@ -36,7 +36,7 @@ const lock = (amount: bigint, permit: unknown) =>
   relayRoute(request("POST", "/api/relay", { body: { type: "lockCollateral", borrower: borrower.address, amount: amount.toString(), permit } }), params({}));
 
 describe("POST /api/relay type=lockCollateral", () => {
-  it("relays CollateralVault.lockWithPermit for the borrower who signed, once, with no MON", async () => {
+  it("relays CollateralVault.lockWithPermit for the borrower who signed, once, with no gas of their own", async () => {
     const permit = await signPermit(202_000_000n);
     const res = await json(await lock(202_000_000n, permit));
     expect(res.status).toBe(200);

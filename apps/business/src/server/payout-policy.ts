@@ -9,7 +9,7 @@ import { getPrivy } from "./privy";
 
 /**
  * Create the merchant's automatic-payout policy in Privy (research §6.2):
- * our payout signer may sign only an AUSD TransferWithAuthorization on this
+ * our payout signer may sign only an USDC TransferWithAuthorization on this
  * chain, from the merchant's wallet, to `payoutAddress`, up to the per-payout
  * cap. The browser then adds the signer to the merchant's wallet with this
  * policy as its override (`useSigners().addSigners`), which only the merchant

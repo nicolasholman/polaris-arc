@@ -34,7 +34,7 @@ export type CheckoutSessionCreateParams = {
    * given (it is their sum); when both are given they must agree.
    */
   amount?: string | number;
-  /** Only "USD": every Polaris payment settles in AUSD, a dollar. */
+  /** Only "USD": every Polaris payment settles in USDC, a dollar. */
   currency?: "USD";
   /** One line the buyer sees under the merchant's name. Up to 500 characters. */
   description: string;

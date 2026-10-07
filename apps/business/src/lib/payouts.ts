@@ -3,7 +3,7 @@
 import { useCallback } from "react";
 
 import { useAuth } from "./auth-context";
-import { ausdDomain, AUTHORIZATION_TTL_SECONDS, CENTS_TO_AUSD_UNITS, TRANSFER_WITH_AUTHORIZATION_TYPES } from "./chain";
+import { usdcDomain, AUTHORIZATION_TTL_SECONDS, CENTS_TO_USDC_UNITS, TRANSFER_WITH_AUTHORIZATION_TYPES } from "./chain";
 import type { Address, AutoPayouts, Cents, Merchant, Payout, WithdrawInput } from "./data/types";
 import { PAYOUT_SIGNER_ID } from "./features";
 import { useDashboardData } from "./session";
@@ -18,9 +18,9 @@ function randomNonce(): `0x${string}` {
 let networkDomain: Promise<Domain | null> | null = null;
 
 /**
- * AUSD's EIP-712 domain as the server serves it (`/api/public/network`, from
+ * USDC's EIP-712 domain as the server serves it (`/api/public/network`, from
  * the deployment record, so the chain id and address are the ones the relayer
- * uses), falling back to this build's NEXT_PUBLIC_AUSD_* settings. Null when
+ * uses), falling back to this build's NEXT_PUBLIC_USDC_* settings. Null when
  * the server has no chain: then nothing can be withdrawn.
  */
 export function stablecoinDomain(): Promise<Domain | null> {
@@ -29,14 +29,14 @@ export function stablecoinDomain(): Promise<Domain | null> {
       res.ok ? ((await res.json()) as { data?: { domains?: { stablecoin?: Domain } } }).data?.domains?.stablecoin ?? null : null,
     )
     .catch(() => null)
-    .then((d) => d ?? (ausdDomain() as Domain | null));
+    .then((d) => d ?? (usdcDomain() as Domain | null));
   return networkDomain;
 }
 
 /**
  * One-tap withdraw. The merchant's embedded wallet signs an ERC-3009
  * TransferWithAuthorization (no gas: the relayer submits it as
- * `AUSD.transferWithAuthorization`) and the server checks the signature came
+ * `USDC.transferWithAuthorization`) and the server checks the signature came
  * from that wallet before relaying it. Callers only reach this once the
  * server reports a chain and a relayer (see `useCapabilities`).
  */
@@ -63,7 +63,7 @@ export function useWithdraw() {
             message: {
               from: wallet.address,
               to: destination,
-              value: (BigInt(amountCents) * CENTS_TO_AUSD_UNITS).toString(),
+              value: (BigInt(amountCents) * CENTS_TO_USDC_UNITS).toString(),
               validAfter,
               validBefore,
               nonce,
@@ -82,7 +82,7 @@ export function useWithdraw() {
 
 /**
  * Automatic daily payouts. The server creates a Privy policy that allows only
- * AUSD transfers to `payoutAddress`; we then add our payout signer to the
+ * USDC transfers to `payoutAddress`; we then add our payout signer to the
  * merchant's wallet with that policy as its override. Turning off removes it,
  * and the server never needs the wallet for that (it checks the wallet only
  * when turning on).
@@ -123,7 +123,7 @@ export function useAutoPayouts() {
 /**
  * Register the business on chain (MerchantRegistry), right after it is named:
  * the embedded wallet signs the `Registration` the server prepares, and the
- * relayer sends `registerFor`. The merchant never holds MON. Resolves with the
+ * relayer sends `registerFor`. The merchant never needs gas. Resolves with the
  * merchant as the server now sees it (its `registration.state`).
  */
 export function useRegisterMerchant() {

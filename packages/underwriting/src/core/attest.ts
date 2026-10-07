@@ -1,5 +1,5 @@
 /**
- * Whether the DON may attest a set of facts at all: the thin-file gate.
+ * Whether the keeper may report a set of facts at all: the thin-file gate.
  *
  * ScoreManager opens every underwritten wallet at UNDERWRITE_FLOOR (520, the
  * $200 tier) and adds what the facts earn, and PolarisLoanEngine lends against
@@ -11,7 +11,7 @@
  * creditLimitOf $200). The sybil and one-link checks cover only a linked
  * history wallet, so they do not help an account that brings none.
  *
- * So the DON attests only facts that show a life elsewhere, exactly as
+ * So the keeper reports only facts that show a life elsewhere, exactly as
  * `ScoreManager.isThinFile` requires on chain: at least 90 days since the
  * oldest activity AND at least 10 transactions, counted across every subject
  * the derivation used (the account, plus a linked wallet that passed its risk
@@ -33,9 +33,9 @@
  * unsecured line for good and spends the history wallet (it can never back
  * another account), which is the point of the sybil and liquidation checks.
  *
- * The CRE underwriting workflow's gate (workflows/src/underwriting/thin.ts)
- * is the same rule, so the app's preview never promises a line the DON will
- * not attest, or that the chain would refuse.
+ * The Polaris keeper (services/keeper) runs this same function before it
+ * submits a report, so the app's preview never promises a line the keeper
+ * will not report, or that the chain would refuse.
  */
 
 import { ATTEST_MINIMUM } from "./constants.ts";
@@ -46,7 +46,7 @@ export type { AttestGap };
 
 type GateFacts = Omit<Facts, "observedAt"> & { observedAt?: bigint };
 
-/** True when the DON may attest these facts: declined, or at least 90 days and 10 transactions of history. */
+/** True when the keeper may report these facts: declined, or at least 90 days and 10 transactions of history. */
 export function isAttestable(facts: GateFacts): boolean {
   if (scoreBreakdown(facts).declined) return true;
   return facts.walletAgeDays >= ATTEST_MINIMUM.walletAgeDays && facts.txCount >= ATTEST_MINIMUM.txCount;

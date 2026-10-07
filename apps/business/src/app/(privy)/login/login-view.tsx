@@ -127,7 +127,7 @@ function Onboarding({ next }: { next: string }) {
   const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
-  // After the name is saved: register the business on Monad (MerchantRegistry),
+  // After the name is saved: register the business on Arc (MerchantRegistry),
   // signed by the payout wallet and sent by the relayer, then open the dashboard.
   const [registering, setRegistering] = useState<{ business: string; done: boolean } | null>(null);
   const started = useRef(false);
@@ -141,7 +141,7 @@ function Onboarding({ next }: { next: string }) {
     if (!registering || started.current) return;
     const finish = (message?: string) => {
       if (message) {
-        toast({ title: "Your business isn't registered on Monad yet", description: `${message} You can finish it from the dashboard.`, tone: "info", duration: 8000 });
+        toast({ title: "Your business isn't registered on Arc yet", description: `${message} You can finish it from the dashboard.`, tone: "info", duration: 8000 });
       }
       router.replace(next);
     };
@@ -266,14 +266,14 @@ function Registering({ business, step }: { business: string; step: "wallet" | "s
       label: "Confirm with your payout account",
       state: step === "wallet" ? ("waiting" as const) : step === "sign" ? ("active" as const) : ("done" as const),
     },
-    { key: "send", label: "Registered on Monad, fee paid by Polaris", state: step === "done" ? ("done" as const) : ("waiting" as const) },
+    { key: "send", label: "Registered on Arc, fee paid by Polaris", state: step === "done" ? ("done" as const) : ("waiting" as const) },
   ];
   return (
     <div className="grid gap-7" aria-live="polite">
       <div className="grid gap-4">
         <h1 className="text-[clamp(34px,4.4vw,48px)] leading-[1.04] font-medium tracking-[-0.04em]">Registering your business</h1>
         <p className="text-[17px] leading-[1.5] text-ui-muted">
-          One confirmation puts {business} and its payout address on Monad, so buyers can pay you. You never need MON: our
+          One confirmation puts {business} and its payout address on Arc, so buyers can pay you. You never need USDC (gas): our
           relayer sends it.
         </p>
       </div>

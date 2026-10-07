@@ -35,7 +35,7 @@ export const EXCHANGES: readonly string[] = [
  * Labels that stop a linked wallet counting as history. A buyer who links a
  * wallet first funded through a mixer or by an exploiter gets no credit for
  * it; their account is underwritten on its own instead. This is an admission
- * rule, not a score: the DON still attests only facts.
+ * rule, not a score: the keeper still reports only facts.
  */
 // Letter boundaries, not \b: Etherscan-style labels such as "Fake_Phishing1234"
 // join words with underscores and digits, which \b treats as part of the word.

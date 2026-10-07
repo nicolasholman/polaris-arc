@@ -1,6 +1,9 @@
 /**
  * End to end on a local chain: the BUILT SDK (dist/cjs) against the real
- * PolarisPayments and MockAUSD, compiled from packages/contracts.
+ * PolarisPayments and MockUSDC, compiled from packages/contracts. MockUSDC
+ * mirrors Arc's USDC where it matters here: 6 decimals, Circle's ERC-3009
+ * typehashes, the domain { name: "USDC", version: "2" } and no ERC-5267
+ * eip712Domain(), so the SDK reads the domain the way it does on Arc.
  *
  *   pnpm --filter polarispay-sdk test:chain
  *
@@ -9,8 +12,10 @@
  *
  * It proves four things the unit tests can only mock:
  *   1. pay() from a wallet that holds gas settles the order on chain.
- *   2. pay() with a relayUrl settles it for a buyer holding ZERO native gas:
- *      the buyer only signs, a relayer account submits.
+ *   2. pay() with a relayUrl settles it for a buyer who never pays gas: the
+ *      buyer only signs, a relayer account submits. (On Arc gas is paid in
+ *      USDC and Polaris pays it; on Hardhat the gas token is a separate ETH,
+ *      so a zero native balance proves the buyer paid none.)
  *   3. The relayer can't redirect that signature to another merchant.
  *   4. quotePayIn4 is the schedule PolarisLoanEngine actually opens: the same
  *      total, the same instalment on every rung of the ladder, the same due
@@ -26,7 +31,7 @@ const hre = require(require.resolve("hardhat", { paths: [process.cwd()] }));
 const sdk = require(process.env.POLARIS_SDK_DIST ? path.resolve(process.env.POLARIS_SDK_DIST) : path.join(__dirname, "..", "..", "dist", "cjs", "index.js"));
 
 const { ethers } = hre;
-const AUSD = (n) => ethers.parseUnits(String(n), 6);
+const USD = (n) => ethers.parseUnits(String(n), 6);
 
 /** Hardhat's provider, speaking as one of its unlocked accounts. */
 function accountProvider(base, address) {
@@ -62,33 +67,33 @@ function keyProvider(base, wallet) {
 
 async function main() {
   const [owner, treasury, merchant, relayer, buyer, rival] = await ethers.getSigners();
-  const ausd = await (await ethers.getContractFactory("MockAUSD")).deploy();
-  const payments = await (await ethers.getContractFactory("PolarisPayments")).deploy(owner.address, await ausd.getAddress(), treasury.address, 0);
+  const usdc = await (await ethers.getContractFactory("MockUSDC")).deploy("USDC");
+  const payments = await (await ethers.getContractFactory("PolarisPayments")).deploy(owner.address, await usdc.getAddress(), treasury.address, 0);
 
   const chain = {
-    ...sdk.MONAD_TESTNET,
+    ...sdk.ARC_TESTNET,
     key: "hardhat",
     chainId: 31337,
     name: "Hardhat",
     rpcUrl: "http://127.0.0.1:8545",
     explorer: "http://localhost/explorer",
-    stablecoin: await ausd.getAddress(),
+    stablecoin: await usdc.getAddress(),
     payments: await payments.getAddress(),
   };
 
   // 1. Wallet-sent.
-  await ausd.mint(buyer.address, AUSD(1_000));
+  await usdc.mint(buyer.address, USD(1_000));
   const walletClient = sdk.createPolaris({
     publishableKey: "pk_test_localchain0001",
     chain,
     provider: accountProvider(hre.network.provider, buyer.address),
   });
-  const before = await ausd.balanceOf(merchant.address);
+  const before = await usdc.balanceOf(merchant.address);
   const r1 = await walletClient.pay({ merchant: merchant.address, amount: "25.00", orderId: "e2e-wallet-1" });
   assert.equal(r1.ok, true, r1.error);
   assert.equal(r1.relayed, false);
   // 0.5% protocol fee: the merchant nets 24.875.
-  assert.equal((await ausd.balanceOf(merchant.address)) - before, AUSD("24.875"));
+  assert.equal((await usdc.balanceOf(merchant.address)) - before, USD("24.875"));
   const recorded = await walletClient.getPayment({ merchant: merchant.address, orderId: "e2e-wallet-1" });
   assert.equal(recorded.payer, buyer.address);
   assert.equal(recorded.amount, "25.00");
@@ -96,9 +101,9 @@ async function main() {
   assert.deepEqual([again.ok, again.error], [false, "This order has already been paid."]);
   console.log(`  ✓ wallet pay settled: ${r1.transactionHash}`);
 
-  // 2. Gasless through a relay: the buyer has AUSD and no ETH at all.
+  // 2. Gasless through a relay: the buyer has USDC and no native gas at all.
   const gasless = ethers.Wallet.createRandom();
-  await ausd.mint(gasless.address, AUSD(500));
+  await usdc.mint(gasless.address, USD(500));
   assert.equal(await ethers.provider.getBalance(gasless.address), 0n);
 
   let lastRelayBody;
@@ -121,14 +126,14 @@ async function main() {
     relayUrl: "http://relay.local/api/v1/relay/payments",
     fetch: relayFetch,
   });
-  const merchantBefore = await ausd.balanceOf(merchant.address);
+  const merchantBefore = await usdc.balanceOf(merchant.address);
   const r2 = await gaslessClient.pay({ merchant: merchant.address, amount: "200.00", orderId: "e2e-gasless-1" });
   assert.equal(r2.ok, true, r2.error);
   assert.equal(r2.relayed, true);
   assert.equal(await ethers.provider.getBalance(gasless.address), 0n, "the buyer never spent gas");
-  assert.equal(await ausd.balanceOf(gasless.address), AUSD(300));
-  assert.equal((await ausd.balanceOf(merchant.address)) - merchantBefore, AUSD(199));
-  console.log(`  ✓ gasless pay settled by the relayer, buyer ETH balance 0: ${r2.transactionHash}`);
+  assert.equal(await usdc.balanceOf(gasless.address), USD(300));
+  assert.equal((await usdc.balanceOf(merchant.address)) - merchantBefore, USD(199));
+  console.log(`  ✓ gasless pay settled by the relayer, buyer native balance 0: ${r2.transactionHash}`);
 
   // 3. The same signature can't be pointed at another merchant.
   const replay = { ...lastRelayBody, merchant: rival.address, orderId: "e2e-gasless-2" };
@@ -142,7 +147,7 @@ async function main() {
   console.log("  ✓ a relayer can't redirect the buyer's signature to another merchant");
 
   // 4. Pay in 4: the SDK's quote against loans the engine really opens.
-  await payIn4MatchesTheEngine(ausd);
+  await payIn4MatchesTheEngine(usdc);
 
   console.log("\npolarispay-sdk e2e on a local chain: all passed");
 }
@@ -153,13 +158,13 @@ async function main() {
  * right after origination. Every case uses its own borrower, so each starts
  * from the $200 opening line.
  */
-async function payIn4MatchesTheEngine(ausd) {
+async function payIn4MatchesTheEngine(usdc) {
   const signers = await ethers.getSigners();
   const [owner, , merchant] = signers;
   const scores = await (await ethers.getContractFactory("ScoreManager")).deploy(owner.address);
   const engine = await (await ethers.getContractFactory("PolarisLoanEngine")).deploy(
     owner.address,
-    await ausd.getAddress(),
+    await usdc.getAddress(),
     await scores.getAddress(),
     owner.address,
     0,
@@ -167,9 +172,9 @@ async function payIn4MatchesTheEngine(ausd) {
   );
   await scores.setWriter(await engine.getAddress(), true);
   await engine.setOriginator(owner.address, true);
-  await ausd.mint(owner.address, AUSD(100_000));
-  await ausd.connect(owner).approve(await engine.getAddress(), AUSD(100_000));
-  await engine.fund(AUSD(100_000));
+  await usdc.mint(owner.address, USD(100_000));
+  await usdc.connect(owner).approve(await engine.getAddress(), USD(100_000));
+  await engine.fund(USD(100_000));
 
   const DAY = 86_400;
   const cases = [
@@ -187,10 +192,10 @@ async function payIn4MatchesTheEngine(ausd) {
     const quote = sdk.quotePayIn4(c.amount, { installments: c.installments, intervalSeconds: c.intervalSeconds });
     const count = quote.installments.length;
     const label = `${c.amount} × ${count} every ${quote.intervalSeconds}s`;
-    await ausd.mint(borrower.address, AUSD(1_000));
-    await ausd.connect(borrower).approve(await engine.getAddress(), AUSD(1_000));
+    await usdc.mint(borrower.address, USD(1_000));
+    await usdc.connect(borrower).approve(await engine.getAddress(), USD(1_000));
 
-    await (await engine.createLoan(borrower.address, merchant.address, AUSD(c.amount), count, quote.intervalSeconds)).wait();
+    await (await engine.createLoan(borrower.address, merchant.address, USD(c.amount), count, quote.intervalSeconds)).wait();
     const id = await engine.loanCount();
     const loan = await engine.getLoan(id);
 

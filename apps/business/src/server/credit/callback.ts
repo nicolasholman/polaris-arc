@@ -10,14 +10,15 @@ import { syncChain } from "../ingest/sync";
 import { recordDecision, recordUnavailable } from "./underwriting";
 
 /**
- * `POST /api/cre/callback`: what the CRE workflows report after a run, signed
- * with POLARIS_CRE_CALLBACK_SECRET (auth.ts `withCreCallback` verifies it).
+ * `POST /api/keeper/callback`: what the Polaris keeper reports after a run,
+ * signed with POLARIS_KEEPER_CALLBACK_SECRET (auth.ts `withKeeperCallback`
+ * verifies it).
  *
  * - `credit.underwritten` / `credit.refused` / `credit.thin` (underwriting):
  *   the decision for the account is recorded, its request closed, and the
  *   app's credit screen shows it (`GET /api/public/credit/{account}`).
  * - `credit.unavailable` (underwriting): the review needs a data provider the
- *   workflow has no key for (`notConfigured`: Nansen, Zerion or Etherscan).
+ *   keeper has no key for (`notConfigured`: Nansen, Zerion or Etherscan).
  *   No decision is recorded, since nothing was decided; the account's open
  *   request fails with a sentence naming the provider and its key, which
  *   "Raise your limit" shows instead of waiting.
@@ -26,13 +27,11 @@ import { recordDecision, recordUnavailable } from "./underwriting";
  *   at once. The chain events stay the source of truth: the callback only
  *   says where to look.
  * - `collections.heartbeat`: a collections run happened, idle or not (the
- *   local runner, workflows/scripts/local-collections.mjs, sends one per
- *   run). An idle run writes nothing on chain, so this is how the
- *   dashboard's Collections card knows the runner is alive.
+ *   keeper sends one per run). An idle run writes nothing on chain, so this
+ *   is how the dashboard knows the keeper is alive.
  *
- * Every node of the DON may deliver the same callback, so each `id` is
- * handled once; an unknown type is acknowledged (so the DON doesn't retry)
- * and ignored.
+ * A callback may be delivered twice (the keeper retries), so each `id` is
+ * handled once; an unknown type is acknowledged and ignored.
  */
 
 type Payload = {
@@ -48,7 +47,7 @@ type Payload = {
 
 const DECISIONS = { "credit.underwritten": "applied", "credit.refused": "refused", "credit.thin": "thin" } as const;
 
-export async function handleCreCallback(raw: string): Promise<{ id: string; type: string; duplicate: boolean }> {
+export async function handleKeeperCallback(raw: string): Promise<{ id: string; type: string; duplicate: boolean }> {
   let payload: Payload;
   try {
     payload = JSON.parse(raw) as Payload;
@@ -95,7 +94,7 @@ export async function handleCreCallback(raw: string): Promise<{ id: string; type
         providers: named.map((n) => (n && typeof n === "object" ? (n as { provider?: unknown }).provider : n)).filter((p): p is string => typeof p === "string"),
       });
     } else if (type === "collections.run") {
-      afterResponse("cre: chain sync", () => syncChain());
+      afterResponse("keeper: chain sync", () => syncChain());
     } else if (type === "collections.heartbeat") {
       const at = new Date().toISOString();
       const current = await db.collectorRuns.get("cre");
@@ -110,7 +109,7 @@ export async function handleCreCallback(raw: string): Promise<{ id: string; type
       });
     }
   } catch (error) {
-    // Let the DON's retry (or the next node's delivery) try again.
+    // Let the keeper's retry try again.
     await db.creCallbacks.delete(id.slice(0, 200));
     throw error;
   }

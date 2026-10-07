@@ -8,10 +8,10 @@
 // server keeps (PRIVY_PAYOUT_SIGNER_KEY). A merchant who turns on automatic
 // payouts adds it to their own embedded wallet from the dashboard
 // (`useSigners().addSigners`), with a policy the server creates for them
-// (src/server/policy/payout.ts) that lets it sign one thing: an AUSD
+// (src/server/policy/payout.ts) that lets it sign one thing: an USDC
 // TransferWithAuthorization on this chain, from their wallet, to the payout
 // address they chose, up to $10,000 per payout. The relayer submits it, so the
-// merchant never holds MON. Turning payouts off removes the signer.
+// merchant never needs gas. Turning payouts off removes the signer.
 
 import { banner, flag, loadDeployment, loadEnv, mask, privyClient, writeEnvPrivy } from "./lib.mjs";
 import { buildPayoutPolicy } from "../../src/server/policy/payout.ts";

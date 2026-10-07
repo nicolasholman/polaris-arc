@@ -13,7 +13,7 @@ import { getPrivy } from "../privy";
  *   (`eth_signTransaction`) under the relayer policy, authorised by the
  *   relayer key quorum's P-256 key, and we broadcast to our own RPC
  *   (research §4.3, route B): it works on any EVM chain and lets us set the
- *   gas limit, which Monad bills in full.
+ *   gas limit, priced at or above Arc's fee floor.
  * - `local` (development): a raw key on a local Hardhat node, held to the
  *   same allow-list by `checkRelayerCall` before every signature.
  *

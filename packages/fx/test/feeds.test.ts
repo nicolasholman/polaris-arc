@@ -18,12 +18,16 @@ describe("the feed table", () => {
     for (const code of ["ARS", "PHP", "BRL", "MXN", "INR", "NGN", "EUR", "GBP", "JPY", "CHF", "CAD"]) expect(hasFxFeed(code), code).toBe(true);
   });
 
-  it("reads EUR, GBP, JPY, CHF and CAD from Monad mainnet first", () => {
-    for (const code of ["EUR", "GBP", "JPY", "CHF", "CAD"]) expect(feedsFor(code)?.sources[0]?.chain, code).toBe("monad");
-    // Monad's FX feeds report 18 decimals and update every 240 s.
-    for (const code of ["EUR", "GBP", "JPY", "CHF", "CAD"]) {
-      expect(feedsFor(code)?.sources[0]).toMatchObject({ decimals: 18, heartbeatSeconds: 240 });
+  it("reads EUR, GBP and CAD from Polygon's 27 s feeds first, each with a fallback", () => {
+    for (const code of ["EUR", "GBP", "CAD"]) {
+      expect(feedsFor(code)?.sources[0], code).toMatchObject({ chain: "polygon", decimals: 8, heartbeatSeconds: 27 });
     }
+    for (const code of ["EUR", "GBP", "JPY", "CHF", "CAD"]) expect(feedsFor(code)?.sources.length, code).toBe(2);
+  });
+
+  it("reads nothing from Arc: Chainlink does not run there", () => {
+    expect(Object.keys(CHAINS).sort()).toEqual(["base", "ethereum", "polygon"]);
+    expect(Object.values(CHAINS).map((c) => c.id)).not.toContain(5042);
   });
 
   it("lists each currency once, with checksummed addresses and a pair that names it", () => {
@@ -59,7 +63,6 @@ describe("the feed table", () => {
   });
 
   it("points each chain at its own chain id", () => {
-    expect(CHAINS.monad.id).toBe(143);
     expect(CHAINS.ethereum.id).toBe(1);
     expect(CHAINS.polygon.id).toBe(137);
     expect(CHAINS.base.id).toBe(8453);

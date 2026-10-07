@@ -1,7 +1,7 @@
 import { encodeFunctionData, erc20Abi, getAddress, zeroHash, type Address } from "viem";
 import { describe, expect, it } from "vitest";
 
-import { collateralVaultAbi, iausdAbi, merchantRegistryAbi, polarisCheckoutAbi, polarisLoanEngineAbi, polarisPaymentsAbi, polarisSendAbi, polarisSplitAbi } from "@polarispay/contracts/abi";
+import { collateralVaultAbi, iusdcAbi, merchantRegistryAbi, polarisCheckoutAbi, polarisLoanEngineAbi, polarisPaymentsAbi, polarisSendAbi, polarisSplitAbi } from "@polarispay/contracts/abi";
 import { buildPayoutPolicy, TWA_TYPES } from "@/server/policy/payout";
 import {
   buildRegistryAdminPolicy,
@@ -23,10 +23,13 @@ const addresses: RelayerAddresses = {
   registry: "0x0000000000000000000000000000000000004E01",
   stablecoin: "0x00000000000000000000000000000000000A05D0",
   vault: "0x000000000000000000000000000000000000Ca01",
+  sendEurc: "0x0000000000000000000000000000000000005E02",
+  messageTransmitter: "0xE737e5cEBEEBa77EFE34D4aa090756590b1CE275",
+  memo: "0x5294E9927c3306DcBaDb03fe70b92e01cCede505",
 };
 for (const k of Object.keys(addresses) as (keyof RelayerAddresses)[]) addresses[k] = getAddress(addresses[k] as Address);
 const splitAddress = addresses.split as Address;
-const expected = { chainId: 10143, addresses };
+const expected = { chainId: 5042002, addresses };
 const someone = "0x1111111111111111111111111111111111111111" as Address;
 const merchant = "0x2222222222222222222222222222222222222222" as Address;
 
@@ -38,63 +41,63 @@ const payData = encodeFunctionData({
 
 describe("the relayer's allow-list (checkRelayerCall)", () => {
   it("allows every listed call, and nothing else on those contracts", () => {
-    expect(checkRelayerCall({ to: addresses.checkout, data: payData, value: 0n, chainId: 10143 }, expected)).toMatchObject({ contract: "checkout", functionName: "pay" });
+    expect(checkRelayerCall({ to: addresses.checkout, data: payData, value: 0n, chainId: 5042002 }, expected)).toMatchObject({ contract: "checkout", functionName: "pay" });
     const repay = encodeFunctionData({ abi: polarisLoanEngineAbi, functionName: "repayWithSig", args: [1n, 1n, 0n, 2n, "0x"] });
-    expect(checkRelayerCall({ to: addresses.loanEngine, data: repay, chainId: 10143 }, expected).functionName).toBe("repayWithSig");
+    expect(checkRelayerCall({ to: addresses.loanEngine, data: repay, chainId: 5042002 }, expected).functionName).toBe("repayWithSig");
     const claim = encodeFunctionData({ abi: polarisSendAbi, functionName: "claim", args: [someone, merchant, 1n, 27, zeroHash, zeroHash] });
-    expect(checkRelayerCall({ to: addresses.send, data: claim, chainId: 10143 }, expected).functionName).toBe("claim");
-    const twa = encodeFunctionData({ abi: iausdAbi, functionName: "transferWithAuthorization", args: [someone, merchant, 1n, 0n, 1n, zeroHash, 27, zeroHash, zeroHash] });
-    expect(checkRelayerCall({ to: addresses.stablecoin, data: twa, chainId: 10143 }, expected).functionName).toBe("transferWithAuthorization");
+    expect(checkRelayerCall({ to: addresses.send, data: claim, chainId: 5042002 }, expected).functionName).toBe("claim");
+    const twa = encodeFunctionData({ abi: iusdcAbi, functionName: "transferWithAuthorization", args: [someone, merchant, 1n, 0n, 1n, zeroHash, 27, zeroHash, zeroHash] });
+    expect(checkRelayerCall({ to: addresses.stablecoin, data: twa, chainId: 5042002 }, expected).functionName).toBe("transferWithAuthorization");
   });
 
-  it("allows a buyer's re-signed permit through PolarisCheckout.reauthorize, but never a bare AUSD permit", () => {
+  it("allows a buyer's re-signed permit through PolarisCheckout.reauthorize, but never a bare USDC permit", () => {
     const permit = { value: 201_530_000n, deadline: 2_000_000_000n, v: 27, r: zeroHash, s: zeroHash };
     const reauthorize = encodeFunctionData({ abi: polarisCheckoutAbi, functionName: "reauthorize", args: [someone, permit] });
-    expect(checkRelayerCall({ to: addresses.checkout, data: reauthorize, chainId: 10143 }, expected)).toMatchObject({ contract: "checkout", functionName: "reauthorize" });
+    expect(checkRelayerCall({ to: addresses.checkout, data: reauthorize, chainId: 5042002 }, expected)).toMatchObject({ contract: "checkout", functionName: "reauthorize" });
     expect(buildRelayerPolicy(expected).rules.some((r) => r.name === "Re-sign: PolarisCheckout.reauthorize")).toBe(true);
-    const bare = encodeFunctionData({ abi: iausdAbi, functionName: "permit", args: [someone, merchant, 1n, 2n, 27, zeroHash, zeroHash] });
-    expect(() => checkRelayerCall({ to: addresses.stablecoin, data: bare, chainId: 10143 }, expected)).toThrow(/allow-list/);
+    const bare = encodeFunctionData({ abi: iusdcAbi, functionName: "permit", args: [someone, merchant, 1n, 2n, 27, zeroHash, zeroHash] });
+    expect(() => checkRelayerCall({ to: addresses.stablecoin, data: bare, chainId: 5042002 }, expected)).toThrow(/allow-list/);
   });
 
-  it("carries a borrower's permit to CollateralVault.lockWithPermit (a secured line with no MON), above the minimum only", () => {
+  it("carries a borrower's permit to CollateralVault.lockWithPermit (a secured line with no gas of their own), above the minimum only", () => {
     const lock = (amount: bigint) => encodeFunctionData({ abi: collateralVaultAbi, functionName: "lockWithPermit", args: [someone, amount, 2_000_000_000n, 27, zeroHash, zeroHash] });
     const withMin = { ...expected, minAmountUnits: 100_000n };
-    expect(checkRelayerCall({ to: addresses.vault, data: lock(202_000_000n), chainId: 10143 }, withMin)).toMatchObject({ contract: "vault", functionName: "lockWithPermit" });
-    expect(() => checkRelayerCall({ to: addresses.vault, data: lock(1n), chainId: 10143 }, withMin)).toThrow(/100000 base units or more/);
+    expect(checkRelayerCall({ to: addresses.vault, data: lock(202_000_000n), chainId: 5042002 }, withMin)).toMatchObject({ contract: "vault", functionName: "lockWithPermit" });
+    expect(() => checkRelayerCall({ to: addresses.vault, data: lock(1n), chainId: 5042002 }, withMin)).toThrow(/100000 base units or more/);
     // The vault's own lock (msg.sender's), withdraw and owner calls are not the relayer's.
     const bare = encodeFunctionData({ abi: collateralVaultAbi, functionName: "lock", args: [1_000_000n] });
-    expect(() => checkRelayerCall({ to: addresses.vault, data: bare, chainId: 10143 }, expected)).toThrow(/allow-list/);
+    expect(() => checkRelayerCall({ to: addresses.vault, data: bare, chainId: 5042002 }, expected)).toThrow(/allow-list/);
     const seize = encodeFunctionData({ abi: collateralVaultAbi, functionName: "seize", args: [someone, 1n, merchant] });
-    expect(() => checkRelayerCall({ to: addresses.vault, data: seize, chainId: 10143 }, expected)).toThrow(/allow-list/);
+    expect(() => checkRelayerCall({ to: addresses.vault, data: seize, chainId: 5042002 }, expected)).toThrow(/allow-list/);
     const rule = buildRelayerPolicy(withMin).rules.find((r) => r.name === "Secure a line: CollateralVault.lockWithPermit");
     expect(rule?.conditions).toContainEqual(expect.objectContaining({ field: "lockWithPermit.amount", operator: "gte", value: "100000" }));
   });
 
   it("without a vault in the deployment, has no collateral rule and refuses the call", () => {
     const { vault, ...rest } = addresses;
-    const noVault = { chainId: 10143, addresses: { ...rest, vault: null } };
+    const noVault = { chainId: 5042002, addresses: { ...rest, vault: null } };
     const lock = encodeFunctionData({ abi: collateralVaultAbi, functionName: "lockWithPermit", args: [someone, 1_000_000n, 2_000_000_000n, 27, zeroHash, zeroHash] });
-    expect(() => checkRelayerCall({ to: vault as Address, data: lock, chainId: 10143 }, noVault)).toThrow(/isn't a Polaris contract/);
+    expect(() => checkRelayerCall({ to: vault as Address, data: lock, chainId: 5042002 }, noVault)).toThrow(/isn't a Polaris contract/);
     const take = encodeFunctionData({ abi: collateralVaultAbi, functionName: "withdrawWithSig", args: [someone, 1_000_000n, 2_000_000_000n, "0x"] });
-    expect(() => checkRelayerCall({ to: vault as Address, data: take, chainId: 10143 }, noVault)).toThrow(/isn't a Polaris contract/);
+    expect(() => checkRelayerCall({ to: vault as Address, data: take, chainId: 5042002 }, noVault)).toThrow(/isn't a Polaris contract/);
     const policy = buildRelayerPolicy(noVault);
     expect(policy.rules.some((r) => r.name.includes("CollateralVault"))).toBe(false);
     // The two vault calls are left out; the DENY rule is added.
     expect(policy.rules).toHaveLength(RELAYER_CALLS.length - 2 + 1);
   });
 
-  it("carries a borrower's Withdraw to CollateralVault.withdrawWithSig (take out of Boost with no MON), above the minimum only", () => {
+  it("carries a borrower's Withdraw to CollateralVault.withdrawWithSig (take out of Boost with no gas of their own), above the minimum only", () => {
     const take = (amount: bigint) => encodeFunctionData({ abi: collateralVaultAbi, functionName: "withdrawWithSig", args: [someone, amount, 2_000_000_000n, "0x1234"] });
     const withMin = { ...expected, minAmountUnits: 100_000n };
-    expect(checkRelayerCall({ to: addresses.vault, data: take(25_000_000n), chainId: 10143 }, withMin)).toMatchObject({ contract: "vault", functionName: "withdrawWithSig" });
-    expect(() => checkRelayerCall({ to: addresses.vault, data: take(1n), chainId: 10143 }, withMin)).toThrow(/100000 base units or more/);
+    expect(checkRelayerCall({ to: addresses.vault, data: take(25_000_000n), chainId: 5042002 }, withMin)).toMatchObject({ contract: "vault", functionName: "withdrawWithSig" });
+    expect(() => checkRelayerCall({ to: addresses.vault, data: take(1n), chainId: 5042002 }, withMin)).toThrow(/100000 base units or more/);
     // withdraw() pays its caller, the relayer itself: never on the list, and neither is invalidateNonce.
     const bare = encodeFunctionData({ abi: collateralVaultAbi, functionName: "withdraw", args: [1_000_000n] });
-    expect(() => checkRelayerCall({ to: addresses.vault, data: bare, chainId: 10143 }, expected)).toThrow(/allow-list/);
+    expect(() => checkRelayerCall({ to: addresses.vault, data: bare, chainId: 5042002 }, expected)).toThrow(/allow-list/);
     const burn = encodeFunctionData({ abi: collateralVaultAbi, functionName: "invalidateNonce" });
-    expect(() => checkRelayerCall({ to: addresses.vault, data: burn, chainId: 10143 }, expected)).toThrow(/allow-list/);
+    expect(() => checkRelayerCall({ to: addresses.vault, data: burn, chainId: 5042002 }, expected)).toThrow(/allow-list/);
     // Sent to another contract, it decodes as nothing there.
-    expect(() => checkRelayerCall({ to: addresses.loanEngine, data: take(25_000_000n), chainId: 10143 }, expected)).toThrow(PolicyViolation);
+    expect(() => checkRelayerCall({ to: addresses.loanEngine, data: take(25_000_000n), chainId: 5042002 }, expected)).toThrow(PolicyViolation);
 
     const policy = buildRelayerPolicy(withMin);
     expect(lintPolicy(policy)).toEqual([]);
@@ -112,18 +115,18 @@ describe("the relayer's allow-list (checkRelayerCall)", () => {
     const pay = encodeFunctionData({ abi: polarisSplitAbi, functionName: "payShare", args: [zeroHash, 0n, someone, 0n, 1n, 27, zeroHash, zeroHash] });
     const close = encodeFunctionData({ abi: polarisSplitAbi, functionName: "closeSplit", args: [zeroHash, 1n, "0x"] });
     for (const [data, fn] of [[create, "createSplit"], [pay, "payShare"], [close, "closeSplit"]] as const) {
-      expect(checkRelayerCall({ to: splitAddress, data, chainId: 10143 }, expected)).toMatchObject({ contract: "split", functionName: fn });
+      expect(checkRelayerCall({ to: splitAddress, data, chainId: 5042002 }, expected)).toMatchObject({ contract: "split", functionName: fn });
     }
     // A split call sent to another Polaris contract decodes as nothing there.
-    expect(() => checkRelayerCall({ to: addresses.send, data: pay, chainId: 10143 }, expected)).toThrow(PolicyViolation);
+    expect(() => checkRelayerCall({ to: addresses.send, data: pay, chainId: 5042002 }, expected)).toThrow(PolicyViolation);
     const rules = buildRelayerPolicy(expected).rules.map((r) => r.name);
     expect(rules).toEqual(expect.arrayContaining(["Split a bill: PolarisSplit.createSplit", "Pay a share: PolarisSplit.payShare", "Close a split: PolarisSplit.closeSplit"]));
   });
 
   it("without PolarisSplit (a deployment that predates it) the policy has no split rules, and split calls are refused", () => {
-    const old = { chainId: 10143, addresses: { ...addresses, split: null } };
+    const old = { chainId: 5042002, addresses: { ...addresses, split: null } };
     const pay = encodeFunctionData({ abi: polarisSplitAbi, functionName: "payShare", args: [zeroHash, 0n, someone, 0n, 1n, 27, zeroHash, zeroHash] });
-    expect(() => checkRelayerCall({ to: splitAddress, data: pay, chainId: 10143 }, old)).toThrow(/isn't a Polaris contract/);
+    expect(() => checkRelayerCall({ to: splitAddress, data: pay, chainId: 5042002 }, old)).toThrow(/isn't a Polaris contract/);
     const policy = buildRelayerPolicy(old);
     expect(lintPolicy(policy)).toEqual([]);
     expect(policy.rules.filter((r) => r.name.includes("PolarisSplit"))).toEqual([]);
@@ -131,36 +134,58 @@ describe("the relayer's allow-list (checkRelayerCall)", () => {
     expect(callsFor(old.addresses).some((c) => c.contract === "split")).toBe(false);
   });
 
-  it("refuses a relayer that tries to send MON", () => {
-    expect(() => checkRelayerCall({ to: addresses.checkout, data: payData, value: 1n, chainId: 10143 }, expected)).toThrow(PolicyViolation);
+  it("refuses a relayer that tries to send USDC (gas)", () => {
+    expect(() => checkRelayerCall({ to: addresses.checkout, data: payData, value: 1n, chainId: 5042002 }, expected)).toThrow(PolicyViolation);
   });
 
   it("refuses another chain", () => {
-    expect(() => checkRelayerCall({ to: addresses.checkout, data: payData, chainId: 143 }, expected)).toThrow(/only on chain 10143/);
+    expect(() => checkRelayerCall({ to: addresses.checkout, data: payData, chainId: 5042 }, expected)).toThrow(/only on chain 5042002/);
   });
 
   it("refuses a contract that isn't ours, even with a listed function", () => {
-    expect(() => checkRelayerCall({ to: someone, data: payData, chainId: 10143 }, expected)).toThrow(/isn't a Polaris contract/);
+    expect(() => checkRelayerCall({ to: someone, data: payData, chainId: 5042002 }, expected)).toThrow(/isn't a Polaris contract/);
   });
 
   it("refuses approve on the dollar token (a relayer must never set allowances)", () => {
     const approve = encodeFunctionData({ abi: erc20Abi, functionName: "approve", args: [someone, 2n ** 255n] });
-    expect(() => checkRelayerCall({ to: addresses.stablecoin, data: approve, chainId: 10143 }, expected)).toThrow(/allow-list/);
+    expect(() => checkRelayerCall({ to: addresses.stablecoin, data: approve, chainId: 5042002 }, expected)).toThrow(/allow-list/);
   });
 
   it("refuses owner functions on our own contracts", () => {
     const setOperator = encodeFunctionData({ abi: polarisPaymentsAbi, functionName: "setOperator", args: [someone, true] });
-    expect(() => checkRelayerCall({ to: addresses.payments, data: setOperator, chainId: 10143 }, expected)).toThrow(/allow-list/);
+    expect(() => checkRelayerCall({ to: addresses.payments, data: setOperator, chainId: 5042002 }, expected)).toThrow(/allow-list/);
     const activate = encodeFunctionData({ abi: merchantRegistryAbi, functionName: "setActive", args: [someone, true] });
-    expect(() => checkRelayerCall({ to: addresses.registry, data: activate, chainId: 10143 }, expected)).toThrow(/allow-list/);
+    expect(() => checkRelayerCall({ to: addresses.registry, data: activate, chainId: 5042002 }, expected)).toThrow(/allow-list/);
     const withdraw = encodeFunctionData({ abi: polarisLoanEngineAbi, functionName: "withdrawLiquidity", args: [1n, someone] });
-    expect(() => checkRelayerCall({ to: addresses.loanEngine, data: withdraw, chainId: 10143 }, expected)).toThrow(/allow-list/);
+    expect(() => checkRelayerCall({ to: addresses.loanEngine, data: withdraw, chainId: 5042002 }, expected)).toThrow(/allow-list/);
   });
 
   it("refuses a plain transfer and a deployment", () => {
-    expect(() => checkRelayerCall({ to: someone, data: "0x", chainId: 10143 }, expected)).toThrow(PolicyViolation);
-    expect(() => checkRelayerCall({ to: null, data: payData, chainId: 10143 }, expected)).toThrow(/deploys/);
-    expect(() => checkRelayerCall({ to: addresses.checkout, data: "0x", chainId: 10143 }, expected)).toThrow(/functions/);
+    expect(() => checkRelayerCall({ to: someone, data: "0x", chainId: 5042002 }, expected)).toThrow(PolicyViolation);
+    expect(() => checkRelayerCall({ to: null, data: payData, chainId: 5042002 }, expected)).toThrow(/deploys/);
+    expect(() => checkRelayerCall({ to: addresses.checkout, data: "0x", chainId: 5042002 }, expected)).toThrow(/functions/);
+  });
+});
+
+describe("Arc: euros by link, CCTP arrivals and order memos", () => {
+  it("allows PolarisSend on EURC, MessageTransmitterV2.receiveMessage, and Memo only around PolarisCheckout", () => {
+    const send = encodeFunctionData({
+      abi: polarisSendAbi,
+      functionName: "claim",
+      args: [someone, merchant, 2_000_000_000n, 27, zeroHash, zeroHash],
+    });
+    expect(checkRelayerCall({ to: addresses.sendEurc as Address, data: send, chainId: 5042002 }, expected)).toMatchObject({ contract: "sendEurc", functionName: "claim" });
+    const receive = encodeFunctionData({
+      abi: [{ type: "function", name: "receiveMessage", stateMutability: "nonpayable", inputs: [{ name: "message", type: "bytes" }, { name: "attestation", type: "bytes" }], outputs: [{ type: "bool" }] }],
+      functionName: "receiveMessage",
+      args: ["0x1234", "0x5678"],
+    });
+    expect(checkRelayerCall({ to: addresses.messageTransmitter as Address, data: receive, chainId: 5042002 }, expected)).toMatchObject({ contract: "messageTransmitter" });
+    const memoAbi = [{ type: "function", name: "memo", stateMutability: "nonpayable", inputs: [{ name: "target", type: "address" }, { name: "data", type: "bytes" }, { name: "memoId", type: "bytes32" }, { name: "memoData", type: "bytes" }], outputs: [] }] as const;
+    const aroundCheckout = encodeFunctionData({ abi: memoAbi, functionName: "memo", args: [addresses.checkout, payData, zeroHash, "0x"] });
+    expect(checkRelayerCall({ to: addresses.memo as Address, data: aroundCheckout, chainId: 5042002 }, expected)).toMatchObject({ contract: "memo" });
+    const aroundToken = encodeFunctionData({ abi: memoAbi, functionName: "memo", args: [addresses.stablecoin, "0x", zeroHash, "0x"] });
+    expect(() => checkRelayerCall({ to: addresses.memo as Address, data: aroundToken, chainId: 5042002 }, expected)).toThrow(/only PolarisCheckout/);
   });
 });
 
@@ -172,7 +197,7 @@ describe("the Privy relayer policy (buildRelayerPolicy)", () => {
     expect(policy).toMatchObject({ version: "1.0", chain_type: "ethereum" });
   });
 
-  it("denies any MON first, then allows exactly one rule per listed call", () => {
+  it("denies any native USDC first, then allows exactly one rule per listed call", () => {
     const [deny, ...allows] = policy.rules;
     expect(deny).toMatchObject({ action: "DENY", method: "eth_signTransaction", conditions: [{ field: "value", operator: "gt", value: "0" }] });
     expect(allows).toHaveLength(RELAYER_CALLS.length);
@@ -185,7 +210,7 @@ describe("the Privy relayer policy (buildRelayerPolicy)", () => {
       const [to, chain, fn] = rule?.conditions ?? [];
       const at = addresses[call.contract] as Address;
       expect(to).toEqual({ field_source: "ethereum_transaction", field: "to", operator: "in", value: [at, at.toLowerCase()] });
-      expect(chain).toEqual({ field_source: "ethereum_transaction", field: "chain_id", operator: "eq", value: "10143" });
+      expect(chain).toEqual({ field_source: "ethereum_transaction", field: "chain_id", operator: "eq", value: "5042002" });
       expect(fn).toMatchObject({ field_source: "ethereum_calldata", field: "function_name", operator: "eq", value: call.functionName });
       const abi = (fn as { abi: Array<{ type: string; name: string }> }).abi;
       expect(abi.length).toBeGreaterThan(0);
@@ -193,7 +218,7 @@ describe("the Privy relayer policy (buildRelayerPolicy)", () => {
     }
   });
 
-  it("never allows a raw MON transfer, approve, typed data or key export (no rule for them)", () => {
+  it("never allows a raw USDC (gas) transfer, approve, typed data or key export (no rule for them)", () => {
     const methods = new Set(policy.rules.map((r) => r.method));
     expect([...methods]).toEqual(["eth_signTransaction"]);
     const allowedFns = policy.rules.flatMap((r) => r.conditions.filter((c) => c.field === "function_name").map((c) => c.value));
@@ -204,7 +229,7 @@ describe("the Privy relayer policy (buildRelayerPolicy)", () => {
 
 describe("the registry admin policy", () => {
   it("allows only setActive and setMaxOrderValue up to the cap", () => {
-    const policy = buildRegistryAdminPolicy({ chainId: 10143, registry: addresses.registry, capUnits: 1_000_000_000n });
+    const policy = buildRegistryAdminPolicy({ chainId: 5042002, registry: addresses.registry, capUnits: 1_000_000_000n });
     expect(lintPolicy(policy)).toEqual([]);
     const allowed = policy.rules.filter((r) => r.action === "ALLOW");
     expect(allowed.map((r) => r.conditions.find((c) => c.field === "function_name")?.value)).toEqual(["setActive", "setMaxOrderValue"]);
@@ -213,16 +238,16 @@ describe("the registry admin policy", () => {
 });
 
 describe("the automatic payout policy", () => {
-  it("pins typed-data signing to AUSD, this chain, the merchant's own wallet and one payout address", () => {
+  it("pins typed-data signing to USDC, this chain, the merchant's own wallet and one payout address", () => {
     const payout = "0x3333333333333333333333333333333333333333" as Address;
-    const policy = buildPayoutPolicy({ merchantKey: "did:privy:abc", payoutAddress: payout, stablecoin: addresses.stablecoin, chainId: 10143 });
+    const policy = buildPayoutPolicy({ merchantKey: "did:privy:abc", payoutAddress: payout, stablecoin: addresses.stablecoin, chainId: 5042002 });
     expect(lintPolicy(policy)).toEqual([]);
     expect(policy.name).toBe("payout-abc");
     expect(policy.rules).toHaveLength(1);
     const [rule] = policy.rules;
     expect(rule).toMatchObject({ method: "eth_signTypedData_v4", action: "ALLOW" });
     const conds = rule?.conditions ?? [];
-    expect(conds).toContainEqual({ field_source: "ethereum_typed_data_domain", field: "chainId", operator: "eq", value: "10143" });
+    expect(conds).toContainEqual({ field_source: "ethereum_typed_data_domain", field: "chainId", operator: "eq", value: "5042002" });
     expect(conds).toContainEqual({ field_source: "ethereum_typed_data_domain", field: "verifyingContract", operator: "in", value: [addresses.stablecoin, addresses.stablecoin.toLowerCase()] });
     expect(conds).toContainEqual(expect.objectContaining({ field: "to", operator: "in", value: [payout, payout.toLowerCase()] }));
     expect(conds).toContainEqual(expect.objectContaining({ field: "from", operator: "eq", value: "{{wallet.address}}" }));

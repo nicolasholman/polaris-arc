@@ -27,15 +27,15 @@ export const hero = {
 };
 
 export const sponsors = {
-  pill: "Built on Monad with Privy, Chainlink CRE, Nansen, Envio, Agora AUSD and Mera",
+  pill: "Built on Arc with Privy, the Polaris keeper, Nansen, Envio, Agora USDC and passkey",
   items: [
-    { name: "Monad" },
+    { name: "Arc" },
     { name: "Privy" },
-    { name: "Chainlink CRE" },
+    { name: "the Polaris keeper" },
     { name: "Nansen" },
     { name: "Envio" },
-    { name: "Agora AUSD" },
-    { name: "Mera" },
+    { name: "Agora USDC" },
+    { name: "passkey" },
   ],
 } as const;
 
@@ -76,13 +76,13 @@ export const credit = {
   ],
   flow: [
     { title: "The buyer confirms", body: "Face ID in the Polaris app. No wallet, no gas, no seed phrase.", tag: "0.0 s" },
-    { title: "You're paid $200.00", body: "In AUSD, to your payout account, final on Monad.", tag: "0.8 s" },
-    { title: "Chainlink CRE collects", body: "A workflow checks every minute and takes each $50.38 on its weekly due date.", tag: "Weekly" },
+    { title: "You're paid $200.00", body: "In USDC, to your payout account, final on Arc.", tag: "0.8 s" },
+    { title: "the Polaris keeper collects", body: "A workflow checks every minute and takes each $50.38 on its weekly due date.", tag: "Weekly" },
     { title: "A payment fails? We retry", body: "After 6 hours, a day, three days. The buyer is reminded; you're never involved.", tag: "Ours" },
   ],
   underwriting: {
     title: "Why Kofi got a $500 line",
-    note: "Facts from Nansen wallet history, attested by Chainlink CRE nodes. The score is computed on chain.",
+    note: "Facts from Nansen wallet history, attested by the Polaris keeper nodes. The score is computed on chain.",
     reasons: [
       { text: "First funded from a major exchange", points: 10 },
       { text: "Two years of wallet history", points: 8 },
@@ -179,7 +179,7 @@ export const payouts = {
   sub: "Your balance is dollars in an account only you control, created when you sign up. Move it whenever you like.",
   features: [
     { title: "One tap, to any address", body: "An exchange, a treasury, a bank on-ramp. Confirm once and it's there in under a second." },
-    { title: "No network fee", body: "You never hold MON. Our relayer pays the gas, and it can only send what you signed." },
+    { title: "No network fee", body: "You never hold USDC (gas). Our relayer pays the gas, and it can only send what you signed." },
     { title: "Automatic daily payouts", body: "A Privy session signer sweeps your balance every day at 17:00 UTC, to one address you choose and nowhere else." },
   ],
 };
@@ -205,7 +205,7 @@ export const faq = {
     },
     {
       q: "When do I get paid?",
-      a: "When the payment lands: Monad finalises in under a second, so the order shows Paid before the page could reload. Your balance is in dollars (AUSD) and you can withdraw the same minute.",
+      a: "When the payment lands: Arc finalises in under a second, so the order shows Paid before the page could reload. Your balance is in dollars (USDC) and you can withdraw the same minute.",
     },
     {
       q: "How do I withdraw?",
@@ -217,7 +217,7 @@ export const faq = {
     },
     {
       q: "Is it live?",
-      a: "It runs end to end today on a local Monad stand-in, with test dollars: payment links, Pay in 4, subscriptions and payouts, the credit checks and the collections. The Monad testnet launch is in October; mainnet then starts with Pay now and payouts, capped.",
+      a: "It runs end to end today on a local Arc stand-in, with test dollars: payment links, Pay in 4, subscriptions and payouts, the credit checks and the collections. The Arc testnet launch is in October; mainnet then starts with Pay now and payouts, capped.",
     },
   ],
 };

@@ -2,14 +2,15 @@
   "fixture": {
     "label": "FIXTURE: synthesized in the provider's documented response shape. Not live data, not a recording.",
     "provider": "rpc",
-    "request": "eth_call balanceOf on Monad testnet AUSD and USDC",
+    "request": "eth_call balanceOf on Arc testnet USDC and EURC; eth_getTransactionCount on Arc testnet",
     "shape": "JSON-RPC results; the transport wraps each in {jsonrpc, id, result}",
     "persona": "regular-account",
     "recorded": false,
     "synthesizedFor": "2026-09-26T00:00:00Z"
   },
   "calls": {
-    "testnet-rpc.monad.xyz:balanceOf:0xa9012a055bd4e0edff8ce09f960291c09d5322dc": "0x000000000000000000000000000000000000000000000000000000001908b100",
-    "testnet-rpc.monad.xyz:balanceOf:0x534b2f3a21130d7a60830c2df862319e593943a3": "0x0000000000000000000000000000000000000000000000000000000002160ec0"
+    "rpc.testnet.arc.io:balanceOf:0x3600000000000000000000000000000000000000": "0x000000000000000000000000000000000000000000000000000000001908b100",
+    "rpc.testnet.arc.io:balanceOf:0x89b50855aa3be2f677cd6303cec089b5f319d72a": "0x0000000000000000000000000000000000000000000000000000000002160ec0",
+    "rpc.testnet.arc.io:eth_getTransactionCount": "0x4"
   }
 }

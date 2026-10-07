@@ -2,20 +2,20 @@ import { concat, encodeFunctionData, parseAbi, type Hex } from "viem";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
-import { POST as crePost } from "@/app/api/cre/callback/route";
+import { POST as keeperPost } from "@/app/api/keeper/callback/route";
 import { POST as underwritePost } from "@/app/api/credit/underwrite/route";
 import { GET as creditGet } from "@/app/api/public/credit/[account]/route";
 import { GET as messagesGet } from "@/app/api/public/credit/[account]/messages/route";
-import { signCreCallback, verifyCreSignature } from "@/server/credit/callback-signature";
+import { signKeeperCallback, verifyKeeperSignature } from "@/server/credit/callback-signature";
 import { linkMessage, underwriteConsentMessage } from "@/server/credit/messages";
-import { configureExplainForTests, reportFromForwarderCall } from "@/server/credit/explain";
+import { configureExplainForTests, reportFromKeeperCall } from "@/server/credit/explain";
 import { boostAtFaceValue, configureUnderwritingForTests, runUnderwritingQueue, unavailableMessage } from "@/server/credit/underwriting";
 import { getDb } from "@/server/db";
 
 import { json, params, request, setupServer, type TestEnv } from "./helpers/env";
 
 /**
- * The product fires the CRE underwriting workflow: the account signs its
+ * The product fires the keeper underwriting workflow: the account signs its
  * consent (and a history wallet its link proof), the API verifies both,
  * queues the run and sends it to the workflow's HTTP trigger at most once per
  * 30 s; the workflow's signed callback records the decision, which the app
@@ -33,7 +33,7 @@ function profile(over: Partial<{ underwritten: boolean; declined: boolean; score
 }
 
 beforeEach(() => {
-  env = setupServer({ CRE_UNDERWRITING_TRIGGER_URL: TRIGGER, POLARIS_CRE_CALLBACK_SECRET: SECRET });
+  env = setupServer({ KEEPER_UNDERWRITING_URL: TRIGGER, KEEPER_REQUEST_MIN_INTERVAL_MS: "30000", POLARIS_KEEPER_CALLBACK_SECRET: SECRET });
   env.chain.reads.profileOf = () => profile();
   env.chain.reads.requireUnderwriting = () => true;
   env.chain.reads.creditLimitOf = () => 0n;
@@ -67,7 +67,7 @@ async function signedRequest(opts: { withHistory?: boolean } = {}) {
 }
 
 describe("the texts the account and the history wallet sign", () => {
-  it("are byte-for-byte the CRE workflow's consent and the underwriting package's link proof", () => {
+  it("are byte-for-byte the keeper's consent and the underwriting package's link proof", () => {
     const account = "0x1111111111111111111111111111111111111111";
     const wallet = "0x2222222222222222222222222222222222222222";
     // Copied from workflows/src/underwriting/consent.ts and packages/underwriting/src/core/link.ts: keep in step.
@@ -106,7 +106,7 @@ describe("the texts the account and the history wallet sign", () => {
 });
 
 describe("POST /api/credit/underwrite", () => {
-  it("queues a run for an account that signed its consent, and sends { input } to the CRE trigger", async () => {
+  it("queues a run for an account that signed its consent, and sends { input } to the keeper trigger", async () => {
     const { account, history, body } = await signedRequest({ withHistory: true });
     const res = await json(await underwrite(body));
     expect(res.status).toBe(202);
@@ -121,7 +121,7 @@ describe("POST /api/credit/underwrite", () => {
     expect((await status(account.address)).request).toMatchObject({ state: "sent" });
   });
 
-  it("sends at most one run per CRE_TRIGGER_MIN_INTERVAL_MS, oldest first", async () => {
+  it("sends at most one run per KEEPER_REQUEST_MIN_INTERVAL_MS, oldest first", async () => {
     const first = await signedRequest();
     const second = await signedRequest();
     await underwrite(first.body);
@@ -158,7 +158,7 @@ describe("POST /api/credit/underwrite", () => {
     expect((await json(await underwrite(other.body))).body.error.code).toBe("already_underwritten");
   });
 
-  it("says so when no CRE trigger is configured", async () => {
+  it("says so when no keeper trigger is configured", async () => {
     env = setupServer();
     const { body } = await signedRequest();
     expect((await json(await underwrite(body))).body.error.code).toBe("underwriting_unavailable");
@@ -217,11 +217,11 @@ describe("whether Boost counts at face value (ScoreManager's secured-only rule)"
   });
 });
 
-describe("POST /api/cre/callback", () => {
+describe("POST /api/keeper/callback", () => {
   const post = (payload: unknown, opts: { secret?: string; at?: number } = {}) => {
     const body = JSON.stringify(payload);
-    const header = signCreCallback(opts.secret ?? SECRET, body, opts.at ?? Math.floor(Date.now() / 1000));
-    return crePost(new Request("http://localhost:3100/api/cre/callback", { method: "POST", headers: { "content-type": "application/json", "polaris-signature": header, "x-forwarded-for": "127.0.0.1" }, body }), params({}));
+    const header = signKeeperCallback(opts.secret ?? SECRET, body, opts.at ?? Math.floor(Date.now() / 1000));
+    return keeperPost(new Request("http://localhost:3100/api/keeper/callback", { method: "POST", headers: { "content-type": "application/json", "polaris-signature": header, "x-forwarded-for": "127.0.0.1" }, body }), params({}));
   };
 
   it("records the workflow's decision, closes the request, and the app reads it with the line on chain", async () => {
@@ -240,7 +240,7 @@ describe("POST /api/cre/callback", () => {
     expect(s.request).toMatchObject({ state: "done" });
     expect(s.onChain).toMatchObject({ underwritten: true, score: 640, creditLimit: "350.00", boostAtFaceValue: false });
 
-    // Every DON node may deliver it: the second is acknowledged, not applied twice.
+    // Every keeper node may deliver it: the second is acknowledged, not applied twice.
     expect((await json(await post({ id: txHash, type: "credit.underwritten", user: account.address, score: 640 }))).body.data.duplicate).toBe(true);
   });
 
@@ -281,12 +281,12 @@ describe("POST /api/cre/callback", () => {
     const payload = { id: "x1", type: "credit.refused", user: account };
     expect((await post(payload, { secret: "wrong" })).status).toBe(401);
     expect((await post(payload, { at: Math.floor(Date.now() / 1000) - 3600 })).status).toBe(401);
-    const bare = await crePost(new Request("http://localhost:3100/api/cre/callback", { method: "POST", headers: { "x-forwarded-for": "127.0.0.1" }, body: JSON.stringify(payload) }), params({}));
+    const bare = await keeperPost(new Request("http://localhost:3100/api/keeper/callback", { method: "POST", headers: { "x-forwarded-for": "127.0.0.1" }, body: JSON.stringify(payload) }), params({}));
     expect(bare.status).toBe(401);
     expect(await getDb().creditDecisions.count()).toBe(0);
   });
 
-  it("is closed without POLARIS_CRE_CALLBACK_SECRET", async () => {
+  it("is closed without POLARIS_KEEPER_CALLBACK_SECRET", async () => {
     setupServer();
     expect((await post({ id: "x2", type: "collections.run" })).status).toBe(503);
   });
@@ -305,27 +305,26 @@ describe("POST /api/cre/callback", () => {
   });
 
   it("verifies exactly the workflows' signing scheme (t=<unix>,v1=<hex HMAC-SHA256(secret, t.body)>)", () => {
-    const header = signCreCallback("s3cret", '{"id":"1"}', 1_790_000_000);
+    const header = signKeeperCallback("s3cret", '{"id":"1"}', 1_790_000_000);
     // HMAC-SHA256("s3cret", '1790000000.{"id":"1"}'), computed independently.
     expect(header).toBe("t=1790000000,v1=f192598aa9e2545b3fc47aae778a5d16611bc08687a22d1575226dfece7f4501");
-    expect(verifyCreSignature("s3cret", '{"id":"1"}', header, 1_790_000_100)).toEqual({ ok: true, timestamp: 1_790_000_000 });
-    expect(verifyCreSignature("s3cret", '{"id":"2"}', header, 1_790_000_100)).toMatchObject({ ok: false });
+    expect(verifyKeeperSignature("s3cret", '{"id":"1"}', header, 1_790_000_100)).toEqual({ ok: true, timestamp: 1_790_000_000 });
+    expect(verifyKeeperSignature("s3cret", '{"id":"2"}', header, 1_790_000_100)).toMatchObject({ ok: false });
   });
 });
 
-describe("the buyer's reasons come from what the DON attested (Nansen and friends), via the gateway", () => {
-  const FORWARDER = parseAbi(["function report(address receiver, bytes rawReport, bytes reportContext, bytes[] signatures)"]);
+describe("the buyer's reasons come from what the keeper reported, via the gateway", () => {
+  const RECEIVER = parseAbi(["function submitReport(bytes report)"]);
   const body = `0x${"02".padStart(64, "0")}${"ab".repeat(64)}` as Hex; // any report body: the gateway decodes it
-  const forwarderCall = (report: Hex) =>
-    encodeFunctionData({ abi: FORWARDER, functionName: "report", args: ["0x3333333333333333333333333333333333333333", concat([`0x${"00".repeat(109)}`, report]), "0x", []] });
+  const forwarderCall = (report: Hex) => encodeFunctionData({ abi: RECEIVER, functionName: "submitReport", args: [report] });
 
-  it("cuts the forwarder's 109-byte metadata off the raw report", () => {
-    expect(reportFromForwarderCall(forwarderCall(body))).toBe(body);
-    expect(reportFromForwarderCall("0x12345678")).toBeNull();
+  it("reads the report from the keeper's submitReport calldata", () => {
+    expect(reportFromKeeperCall(forwarderCall(body))).toBe(body);
+    expect(reportFromKeeperCall("0x12345678")).toBeNull();
   });
 
   it("explains an applied decision once, from the report in its transaction, with each line's provider", async () => {
-    env = setupServer({ CRE_UNDERWRITING_TRIGGER_URL: TRIGGER, POLARIS_CRE_CALLBACK_SECRET: SECRET, UNDERWRITING_GATEWAY_URL: "http://127.0.0.1:3535/", UNDERWRITING_API_TOKEN: "gw-token" });
+    env = setupServer({ KEEPER_UNDERWRITING_URL: TRIGGER, KEEPER_REQUEST_MIN_INTERVAL_MS: "30000", POLARIS_KEEPER_CALLBACK_SECRET: SECRET, UNDERWRITING_GATEWAY_URL: "http://127.0.0.1:3535/", UNDERWRITING_API_TOKEN: "gw-token" });
     env.chain.reads.profileOf = () => profile({ underwritten: true, score: 640 });
     env.chain.reads.creditLimitOf = () => 350_000_000n;
     env.chain.reads.activeDebtOf = () => 0n;
@@ -357,7 +356,7 @@ describe("the buyer's reasons come from what the DON attested (Nansen and friend
     });
 
     const body2 = JSON.stringify({ id: txHash, type: "credit.underwritten", user: account, score: 640, txHash });
-    await crePost(new Request("http://localhost:3100/api/cre/callback", { method: "POST", headers: { "polaris-signature": signCreCallback(SECRET, body2, Math.floor(Date.now() / 1000)), "x-forwarded-for": "127.0.0.1" }, body: body2 }), params({}));
+    await keeperPost(new Request("http://localhost:3100/api/keeper/callback", { method: "POST", headers: { "polaris-signature": signKeeperCallback(SECRET, body2, Math.floor(Date.now() / 1000)), "x-forwarded-for": "127.0.0.1" }, body: body2 }), params({}));
     const s = await status(account);
     expect(asked).toHaveLength(1);
     expect(asked[0]).toMatchObject({ url: "http://127.0.0.1:3535/v1/explain", auth: "Bearer gw-token", body: { report: body, activeDebt: "0" } });
@@ -372,7 +371,7 @@ describe("the buyer's reasons come from what the DON attested (Nansen and friend
     const account = privateKeyToAccount(generatePrivateKey()).address;
     const txHash = `0x${"aa".repeat(32)}` as Hex;
     const raw = JSON.stringify({ id: txHash, type: "credit.underwritten", user: account, score: 600, txHash });
-    await crePost(new Request("http://localhost:3100/api/cre/callback", { method: "POST", headers: { "polaris-signature": signCreCallback(SECRET, raw, Math.floor(Date.now() / 1000)), "x-forwarded-for": "127.0.0.1" }, body: raw }), params({}));
+    await keeperPost(new Request("http://localhost:3100/api/keeper/callback", { method: "POST", headers: { "polaris-signature": signKeeperCallback(SECRET, raw, Math.floor(Date.now() / 1000)), "x-forwarded-for": "127.0.0.1" }, body: raw }), params({}));
     expect((await status(account)).decision).toMatchObject({ status: "applied", explanation: null });
   });
 });

@@ -36,7 +36,7 @@ const STAGE_LABEL: Record<PayStage, string> = {
   connecting: "Connecting your wallet…",
   signing: "Confirm in your wallet",
   submitting: "Paying…",
-  confirming: "Confirming on Monad…",
+  confirming: "Confirming on Arc…",
 };
 
 /**
@@ -141,7 +141,7 @@ export function PolarisPayButton(props: PolarisPayButtonProps) {
       ) : null}
       {phase === "done" && result?.explorerUrl ? (
         <p className="plrs-note" id={statusId}>
-          Settled on Monad.{" "}
+          Settled on Arc.{" "}
           <a href={result.explorerUrl} target="_blank" rel="noopener noreferrer">
             View receipt
           </a>

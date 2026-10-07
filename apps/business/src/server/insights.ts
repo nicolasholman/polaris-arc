@@ -16,8 +16,8 @@ import { getConfig } from "./env";
  *   Envio indexer (`@polarispay/indexer-client`, `merchantActivity`) when
  *   POLARIS_INDEXER_URL is set. Without it, the same kinds of events from this
  *   server's own chain sync, labelled as such; an unreachable indexer says so.
- * - "Why your buyers got credit": the reasons the CRE underwriting workflow's
- *   decisions carried for this merchant's Pay in 4 buyers (the facts the DON
+ * - "Why your buyers got credit": the reasons the keeper underwriting workflow's
+ *   decisions carried for this merchant's Pay in 4 buyers (the facts the keeper
  *   attested, explained by @polarispay/underwriting), each with its provider.
  */
 
@@ -128,7 +128,7 @@ async function indexedEvents(wallet: Address | null, payments: Payment[], plans:
 
 const PROVIDER_LABEL: Record<string, UnderwritingReason["source"]> = { nansen: "Nansen", zerion: "Zerion" };
 
-/** The reasons behind this merchant's buyers' lines, strongest first, from the CRE decisions. */
+/** The reasons behind this merchant's buyers' lines, strongest first, from the keeper decisions. */
 async function underwritingReasons(plans: Plan[]): Promise<Insights["underwriting"]> {
   const buyers = [...new Set(plans.map((p) => p.buyer.toLowerCase()))].slice(0, 200);
   if (buyers.length === 0) return null;

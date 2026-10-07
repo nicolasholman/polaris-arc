@@ -32,7 +32,7 @@ beforeEach(async () => {
   merchant = await merchantWithKeys({ webhook: true });
 });
 
-/** Put logs on the fake chain as if a transaction nobody here sent (CRE, a wallet) had emitted them. */
+/** Put logs on the fake chain as if a transaction nobody here sent (keeper, a wallet) had emitted them. */
 function chainEmits(specs: LogSpec[]): Hex {
   env.chain.blockNumber += 1n;
   const txHash = `0x${env.chain.blockNumber.toString(16).padStart(64, "0")}` as Hex;
@@ -87,7 +87,7 @@ describe("chain events nobody here sent arrive through the chain sync", () => {
     expect((await getDb().plans.get("1"))?.state).toBe("repaid");
   });
 
-  it("installment.failed follows the dunning ladder: one event per rung, not one per CRE run", async () => {
+  it("installment.failed follows the dunning ladder: one event per rung, not one per keeper run", async () => {
     await syncChain();
     await openPlan();
     const reason = encodeErrorResult({ abi: polarisLoanEngineAbi, errorName: "InsufficientBalance", args: [1n, 50_383_562n] });
@@ -285,7 +285,7 @@ describe("webhook delivery", () => {
 });
 
 describe("payouts", () => {
-  it("a signed withdrawal is relayed as AUSD transferWithAuthorization, then payout.paid", async () => {
+  it("a signed withdrawal is relayed as USDC transferWithAuthorization, then payout.paid", async () => {
     const destination = "0x5555555555555555555555555555555555555555" as Address;
     const validBefore = inSeconds(1800);
     const nonce = `0x${"42".repeat(32)}` as Hex;

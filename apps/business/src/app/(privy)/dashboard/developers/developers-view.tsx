@@ -96,7 +96,7 @@ function IntegrationPanel() {
   const canRegister = !blocker && (state === "none" || state === "failed");
 
   return (
-    <Panel title="Your integration" subtitle="What your server needs, and where your business stands on Monad">
+    <Panel title="Your integration" subtitle="What your server needs, and where your business stands on Arc">
       <div className="mt-5 grid grid-cols-1 gap-3">
         <DetailsList
           size="sm"

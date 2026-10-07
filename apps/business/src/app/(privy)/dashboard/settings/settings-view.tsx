@@ -31,7 +31,7 @@ import { markExplicitSignOut } from "@/lib/sign-out";
 
 /**
  * Settings, behind the top nav's "More": the business name buyers see, the
- * payout wallet, where the business stands on Monad, and signing out.
+ * payout wallet, where the business stands on Arc, and signing out.
  */
 export function SettingsView() {
   const { merchant, capabilities } = useMerchant();
@@ -61,11 +61,11 @@ export function SettingsView() {
             value="Test mode"
             badge={
               <StatusPill tone="lime" size="sm">
-                {capabilities?.chain ? capabilities.chain.name : "Monad testnet"}
+                {capabilities?.chain ? capabilities.chain.name : "Arc testnet"}
               </StatusPill>
             }
             stats={[
-              { label: "Currency", value: "AUSD" },
+              { label: "Currency", value: "USDC" },
               { label: "Network fee", value: "$0.00" },
               { label: "Settles in", value: "0.8 s" },
             ]}
@@ -143,7 +143,7 @@ function WalletPanel() {
   const signer = useAuth().wallet.signer;
   const wallet = merchant.walletAddress;
   return (
-    <PanelCard title="Payout wallet" subtitle="An account only you control, created with your sign-in. Every payment settles here in AUSD.">
+    <PanelCard title="Payout wallet" subtitle="An account only you control, created with your sign-in. Every payment settles here in USDC.">
       {wallet ? (
         <div className="mt-5 grid grid-cols-[minmax(0,1fr)] gap-5 sm:grid-cols-[auto_minmax(0,1fr)] sm:items-center">
           <span className="w-fit overflow-hidden rounded-[18px]">
@@ -180,19 +180,19 @@ function MonadPanel() {
   const state = registrationOf(merchant);
   const canRegister = !blocker && (state === "none" || state === "failed");
   return (
-    <PanelCard title="On Monad" padding="md" action={<RegistrationBadge merchant={merchant} />}>
+    <PanelCard title="On Arc" padding="md" action={<RegistrationBadge merchant={merchant} />}>
       <p className="mt-2 text-[14px] leading-relaxed text-ui-muted">
         {state === "active"
           ? "Registered and active: you take payments and offer Pay in 4."
           : state === "registered"
             ? "Registered: you take payments. Pay in 4 opens once Polaris activates your account."
             : state === "submitted"
-              ? "Your registration is on its way to Monad."
+              ? "Your registration is on its way to Arc."
               : "Register once so buyers can pay you. Polaris pays the network fee."}
       </p>
       {canRegister ? (
         <PrimaryButton size="md" block icon={<BadgeCheck />} loading={busy} onClick={() => void run()} className="mt-4">
-          Register on Monad
+          Register on Arc
         </PrimaryButton>
       ) : blocker && state === "none" ? (
         <p className="mt-3 text-[13px] text-ui-muted">{blocker}</p>

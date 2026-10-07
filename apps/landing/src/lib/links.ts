@@ -16,6 +16,9 @@ export const APP_URL = base(process.env.NEXT_PUBLIC_APP_URL);
 /** Polaris for Business (apps/business): "Log in" and "Start accepting". */
 export const BUSINESS_URL = base(process.env.NEXT_PUBLIC_BUSINESS_URL);
 
+/** The public source repository: the GitHub link and the blog cards. */
+export const REPO_URL = base(process.env.NEXT_PUBLIC_REPO_URL) ?? "https://github.com/nickthelegend/polaris-arc";
+
 /** `url` + `path` when the app is deployed, else the in-page anchor. */
 export function linkTo(url: string | null, path: string, fallback: string): string {
   return url ? `${url}${path}` : fallback;

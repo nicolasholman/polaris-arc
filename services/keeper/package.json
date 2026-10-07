@@ -1,0 +1,26 @@
+{
+  "name": "@polaris/keeper",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "description": "The Polaris keeper on Arc: collects due Pay in 4 instalments and subscription renewals, retries a buyer the moment they re-sign, and runs credit reviews for UnderwritingReceiver. One EOA, gas paid in USDC.",
+  "engines": {
+    "node": ">=22.6.0"
+  },
+  "scripts": {
+    "start": "node --conditions=source --disable-warning=ExperimentalWarning src/main.ts",
+    "once": "node --conditions=source --disable-warning=ExperimentalWarning src/main.ts --once",
+    "test": "node --conditions=source --disable-warning=ExperimentalWarning --test \"test/*.test.ts\"",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@polarispay/contracts": "workspace:*",
+    "@polarispay/underwriting": "workspace:*",
+    "viem": "2.56.9"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.1",
+    "typescript": "^5.9.3"
+  }
+}

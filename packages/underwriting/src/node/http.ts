@@ -32,7 +32,7 @@ export interface HttpResponse {
 
 export type HttpTransport = (req: HttpRequest, signal: AbortSignal) => Promise<HttpResponse>;
 
-/** The live transport: `fetch`, never following redirects (CRE does not either). */
+/** The live transport: `fetch`, never following redirects. */
 export const fetchTransport: HttpTransport = async (req, signal) => {
   const res = await fetch(req.url, {
     method: req.method,
@@ -63,7 +63,7 @@ export interface RetryPolicy {
   attempts: number;
   baseDelayMs: number;
   maxDelayMs: number;
-  /** Per attempt. CRE's HTTP cap is 10 s, so the same here. */
+  /** Per attempt. A buyer may be waiting at checkout. */
   timeoutMs: number;
   /** Longest Retry-After worth waiting for at checkout. */
   maxRetryAfterMs: number;

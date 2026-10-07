@@ -31,16 +31,20 @@ const NAMES = {
   PolarisCheckout: "checkout",
   PolarisSend: "send",
   MerchantRegistry: "merchantRegistry",
-  PolarisCollector: "collector",
+  // The keeper's collections receiver keeps the SDK field name `collector`.
+  CollectionsReceiver: "collector",
   BatchSettlement: "batchSettlement",
 };
 
-/** A deployment may bring its own dollar token (a MockAUSD while the AUSD faucet is dry). */
-const STABLECOIN_NAMES = ["AUSD", "MockAUSD", "Stablecoin", "stablecoin"];
+/**
+ * The deployment's dollar token: `contracts.USDC` (Circle's USDC on Arc, or a
+ * MockUSDC on a local chain).
+ */
+const STABLECOIN_NAMES = ["USDC", "MockUSDC"];
 
 const NETWORKS = [
-  { key: "monadTestnet", file: "monad-testnet.json", chainId: 10143 },
-  { key: "monad", file: "monad.json", chainId: 143 },
+  { key: "arcTestnet", file: "arc-testnet.json", chainId: 5042002 },
+  { key: "arc", file: "arc-mainnet.json", chainId: 5042 },
 ];
 
 function isAddress(value) {
@@ -50,7 +54,7 @@ function isAddress(value) {
 /**
  * A contract's address in a deployment record. packages/contracts' deploy
  * scripts write `{ address, blockNumber, txHash, ... }` per contract (the
- * Monad records); the older Sepolia records wrote the bare address string.
+ * Arc records); the older Sepolia records wrote the bare address string.
  * Both are read.
  */
 export function addressOf(entry) {
@@ -131,12 +135,12 @@ export type DeploymentRecord = {
   /** The deployment file this was generated from, or null if there is none yet. */
   source: string | null;
   deployedAt: string | null;
-  /** A dollar token the deployment brought (e.g. MockAUSD), or null to use Agora's AUSD. */
+  /** The dollar token the deployment records (contracts.USDC), or null to use Circle's USDC on Arc. */
   stablecoin: Address | null;
   contracts: Record<ContractName, Address>;
 };
 
-export const DEPLOYMENTS: { monadTestnet: DeploymentRecord; monad: DeploymentRecord } = {
+export const DEPLOYMENTS: { arcTestnet: DeploymentRecord; arc: DeploymentRecord } = {
 ${body}
 };
 `;

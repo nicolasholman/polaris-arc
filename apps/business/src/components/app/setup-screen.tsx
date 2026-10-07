@@ -51,7 +51,7 @@ export function SetupScreen() {
         </h1>
         <p className="max-w-[46ch] text-[16px] leading-relaxed text-ui-muted">
           {development
-            ? "Merchants sign in with Privy and each gets an embedded payout wallet on Monad. This build has no Privy app id yet, so there is nothing to sign in with."
+            ? "Merchants sign in with Privy and each gets an embedded payout wallet on Arc. This build has no Privy app id yet, so there is nothing to sign in with."
             : "We can't sign anyone in at the moment. Your account and your money are unaffected. Please try again a little later."}
         </p>
       </div>

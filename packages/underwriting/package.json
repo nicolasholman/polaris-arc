@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "license": "MIT",
-  "description": "Nansen-powered credit underwriting for Polaris: provider clients (Nansen, Zerion, Etherscan, RPC), ScoreManager Facts, the score and limit model, plain-language reasons, and a pure core the Chainlink CRE workflow runs.",
+  "description": "Credit underwriting for Polaris on Arc: reads a buyer's Polaris account from Arc (RPC and the Blockscout explorer, keyless) plus an optional linked history wallet (Nansen, Zerion, Etherscan), and produces ScoreManager Facts, the score and limit model, plain-language reasons and the report the Polaris keeper submits.",
   "engines": {
     "node": ">=22.6.0"
   },

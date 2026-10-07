@@ -3,7 +3,7 @@ import { configurationError } from "./errors.js";
 import type { Address, ContractName } from "./types.js";
 
 /**
- * Chain presets. `MONAD_TESTNET` and `MONAD` are what 0.3 is for; `SEPOLIA`
+ * Chain presets. `ARC_TESTNET` and `ARC` are what 0.3 is for; `SEPOLIA`
  * is the 0.2 deployment, kept so existing integrations keep working.
  *
  * Polaris contract addresses come from `deployments.ts`, which is generated
@@ -22,7 +22,7 @@ export interface PolarisContracts {
   name: string;
   rpcUrl: string;
   explorer: string;
-  /** The dollar token: AUSD on Monad, MockUSDC on the 0.2 Sepolia deployment. */
+  /** The dollar token: USDC on Arc (6 decimals), MockUSDC on the 0.2 Sepolia deployment. */
   stablecoin: string;
   loanEngine: string;
   scoreManager: string;
@@ -31,9 +31,10 @@ export interface PolarisContracts {
 }
 
 export interface PolarisChain extends PolarisContracts {
-  /** A stable identifier: "monad-testnet", "monad", "sepolia". */
+  /** A stable identifier: "arc-testnet", "arc", "sepolia". */
   key: string;
   testnet: boolean;
+  /** The gas token. On Arc that is USDC itself (18 decimals natively; the ERC-20 view has 6). */
   nativeCurrency: { name: string; symbol: string; decimals: number };
   stablecoin: Address;
   stablecoinSymbol: string;
@@ -47,7 +48,10 @@ export interface PolarisChain extends PolarisContracts {
   /** PolarisSend: send by link. */
   send: Address;
   merchantRegistry: Address;
-  /** PolarisCollector: the Chainlink CRE receiver. */
+  /**
+   * CollectionsReceiver: takes the Polaris keeper's collection reports. The
+   * field keeps its 0.3 name for API stability.
+   */
   collector: Address;
   batchSettlement: Address;
   features: {
@@ -58,13 +62,25 @@ export interface PolarisChain extends PolarisContracts {
   deployment: { source: string | null; deployedAt: string | null };
 }
 
-/** Agora's AUSD. Its EIP-712 domain is read from the token, never assumed (name "Agora Dollar", version "1"). */
-export const AUSD = {
-  monadTestnet: "0xa9012a055bd4e0eDfF8Ce09f960291C09D5322dC",
-  monad: "0x00000000eFE302BEAA2b3e6e1b18d08D69a9012a",
+/**
+ * Circle's USDC on Arc: the dollar, and the gas token. The ERC-20 interface
+ * has 6 decimals. Its EIP-712 domain is { name: "USDC", version: "2" }, read
+ * from `name()` / `version()` and checked against `DOMAIN_SEPARATOR()` (USDC
+ * has no ERC-5267 `eip712Domain()`).
+ */
+export const USDC = {
+  arcTestnet: "0x3600000000000000000000000000000000000000",
+  arc: "0x3600000000000000000000000000000000000000",
 } as const satisfies Record<string, Address>;
 
-const MON = { name: "Monad", symbol: "MON", decimals: 18 };
+/** Circle's EURC on Arc (6 decimals, EIP-712 domain { name: "EURC", version: "2" }). */
+export const EURC = {
+  arcTestnet: "0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a",
+  arc: "0xbEf5f6d51CB62b58e6A8f77868681825C6fe21c1",
+} as const satisfies Record<string, Address>;
+
+/** Arc's gas token is USDC. Gas is paid in it, and through the relayer Polaris pays it. */
+const ARC_NATIVE = { name: "USDC", symbol: "USDC", decimals: 18 };
 
 function fromDeployment(record: DeploymentRecord, defaultStablecoin: Address) {
   return {
@@ -74,32 +90,32 @@ function fromDeployment(record: DeploymentRecord, defaultStablecoin: Address) {
   };
 }
 
-export const MONAD_TESTNET: PolarisChain = Object.freeze({
-  key: "monad-testnet",
-  chainId: 10143,
-  name: "Monad Testnet",
-  rpcUrl: "https://testnet-rpc.monad.xyz",
-  explorer: "https://testnet.monadvision.com",
+export const ARC_TESTNET: PolarisChain = Object.freeze({
+  key: "arc-testnet",
+  chainId: 5042002,
+  name: "Arc Testnet",
+  rpcUrl: "https://rpc.testnet.arc.io",
+  explorer: "https://explorer.testnet.arc.io",
   testnet: true,
-  nativeCurrency: MON,
-  stablecoinSymbol: "AUSD",
+  nativeCurrency: ARC_NATIVE,
+  stablecoinSymbol: "USDC",
   stablecoinDecimals: 6,
   features: { payWithAuthorization: true },
-  ...fromDeployment(DEPLOYMENTS.monadTestnet, AUSD.monadTestnet),
+  ...fromDeployment(DEPLOYMENTS.arcTestnet, USDC.arcTestnet),
 });
 
-export const MONAD: PolarisChain = Object.freeze({
-  key: "monad",
-  chainId: 143,
-  name: "Monad",
-  rpcUrl: "https://rpc.monad.xyz",
-  explorer: "https://monadvision.com",
+export const ARC: PolarisChain = Object.freeze({
+  key: "arc",
+  chainId: 5042,
+  name: "Arc",
+  rpcUrl: "https://rpc.mainnet.arc.io",
+  explorer: "https://explorer.arc.io",
   testnet: false,
-  nativeCurrency: MON,
-  stablecoinSymbol: "AUSD",
+  nativeCurrency: ARC_NATIVE,
+  stablecoinSymbol: "USDC",
   stablecoinDecimals: 6,
   features: { payWithAuthorization: true },
-  ...fromDeployment(DEPLOYMENTS.monad, AUSD.monad),
+  ...fromDeployment(DEPLOYMENTS.arc, USDC.arc),
 });
 
 /**
@@ -130,7 +146,7 @@ export const SEPOLIA: PolarisChain = Object.freeze({
   deployment: { source: "packages/contracts/deployments/sepolia.json", deployedAt: "2026-08-06T04:35:49.479Z" },
 });
 
-export const CHAINS: readonly PolarisChain[] = [MONAD_TESTNET, MONAD, SEPOLIA];
+export const CHAINS: readonly PolarisChain[] = [ARC_TESTNET, ARC, SEPOLIA];
 
 export function chainById(chainId: number): PolarisChain | undefined {
   return CHAINS.find((c) => c.chainId === chainId);
@@ -144,7 +160,7 @@ const CONTRACT_LABELS: Record<ContractName | "stablecoin", string> = {
   checkout: "PolarisCheckout",
   send: "PolarisSend",
   merchantRegistry: "MerchantRegistry",
-  collector: "PolarisCollector",
+  collector: "CollectionsReceiver",
   batchSettlement: "BatchSettlement",
   stablecoin: "the dollar token",
 };
@@ -228,8 +244,8 @@ export function isDeployed(chain: PolarisChain, names: ReadonlyArray<ContractNam
 }
 
 function presetName(chain: PolarisChain): string {
-  if (chain.chainId === MONAD_TESTNET.chainId) return "MONAD_TESTNET";
-  if (chain.chainId === MONAD.chainId) return "MONAD";
+  if (chain.chainId === ARC_TESTNET.chainId) return "ARC_TESTNET";
+  if (chain.chainId === ARC.chainId) return "ARC";
   if (chain.chainId === SEPOLIA.chainId) return "SEPOLIA";
   return "chain";
 }

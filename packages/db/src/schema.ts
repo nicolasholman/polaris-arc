@@ -1,7 +1,7 @@
 /**
  * The records Polaris for Business keeps, and the collections that hold them.
  *
- * Money on chain is AUSD base units (6 decimals) as decimal strings, never
+ * Money on chain is USDC base units (6 decimals) as decimal strings, never
  * floats. Session prices are integer cents, the unit merchants think in.
  * Times are ISO-8601 UTC strings unless a field says `Ms` (epoch millis) or
  * `At` on a chain record (unix seconds, as the contracts store them).
@@ -48,7 +48,7 @@ export type MerchantRecord = {
     state: RegistrationState;
     txHash: Hex | null;
     activationTxHash: Hex | null;
-    /** The per-order cap set on activation, in AUSD base units. */
+    /** The per-order cap set on activation, in USDC base units. */
     maxOrderUnits: string | null;
     error: string | null;
     updatedAt: IsoDate | null;
@@ -140,7 +140,7 @@ export type SessionMismatch = {
   txHash: Hex;
   /** What was wrong, for the dashboard. */
   reason: string;
-  /** What the session asked for and what arrived, in AUSD base units. */
+  /** What the session asked for and what arrived, in USDC base units. */
   expectedUnits: string;
   gotUnits: string;
   at: IsoDate;
@@ -244,7 +244,9 @@ export type RelayKind =
   | "payout"
   | "createSplit"
   | "payShare"
-  | "closeSplit";
+  | "closeSplit"
+  /** The relayer finishes a buyer's CCTP V2 transfer into Arc (MessageTransmitterV2.receiveMessage). */
+  | "cctpMint";
 
 export type RelayRecord = {
   /** A digest of the signed request: the same signatures relay once. */
@@ -327,7 +329,7 @@ export type PlanRecord = {
   /**
    * The borrower signed their approval again (PolarisCheckout.Reauthorized)
    * after a collection failed for a lost one, and the collection that
-   * followed (the CRE collections run on its log trigger). Cleared by the
+   * followed (the keeper's collections run that picked it up). Cleared by the
    * next failure. The app shows "collecting now" until `collected` is set.
    */
   reauthorized?: { at: IsoDate; txHash: Hex; collected: { at: IsoDate; txHash: Hex } | null } | null;
@@ -513,7 +515,7 @@ export type IndexerOutboxRecord = {
  * money added (minted or bridged in), transfers to and from people, send
  * links made, claimed or taken back, and the transfers inside a payment or
  * an instalment (kept so a balance history adds up). One record per address
- * per AUSD Transfer log: `<txHash>:<logIndex>:<address>`.
+ * per USDC Transfer log: `<txHash>:<logIndex>:<address>`.
  */
 export type WalletMoveRecord = {
   id: string;
@@ -595,9 +597,9 @@ export type CollectorRunRecord = {
   skipped: number;
 };
 
-/* ── Credit: CRE underwriting requests and outcomes ─────────────────────── */
+/* ── Credit: the keeper's underwriting requests and outcomes ────────────── */
 
-/** One signed request to underwrite a Polaris account, queued for the CRE underwriting workflow's HTTP trigger. */
+/** One signed request to underwrite a Polaris account, queued for the Polaris keeper. */
 export type UnderwritingRequestRecord = {
   /** `uwr_…`. */
   id: string;
@@ -605,13 +607,13 @@ export type UnderwritingRequestRecord = {
   account: Address;
   /** The history wallet it links, or null for the account alone. */
   wallet: Address | null;
-  /** Exactly what the trigger receives as `input` (the workflow verifies the signatures itself). */
+  /** Exactly what the keeper receives (it verifies the signatures itself). */
   payload: {
     user: Address;
     consent: { issuedAt: number; nonce: string; signature: Hex };
     linked: { wallet: Address; issuedAt: number; nonce: string; signature: Hex } | null;
   };
-  /** queued → sent (the trigger accepted it) → done (the workflow's callback came back), or failed. */
+  /** queued → sent (the keeper accepted it) → done (its outcome came back), or failed. */
   state: "queued" | "sent" | "done" | "failed";
   attempts: number;
   error: string | null;
@@ -620,7 +622,7 @@ export type UnderwritingRequestRecord = {
   doneAt: IsoDate | null;
 };
 
-/** What the CRE underwriting workflow decided for an account, from its signed callback. */
+/** What the Polaris keeper decided for an account, from its signed callback. */
 export type CreditDecisionRecord = {
   /** The account, lower-case. */
   id: string;
@@ -635,13 +637,14 @@ export type CreditDecisionRecord = {
   at: IsoDate;
   /**
    * The report transaction behind it, as the chain sync saw it land
-   * (UnderwritingApplied or UnderwritingRefused through the forwarder): the
-   * provenance the app links to ("Verified by Chainlink CRE").
+   * (UnderwritingApplied or UnderwritingRefused from the keeper's
+   * `submitReport`): the provenance the app links to on the Arc explorer
+   * ("Reviewed by the Polaris keeper").
    */
   report?: { txHash: Hex; at: IsoDate; blockNumber: number } | null;
   /**
    * The buyer's reasons for this decision, explained by the underwriting
-   * gateway from the facts the DON attested (each line with its points and
+   * gateway from the facts the keeper reported (each line with its points and
    * the provider behind it, e.g. Nansen). Undefined until tried; null when
    * there is no report to explain. `source`: the gateway, or the underwriting package in process.
    */
@@ -653,7 +656,7 @@ export type CreditDecisionRecord = {
   } | null;
 };
 
-/* ── Chainlink CRE: what each workflow run did on chain ─────────────────── */
+/* ── The Polaris keeper: what each report did on chain ─────────────────── */
 
 /** A task a collections report carried, as CollectionsReceiver reported it. */
 export type CreTaskOutcome = {
@@ -669,10 +672,11 @@ export type CreTaskOutcome = {
 };
 
 /**
- * One CRE report that landed: a transaction through the forwarder to one of
- * our receivers, from its own events (CollectionsRun and its tasks,
- * UnderwritingApplied or Refused, CreditGuardUpdated or AttestationRefused).
- * The chain is the source: nothing here comes from a callback.
+ * One keeper report that landed: a `submitReport` transaction to one of our
+ * receivers, from its own events (CollectionsRun and its tasks,
+ * UnderwritingApplied or Refused). The chain is the source: nothing here comes
+ * from a callback. The type keeps its historical name (`CreRunRecord`) so
+ * stored records stay readable; `workflow` names the report kind.
  */
 export type CreRunRecord = {
   /** The transaction hash, lower-case: one report per transaction. */
@@ -681,7 +685,11 @@ export type CreRunRecord = {
   txHash: Hex;
   blockNumber: number;
   at: IsoDate;
-  /** Who delivered it: the forwarder's ReportProcessed and the transaction's sender, when the receipt could be read. */
+  /**
+   * Who delivered it, when the receipt could be read. Records from before the
+   * Arc port carry a forwarder's ReportProcessed; the keeper calls the receiver
+   * directly, so new records leave this null.
+   */
   delivery: { forwarder: Address; transmitter: Address | null; workflowExecutionId: Hex | null; result: boolean } | null;
   collections?: {
     tasks: number;
@@ -689,19 +697,24 @@ export type CreRunRecord = {
     skipped: number;
     items: CreTaskOutcome[];
     /**
-     * A buyer's Reauthorized that this run collected after (the instant
-     * retry on the EVM log trigger): the buyer, that transaction, and when.
+     * A buyer's Reauthorized that this run collected after (the keeper's
+     * instant retry): the buyer, that transaction, and when.
      */
     afterReauthorization: { buyer: Address; txHash: Hex; at: IsoDate } | null;
   };
   underwrite?: { items: Array<{ user: Address; linkedWallet: Address | null; applied: boolean; score: number | null; reason: string | null }> };
+  /**
+   * Legacy: an attested credit-guard report from before the Arc port. On Arc
+   * the credit guard reads the pool live and takes no reports, so new records
+   * never set this.
+   */
   guardian?: {
     accepted: boolean;
     /** The feed round it wrote, when accepted. */
     round: number | null;
     creditPaused: boolean | null;
     reasons: number | null;
-    /** AUSD/USD it cited, 8 decimals, and that Chainlink round. */
+    /** The dollar price it cited, 8 decimals, and that feed round (legacy). */
     price: string | null;
     priceRoundId: string | null;
     freeCashUnits: string | null;
@@ -711,10 +724,10 @@ export type CreRunRecord = {
   };
 };
 
-/** A buyer signed their approval again (PolarisCheckout.Reauthorized): the collections log trigger's event. */
+/** A buyer signed their approval again (PolarisCheckout.Reauthorized): the event the keeper's collections retry on. */
 export type ReauthorizationRecord = { id: string; buyer: Address; valueUnits: string; txHash: Hex; blockNumber: number; at: IsoDate };
 
-/** A CRE callback we have handled, by its id: every DON node may deliver it. */
+/** A keeper callback we have handled, by its id: a callback may be delivered more than once. */
 export type CreCallbackRecord = { id: string; type: string; receivedAt: IsoDate };
 
 /* ── Receipts only the buyer can read ───────────────────────────────────── */

@@ -16,7 +16,7 @@
  *   relatedWallets     the linked wallet's cluster size, but 0 when it was exchange-funded
  *                      or the funder ties to INFRASTRUCTURE_OUTDEGREE (60) or more wallets:
  *                      that is a faucet or an exchange, not one person with many accounts
- *   observedAt         the caller's clock: DON time in CRE, never Date.now() inside the core
+ *   observedAt         the caller's clock (the keeper's), never Date.now() inside the core
  *
  * Admission rules for the linked wallet, applied before the merge:
  *
@@ -26,7 +26,7 @@
  *     while a risk is unread could hide the risk.
  *
  * Missing data is never attested as zero (data.md §8). The derivation reports
- * `final: false` and lists what is missing; the CRE workflow must not send a
+ * `final: false` and lists what is missing; the keeper must not send a
  * report that is not final.
  *
  * Evidence no configured provider could read (`not_configured`: the key is

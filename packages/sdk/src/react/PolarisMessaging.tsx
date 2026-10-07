@@ -242,7 +242,7 @@ export function PolarisMessaging({
 
           <p className="plrs-fine">
             Pay in {count} runs on your Polaris credit line, scored on chain with the reasons shown to you. Opening lines run from $200 to
-            $1,000 and grow as you repay on time. The merchant is paid in full today, in dollars (AUSD) on Monad.
+            $1,000 and grow as you repay on time. The merchant is paid in full today, in dollars (USDC) on Arc, final in under a second.
           </p>
         </div>
       ) : null}

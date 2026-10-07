@@ -42,7 +42,7 @@ describe("personas", () => {
     assert.equal(o.report, null, "a report would open ScoreManager's $200 floor on no evidence");
     assert.deepEqual(o.facts, {
       walletAgeDays: 3,
-      txCount: 2,
+      txCount: 1,
       stableBalance: 37_600_000n,
       defiTenureDays: 0,
       priorLiquidations: 0,
@@ -61,7 +61,7 @@ describe("personas", () => {
     const o = await run(fixtureProviders(), ACCOUNT.regular, null, { purchase: 150_000_000n });
     assert.equal(o.final, true);
     assert.equal(o.attest, true);
-    assert.equal(o.facts.walletAgeDays, 90);
+    assert.equal(o.facts.walletAgeDays, 130);
     assert.equal(o.decision.limit, 200_000_000n);
     assert.equal(o.decision.payIn4.allowed, true);
     assert.match(o.report ?? "", /^0x[0-9a-f]{832}$/);
@@ -154,29 +154,33 @@ describe("personas", () => {
     assert.equal(o.facts.defiTenureDays, 0);
   });
 
-  it("an account Zerion has no record of is dated by Etherscan's token transfers", async () => {
-    const o = await run(fixtureProviders(), ACCOUNT.zerionBlind, null);
+  it("an account that pays its own gas is dated by its first transaction and counted by its nonce", async () => {
+    const o = await run(fixtureProviders(), ACCOUNT.selfPaying, null);
     assert.equal(o.final, true);
     assert.equal(o.facts.walletAgeDays, 45);
-    assert.equal(o.facts.txCount, 3);
-    assert.equal(o.derivation.attribution.walletAgeDays.source, "etherscan.tokentx");
-    assert.equal(o.derivation.attribution.walletAgeDays.status, "fallback");
+    assert.equal(o.facts.txCount, 3, "its nonce (3) outnumbers the one transfer it signed");
+    assert.equal(o.derivation.attribution.walletAgeDays.source, "blockscout.txlist");
+    assert.equal(o.derivation.attribution.txCount.source, "rpc.nonce");
   });
 
-  it("an account with more than a page of history is dated with probes, not paging", async () => {
+  it("an account Polaris relays for is dated by its token transfers and counted by what it signed", async () => {
     const o = await run(fixtureProviders(), ACCOUNT.regular, null);
     assert.equal(o.final, true);
-    assert.equal(o.facts.txCount, 100, "a full page proves at least 100");
-    assert.equal(o.facts.walletAgeDays, 90, "its oldest transfer is 130 days old; the probes prove over 90");
-    assert.equal(o.derivation.attribution.walletAgeDays.source, "zerion.probe");
-    assert.equal(reason(o, "age")?.text, "You've used this account for over 3 months · +6");
-    assert.equal(reason(o, "activity")?.text, "You've made 100 payments and transfers · +4");
+    assert.equal(o.facts.txCount, 67, "the transfers it sent in the last 100 outnumber its nonce (4)");
+    assert.equal(o.facts.walletAgeDays, 130, "its oldest transfer, exactly");
+    assert.equal(o.facts.stableBalance, 455_000_000n, "USDC plus EURC");
+    assert.equal(o.derivation.attribution.walletAgeDays.source, "blockscout.tokentx");
+    assert.equal(o.derivation.attribution.txCount.source, "blockscout.tokentx");
+    assert.equal(reason(o, "age")?.text, "You've used this account for 4 months · +8");
+    assert.equal(reason(o, "activity")?.text, "You've made 67 payments and transfers · +2");
+    assert.equal(reason(o, "age")?.provider, "blockscout");
   });
 
-  it("an account whose history fits one page gets its exact age", async () => {
-    const o = await run(fixtureProviders(), ACCOUNT.fresh, null);
-    assert.equal(o.derivation.attribution.walletAgeDays.source, "zerion.transactions");
-    assert.equal(o.derivation.attribution.walletAgeDays.lowerBound, false);
+  it("an account needs no keyed provider: only Arc's RPC and explorer are asked", async () => {
+    const t = scripted(fixtureTransport(), []);
+    await run(fixtureProviders(t), ACCOUNT.fresh, null);
+    assert.ok(t.calls.length > 0);
+    assert.ok(t.calls.every((c) => c.url.startsWith("https://rpc.testnet.arc.io") || c.url.startsWith("https://explorer.testnet.arc.io/api?")), t.calls.map((c) => c.url).join("\n"));
   });
 });
 
@@ -223,15 +227,43 @@ describe("provider failures and fallback", () => {
     assert.equal(o.breakdown.score, 520);
   });
 
-  it("Zerion down: Nansen supplies the balance and the trading history", async () => {
+  it("Zerion down: Nansen supplies the balance and the trading history, and the account on Arc is unaffected", async () => {
     const t = scripted(fixtureTransport(), [{ match: host("api.zerion.io"), respond: () => status(503, {}) }]);
     const o = await run(fixtureProviders(t), ACCOUNT.regular, LINKED.strong);
     assert.equal(o.derivation.attribution.stableBalance.source, "nansen.current-balance");
     assert.equal(o.derivation.attribution.defiTenureDays.source, "nansen.transactions");
     assert.equal(o.derivation.attribution.walletAgeDays.source, "nansen.first-funder");
-    // The account's own history has no second source in fixtures, so it waits.
+    assert.equal(o.final, true);
+  });
+
+  it("Arc's explorer down: the account's age is missing, so it waits; its nonce still counts", async () => {
+    const t = scripted(fixtureTransport(), [{ match: host("explorer.testnet.arc.io"), respond: () => status(502, {}) }]);
+    const p = fixtureProviders(t);
+    const a = await collectAccount(ACCOUNT.selfPaying, p, { now: NOW });
+    assert.equal(a.evidence.firstSeenAt.status, "missing");
+    assert.equal(a.evidence.sentCount.status, "fallback");
+    assert.equal(a.evidence.sentCount.source, "rpc.nonce");
+    assert.equal(a.evidence.sentCount.value, 3);
+    const o = await run(fixtureProviders(t), ACCOUNT.selfPaying, null);
     assert.equal(o.final, false);
     assert.ok(o.missing.includes("account.firstSeenAt"));
+    assert.ok(o.issues.some((i) => i.source.startsWith("blockscout.") && i.code === "server_error"));
+  });
+
+  it("Arc's txlist down but its transfers answer: the age falls back to the oldest transfer", async () => {
+    const t = scripted(fixtureTransport(), [{ match: host("explorer.testnet.arc.io", "action=txlist"), respond: () => status(500, {}) }]);
+    const a = await collectAccount(ACCOUNT.selfPaying, fixtureProviders(t), { now: NOW });
+    assert.equal(a.evidence.firstSeenAt.status, "fallback");
+    assert.equal(a.evidence.firstSeenAt.source, "blockscout.tokentx");
+    assert.equal(a.evidence.firstSeenAt.value, NOW - 12 * 3600 - 45 * 86_400);
+  });
+
+  it("no explorer for the account chain (a local chain): the age is not configured, the nonce counts", async () => {
+    const p = { ...fixtureProviders(), explorer: null };
+    const a = await collectAccount(ACCOUNT.selfPaying, p, { now: NOW });
+    assert.equal(a.evidence.firstSeenAt.status, "not_configured");
+    assert.equal(a.evidence.sentCount.status, "fallback");
+    assert.equal(a.evidence.sentCount.value, 3);
   });
 
   it("Etherscan down: past loans cannot be checked, so the linked wallet waits", async () => {
@@ -247,7 +279,7 @@ describe("provider failures and fallback", () => {
     const o = await run(fixtureProviders(t), ACCOUNT.fresh, LINKED.strong);
     assert.equal(o.final, true);
     assert.equal(o.derivation.attribution.txCount.source, "zerion.transactions");
-    assert.equal(o.facts.txCount, 9 + 2, "nine counted rows (the trash airdrop is not activity) plus the account's two");
+    assert.equal(o.facts.txCount, 9 + 1, "nine counted rows (the trash airdrop is not activity) plus the account's one sent transfer");
   });
 
   it("everything down: nothing is reported, and the preview is the floor", async () => {

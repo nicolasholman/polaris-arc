@@ -49,6 +49,17 @@ export function formatLocalAmount(micros: bigint, currency: string, perUsd: numb
   }
 }
 
+/**
+ * An amount in EURC base units (6 decimals) in dollars, at the EUR / USD rate
+ * (`perUsd` is euros per dollar, as `/api/fx?currency=EUR` returns it). One
+ * EURC is one euro, so the euro amount itself needs no rate. Null when the
+ * rate is unusable.
+ */
+export function eurcToUsd(eurcMicros: bigint, eurPerUsd: number): number | null {
+  if (!Number.isFinite(eurPerUsd) || eurPerUsd <= 0) return null;
+  return Number(eurcMicros) / 1e6 / eurPerUsd;
+}
+
 /** "just now", "3 min ago", "5 h ago": how old the rate is. */
 export function rateAgeText(updatedAt: number, nowMs: number): string {
   const seconds = Math.max(0, Math.floor(nowMs / 1000 - updatedAt));

@@ -3,7 +3,7 @@
  * These are deliberately not the companies' real logos.
  */
 
-type GlyphName = "monad" | "privy" | "chainlink" | "agora" | "envio" | "nansen" | "circle" | "zerion";
+type GlyphName = "arc" | "circle" | "cctp" | "eurc" | "privy" | "nansen" | "zerion";
 
 function Glyph({ name }: { name: GlyphName }) {
   // Scales with the wordmark: 30px beside the 32px desktop text.
@@ -15,10 +15,24 @@ function Glyph({ name }: { name: GlyphName }) {
     focusable: false as const,
   };
   switch (name) {
-    case "monad":
+    case "arc":
       return (
         <svg {...common} fill="none">
-          <rect x="6" y="6" width="14" height="14" rx="3.5" transform="rotate(45 13 13)" stroke="currentColor" strokeWidth="2.6" />
+          <path d="M4 17a9 9 0 0 1 18 0" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" />
+          <circle cx="13" cy="17" r="2.6" fill="currentColor" />
+        </svg>
+      );
+    case "cctp":
+      return (
+        <svg {...common} fill="none">
+          <path d="M4 9h17m-4.5-4.5L21 9l-4.5 4.5M22 17H5m4.5-4.5L5 17l4.5 4.5" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      );
+    case "eurc":
+      return (
+        <svg {...common} fill="none">
+          <circle cx="13" cy="13" r="9" stroke="currentColor" strokeWidth="2.6" />
+          <path d="M13 4a9 9 0 0 0 0 18Z" fill="currentColor" />
         </svg>
       );
     case "privy":
@@ -26,27 +40,6 @@ function Glyph({ name }: { name: GlyphName }) {
         <svg {...common}>
           <circle cx="13" cy="11" r="8" fill="currentColor" />
           <rect x="9" y="17" width="4.5" height="7" rx="1.5" fill="currentColor" />
-        </svg>
-      );
-    case "chainlink":
-      return (
-        <svg {...common} fill="none">
-          <path d="M13 3.5 21.2 8.2v9.6L13 22.5l-8.2-4.7V8.2L13 3.5Z" stroke="currentColor" strokeWidth="2.6" strokeLinejoin="round" />
-        </svg>
-      );
-    case "agora":
-      return (
-        <svg {...common} fill="none">
-          <circle cx="9.5" cy="13" r="6.5" stroke="currentColor" strokeWidth="2.4" />
-          <circle cx="16.5" cy="13" r="6.5" fill="currentColor" />
-        </svg>
-      );
-    case "envio":
-      return (
-        <svg {...common}>
-          <rect x="3" y="5" width="20" height="4" rx="2" fill="currentColor" />
-          <rect x="3" y="11" width="14" height="4" rx="2" fill="currentColor" />
-          <rect x="3" y="17" width="20" height="4" rx="2" fill="currentColor" />
         </svg>
       );
     case "nansen":

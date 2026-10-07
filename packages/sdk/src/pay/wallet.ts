@@ -5,7 +5,7 @@ import type { Eip1193Provider, Hex } from "../types.js";
 /**
  * The few EIP-1193 calls a payment needs, written against the bare
  * `request` interface so any provider works: an injected wallet, Privy,
- * WalletConnect, a viem-wrapped Mera account, or Hardhat's provider.
+ * WalletConnect, a viem-wrapped passkey account, or Hardhat's provider.
  */
 
 export function findProvider(explicit?: unknown): Eip1193Provider {
@@ -48,7 +48,7 @@ function wrongChain(chain: PolarisChain, cause?: unknown): PolarisError {
  * Switch the wallet to `chain`, adding it first if the wallet has never seen
  * it (error 4902). When the buyer declines the switch or the add, or the
  * wallet can't switch on its own, this throws `wrong_chain` ("Switch your
- * wallet to Monad Testnet to pay."), never "You cancelled the request.": the
+ * wallet to Arc Testnet to pay."), never "You cancelled the request.": the
  * buyer didn't cancel the payment, and the next step is to change network.
  * The wallet's own error is kept as `cause`.
  */
@@ -87,7 +87,7 @@ export async function ethCall(provider: Eip1193Provider, to: string, data: strin
 
 export type Receipt = { status: "success" | "reverted"; transactionHash: Hex; blockNumber: number };
 
-/** Poll for a receipt. Monad finalises in under a second, so this is short in practice. */
+/** Poll for a receipt. Arc is final in under a second, so this is short in practice. */
 export async function waitForReceipt(provider: Eip1193Provider, txHash: string, timeoutMs = 60_000): Promise<Receipt> {
   const started = Date.now();
   let delay = 250;

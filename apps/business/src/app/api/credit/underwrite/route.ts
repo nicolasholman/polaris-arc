@@ -5,7 +5,7 @@ import { methodNotAllowed, ok, readJson } from "@/server/http";
 export const dynamic = "force-dynamic";
 
 /**
- * Ask for a Pay in 4 credit line: queue a run of the CRE underwriting
+ * Ask for a Pay in 4 credit line: queue a run of the keeper underwriting
  * workflow for this account. The credential is the account's own EIP-191
  * signature over its consent (and, to bring history, the history wallet's
  * over its link proof), both from `GET /api/public/credit/{account}/messages`.

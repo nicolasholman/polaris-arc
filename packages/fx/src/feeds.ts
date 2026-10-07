@@ -1,10 +1,14 @@
 /**
  * Which Chainlink Data Feed gives each local currency, and on which chain.
  *
+ * Chainlink does not run on Arc. These feeds are read from Ethereum, Polygon
+ * and Base, for display only: Polaris charges and pays in USDC on Arc, and a
+ * rate here only prints an indicative local amount under it.
+ *
  * Pure data (no viem, no network), so the browser can import it too
  * (`@polaris/fx/feeds`), for example to list the currencies that have a rate.
  *
- * Every address below was read on chain on 2026-09-27 at 22:37 UTC with public RPCs:
+ * Every address below was read on chain with public RPCs (see `FEEDS_VERIFIED_ON`):
  * `description()` returned the pair shown, `decimals()` the decimals shown,
  * and `latestRoundData()` a positive answer updated within its heartbeat.
  * `pnpm --filter @polaris/fx check:live` repeats that check against today's
@@ -13,22 +17,21 @@
  *
  * | Chain           | Directory file                                                              |
  * |-----------------|-----------------------------------------------------------------------------|
- * | Monad mainnet   | https://reference-data-directory.vercel.app/feeds-monad-mainnet.json        |
  * | Ethereum        | https://reference-data-directory.vercel.app/feeds-mainnet.json              |
  * | Polygon PoS     | https://reference-data-directory.vercel.app/feeds-matic-mainnet.json        |
  * | Base            | https://reference-data-directory.vercel.app/feeds-ethereum-mainnet-base-1.json |
  *
- * Order within a currency is the order the service tries them: Monad mainnet
- * first where Monad has the pair (EUR, GBP, JPY, CHF, CAD: 240 s heartbeat),
- * otherwise the feed that updates most often, then one fallback on another
- * chain carrying the same Chainlink product (same pair, same reference rate),
- * used only when the first is unreachable or stale.
+ * Order within a currency is the order the service tries them: the feed that
+ * updates most often first, then one fallback on another chain carrying the
+ * same Chainlink product (same pair, same reference rate), used only when the
+ * first is unreachable or stale.
  *
  * Nothing here is ever used to price or settle anything: Polaris charges and
- * pays in dollars, and these rates only print an indicative local amount.
+ * pays in dollars (USDC; EURC for euro send links, where one EURC is one euro),
+ * and these rates only print an indicative local amount.
  */
 
-export type ChainKey = "monad" | "ethereum" | "polygon" | "base";
+export type ChainKey = "ethereum" | "polygon" | "base";
 
 export interface ChainInfo {
   /** EVM chain id; the service checks the RPC answers with it before trusting a read. */
@@ -42,13 +45,6 @@ export interface ChainInfo {
 }
 
 export const CHAINS: Readonly<Record<ChainKey, ChainInfo>> = {
-  monad: {
-    id: 143,
-    name: "Monad mainnet",
-    rpcUrls: ["https://rpc.monad.xyz", "https://rpc1.monad.xyz"],
-    envVar: "FX_RPC_MONAD",
-    directory: "https://reference-data-directory.vercel.app/feeds-monad-mainnet.json",
-  },
   ethereum: {
     id: 1,
     name: "Ethereum",
@@ -99,53 +95,53 @@ export interface CurrencyFeeds {
   readonly note?: string;
 }
 
-/** The date every address and figure in `FX_FEEDS` was read on chain. */
-export const FEEDS_VERIFIED_ON = "2026-09-27T22:37Z";
+/** When every address in `FX_FEEDS` was last read on chain and matched (`check:live`). */
+export const FEEDS_VERIFIED_ON = "2026-10-07T13:41Z";
 
 export const FX_FEEDS: readonly CurrencyFeeds[] = [
-  /* ── On Monad mainnet (240 s heartbeat, 0.15 % deviation, 18 decimals) ── */
+  /* ── Majors: Polygon's 27 s feeds where they exist, an Ethereum fallback ── */
   {
     currency: "EUR",
     name: "Euro",
     sources: [
-      { chain: "monad", address: "0x00D7E359c8CE46168eFDD4D65b708fFb16c4b99a", pair: "EUR / USD", decimals: 18, heartbeatSeconds: 240, deviationPercent: 0.15 },
       { chain: "polygon", address: "0x73366Fe0AA0Ded304479862808e02506FE556a98", pair: "EUR / USD", decimals: 8, heartbeatSeconds: 27, deviationPercent: 0.01 },
+      { chain: "ethereum", address: "0xb49f677943BC038e9857d61E7d053CaA2C1734C1", pair: "EUR / USD", decimals: 8, heartbeatSeconds: 86400, deviationPercent: 0.15 },
     ],
   },
   {
     currency: "GBP",
     name: "Pound sterling",
     sources: [
-      { chain: "monad", address: "0x1ffC8B75a16FFfbd7879F042B580F7607Dcf5C30", pair: "GBP / USD", decimals: 18, heartbeatSeconds: 240, deviationPercent: 0.15 },
       { chain: "polygon", address: "0x099a2540848573e94fb1Ca0Fa420b00acbBc845a", pair: "GBP / USD", decimals: 8, heartbeatSeconds: 27, deviationPercent: 0.01 },
+      { chain: "ethereum", address: "0x5c0Ab2d9b5a7ed9f470386e82BB36A3613cDd4b5", pair: "GBP / USD", decimals: 8, heartbeatSeconds: 86400, deviationPercent: 0.15 },
     ],
   },
   {
     currency: "JPY",
     name: "Japanese yen",
     sources: [
-      { chain: "monad", address: "0xF64664Ea54cE47eCC7a1816C49d1Bc6deF828927", pair: "JPY / USD", decimals: 18, heartbeatSeconds: 240, deviationPercent: 0.15 },
       { chain: "ethereum", address: "0xBcE206caE7f0ec07b545EddE332A47C2F75bbeb3", pair: "JPY / USD", decimals: 8, heartbeatSeconds: 86400, deviationPercent: 0.15 },
+      { chain: "polygon", address: "0xD647a6fC9BC6402301583C91decC5989d8Bc382D", pair: "JPY / USD", decimals: 8, heartbeatSeconds: 86400, deviationPercent: 0.3 },
     ],
   },
   {
     currency: "CHF",
     name: "Swiss franc",
     sources: [
-      { chain: "monad", address: "0x6DBa7f3A7B5B7c1079337104caD14D19150F6B8d", pair: "CHF / USD", decimals: 18, heartbeatSeconds: 240, deviationPercent: 0.15 },
       { chain: "polygon", address: "0xc76f762CedF0F78a439727861628E0fdfE1e70c2", pair: "CHF / USD", decimals: 8, heartbeatSeconds: 86400, deviationPercent: 0.1 },
+      { chain: "ethereum", address: "0x449d117117838fFA61263B61dA6301AA2a88B13A", pair: "CHF / USD", decimals: 8, heartbeatSeconds: 86400, deviationPercent: 0.15 },
     ],
   },
   {
     currency: "CAD",
     name: "Canadian dollar",
     sources: [
-      { chain: "monad", address: "0x3293eA5650E9f8c4091642b7EB1C46CFEe5197cA", pair: "CAD / USD", decimals: 18, heartbeatSeconds: 240, deviationPercent: 0.15 },
       { chain: "polygon", address: "0xACA44ABb8B04D07D883202F99FA5E3c53ed57Fb5", pair: "CAD / USD", decimals: 8, heartbeatSeconds: 27, deviationPercent: 0.01 },
+      { chain: "ethereum", address: "0xa34317DB73e77d453b1B8d04550c44D10e981C8e", pair: "CAD / USD", decimals: 8, heartbeatSeconds: 86400, deviationPercent: 0.15 },
     ],
   },
 
-  /* ── Not on Monad: Ethereum, Polygon and Base ── */
+  /* ── The rest: Ethereum, Polygon and Base ── */
   {
     currency: "ARS",
     name: "Argentine peso",
@@ -280,8 +276,8 @@ export const FX_FEEDS: readonly CurrencyFeeds[] = [
 ];
 
 /**
- * Currencies the app offers with no Chainlink feed on Monad, Ethereum,
- * Polygon or Base (checked 2026-09-27). The app shows no local amount for
+ * Currencies the app offers with no Chainlink feed on Ethereum, Polygon or
+ * Base (checked 2026-09-27). The app shows no local amount for
  * them rather than a made-up one. AED is pegged at 3.6725, but a peg we type
  * in is not a Chainlink rate, so it is hidden too.
  */
@@ -309,3 +305,10 @@ export function hasFxFeed(currency: string): boolean {
 export function quotesLocalPerUsd(pair: string): boolean {
   return pair.startsWith("USD / ");
 }
+
+/**
+ * The euro, for EURC. One EURC is one euro (Circle redeems it 1:1), so an
+ * amount in EURC base units (6 decimals) needs no rate to show in euros, and
+ * converting it to dollars uses the EUR / USD feed above.
+ */
+export const EURC_CURRENCY = "EUR";

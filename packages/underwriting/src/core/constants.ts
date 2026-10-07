@@ -3,17 +3,14 @@
  * before it lands on chain, plus the network and provider constants the
  * underwriting recipe needs (docs/research/data.md §7.1, plan Appendix A).
  *
- * The contract is the specification. `test/mirror.test.ts` holds these to the
- * JavaScript mirror in packages/contracts, which Hardhat holds to the deployed
- * bytecode, and `packages/contracts/test/metropolis/UnderwritingPackage.test.js`
- * holds this package to the contract directly.
+ * The contract is the specification: ScoreManager and PolarisLoanEngine in
+ * packages/contracts define every number below, and this package mirrors them.
  */
 
 import type { Address, KeyedProvider } from "./types.ts";
 
 /**
- * The environment variable (and CRE secret id) that holds each keyed
- * provider's API key. A provider without its key is not configured: it is
+ * The environment variable that holds each keyed provider's API key. A provider without its key is not configured: it is
  * never called, and the evidence it would read is absent (facts.ts).
  */
 export const PROVIDER_KEYS: Readonly<Record<KeyedProvider, string>> = {
@@ -32,8 +29,8 @@ export const FACTS_VERSION = 1;
 export const MODEL_VERSION = 3;
 
 /**
- * The thin-file gate (attest.ts): the DON attests facts only when they reach
- * BOTH of these, or decline. They are ScoreManager's own MIN_HISTORY_DAYS and
+ * The thin-file gate (attest.ts): the keeper reports facts only when they
+ * reach BOTH of these, or decline. They are ScoreManager's own MIN_HISTORY_DAYS and
  * MIN_HISTORY_TXS (`isThinFile`): below either, `ScoreManager.underwrite`
  * refuses the report with ThinFile, so no report is sent and the account
  * stays secured-only.
@@ -106,32 +103,44 @@ export const U64_MAX = 0xffff_ffff_ffff_ffffn;
 /** The report kind UnderwritingReceiver accepts (`REPORT_KIND`); see abi.ts. */
 export const REPORT_KIND_UNDERWRITE = 2;
 
-/** Monad networks and the dollars on them (plan Appendix A; 6 decimals, verified). */
-export const MONAD_TESTNET = {
-  chainId: 10143,
-  rpcUrl: "https://testnet-rpc.monad.xyz",
-  zerionChainId: "monad-test-v2",
-  ausd: "0xa9012a055bd4e0eDfF8Ce09f960291C09D5322dC" as Address,
-  usdc: "0x534b2f3A21130d7a60830c2Df862319e593943A3" as Address,
+/**
+ * Arc, where Polaris accounts live. Gas is paid in USDC; the ERC-20 interface
+ * of USDC (`0x3600…`) reads the same balance in 6 decimals. EURC is Circle's
+ * euro token (6 decimals). The explorer is Blockscout, whose Etherscan-style
+ * API needs no key.
+ */
+export const ARC_TESTNET = {
+  chainId: 5042002,
+  rpcUrl: "https://rpc.testnet.arc.io",
+  explorerApiUrl: "https://explorer.testnet.arc.io/api",
+  usdc: "0x3600000000000000000000000000000000000000" as Address,
+  eurc: "0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a" as Address,
 } as const;
 
-export const MONAD_MAINNET = {
-  chainId: 143,
-  rpcUrl: "https://rpc.monad.xyz",
-  zerionChainId: "monad",
-  ausd: "0x00000000eFE302BEAA2b3e6e1b18d08D69a9012a" as Address,
-  usdc: "0x754704Bc059F8C67012fEd69BC8A327a5aafb603" as Address,
+export const ARC_MAINNET = {
+  chainId: 5042,
+  rpcUrl: "https://rpc.mainnet.arc.io",
+  explorerApiUrl: "https://explorer.arc.io/api",
+  usdc: "0x3600000000000000000000000000000000000000" as Address,
+  eurc: "0xbEf5f6d51CB62b58e6A8f77868681825C6fe21c1" as Address,
 } as const;
+
+/** The Arc network with this chain id, if it is one. */
+export function arcNetwork(chainId: number): typeof ARC_TESTNET | typeof ARC_MAINNET | null {
+  if (chainId === ARC_TESTNET.chainId) return ARC_TESTNET;
+  if (chainId === ARC_MAINNET.chainId) return ARC_MAINNET;
+  return null;
+}
 
 /**
  * Where a linked wallet's sent-transaction count is read (data.md §6.2): one
- * `eth_getTransactionCount` per chain. Only Monad's RPC is verified; the others
- * are public endpoints and belong in config for production.
+ * `eth_getTransactionCount` per chain, on public endpoints (override each with
+ * `RPC_URL_<chainId>`; production should use its own).
  */
 export const HISTORY_CHAINS: ReadonlyArray<{ name: string; chainId: number; rpcUrl: string }> = [
   { name: "ethereum", chainId: 1, rpcUrl: "https://ethereum-rpc.publicnode.com" },
   { name: "base", chainId: 8453, rpcUrl: "https://mainnet.base.org" },
-  { name: "monad", chainId: 143, rpcUrl: "https://rpc.monad.xyz" },
+  { name: "arc", chainId: ARC_MAINNET.chainId, rpcUrl: ARC_MAINNET.rpcUrl },
 ];
 
 /**
@@ -160,12 +169,10 @@ export const NANSEN_RELATED_CHAINS: ReadonlySet<string> = new Set([
   "optimism",
   "polygon",
   "bnb",
-  "monad",
 ]);
 
 /** Dollar-pegged symbols that count toward the balance. */
 export const STABLE_SYMBOLS: ReadonlySet<string> = new Set([
-  "AUSD",
   "USDC",
   "USDC.E",
   "USDT",

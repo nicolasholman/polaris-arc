@@ -15,7 +15,7 @@ import {
 
 import {
   collateralVaultAbi,
-  iausdAbi,
+  iusdcAbi,
   polarisCheckoutAbi,
   polarisLoanEngineAbi,
   polarisPaymentsAbi,
@@ -33,6 +33,7 @@ import { ensureQuoted, orderKeyOf, openSessionForPayment } from "../sessions/ses
 import { periodSeconds } from "../sessions/params";
 import { vaultWithdrawDomain } from "../vault";
 import { MAX_SHARES, readSplit, requireSplitContract, shareNonce, SPLIT_MAX_EXPIRY, SPLIT_MIN_LIFETIME, splitIdOf } from "../split";
+import { orderMemo } from "../chain/circle";
 import { carry, fromRecord, type RelayResult } from "./carry";
 import { address, bad, bytes32, deadline, field, signature, text, uint, vrs } from "./parse";
 import { polarisDomain, TYPES, type Domain } from "./typed-data";
@@ -54,15 +55,15 @@ import { polarisDomain, TYPES, type Domain } from "./typed-data";
  * | `pay`                | buyer: ReceiveWithAuth.    | PolarisCheckout.pay                         |
  * | `openPlan`           | buyer: PlanIntent + Permit | PolarisCheckout.openPlan                    |
  * | `subscribe`          | buyer: SubscribeIntent + Permit | PolarisCheckout.subscribe              |
- * | `send`               | sender: ReceiveWithAuth. + link key: Open | PolarisSend.send             |
- * | `claim`              | link key: Claim            | PolarisSend.claim                           |
- * | `cancelSend`         | sender: Cancel             | PolarisSend.cancel                          |
+ * | `send`               | sender: ReceiveWithAuth. + link key: Open | PolarisSend.send (USD or EUR) |
+ * | `claim`              | link key: Claim            | PolarisSend.claim (USD or EUR)              |
+ * | `cancelSend`         | sender: Cancel             | PolarisSend.cancel (USD or EUR)             |
  * | `repay`              | borrower: RepayIntent      | PolarisLoanEngine.repayWithSig              |
  * | `reauthorize`        | borrower: Permit (engine)  | PolarisCheckout.reauthorize                 |
  * | `lockCollateral`     | borrower: Permit (vault)   | CollateralVault.lockWithPermit              |
  * | `withdrawCollateral` | borrower: Withdraw         | CollateralVault.withdrawWithSig             |
  * | `cancelSubscription` | subscriber: CancelSubscription | PolarisPayments.cancelWithSignature     |
- * | `transfer`           | owner: TransferWithAuth.   | AUSD.transferWithAuthorization              |
+ * | `transfer`           | owner: TransferWithAuth.   | USDC.transferWithAuthorization              |
  * | `createSplit`        | organiser: CreateSplit     | PolarisSplit.createSplit                    |
  * | `payShare`           | friend: ReceiveWithAuth.   | PolarisSplit.payShare                       |
  * | `closeSplit`         | organiser: CloseSplit      | PolarisSplit.closeSplit                     |
@@ -111,6 +112,21 @@ function stablecoinDomain(chain: ChainConfig): Domain {
   return { ...chain.stablecoinDomain, chainId: chain.id, verifyingContract: chain.contracts.stablecoin };
 }
 
+/**
+ * Which send-by-link escrow a request uses: dollars (USDC, PolarisSend) by
+ * default, or euros (`currency: "EUR"`: EURC on Arc, PolarisSendEURC) where
+ * the deployment has them. EURC signs ERC-3009 exactly like USDC, under its
+ * own domain ("EURC", "2").
+ */
+function sendRoute(body: Record<string, unknown>, chain: ChainConfig): { currency: "USD" | "EUR"; send: Address; tokenDomain: Domain } {
+  const raw = body.currency === undefined || body.currency === null ? "USD" : body.currency;
+  if (raw !== "USD" && raw !== "EUR") bad("currency", 'currency must be "USD" or "EUR".');
+  if (raw === "USD") return { currency: "USD", send: chain.contracts.send, tokenDomain: stablecoinDomain(chain) };
+  const { sendEurc, eurc } = chain.contracts;
+  if (!sendEurc || !eurc || !chain.eurcDomain) throw new HttpError(400, "currency_unavailable", "Sending euros isn't available on this network.", { param: "currency" });
+  return { currency: "EUR", send: sendEurc, tokenDomain: { ...chain.eurcDomain, chainId: chain.id, verifyingContract: eurc } };
+}
+
 function relayIdOf(type: string, ...signatures: Hex[]): string {
   return `sig:${keccak256(stringToHex(`${type}:${signatures.join(":")}`)).slice(2, 42)}`;
 }
@@ -136,7 +152,7 @@ async function assertSigner(expected: Address, recover: Promise<Address>, what: 
  *
  * Each account also has a daily budget. And `open` requests (transfers and
  * sends by link, which need no merchant's checkout and so can be made by
- * anyone with a fresh key and a little AUSD) share one global budget, a
+ * anyone with a fresh key and a little USDC) share one global budget, a
  * circuit breaker on what the relayer can be made to spend on strangers.
  */
 function countVerified(signer: Address, options: { open?: boolean } = {}): void {
@@ -149,7 +165,7 @@ function countVerified(signer: Address, options: { open?: boolean } = {}): void 
 /** The smallest transfer or send the relayer carries (and the Privy policy signs). */
 function assertMinimum(amount: bigint, param: string): void {
   const min = getConfig().relayerLimits.minTransferUnits;
-  if (amount < min) bad(param, `${param} must be at least ${formatUnits(min)} AUSD.`);
+  if (amount < min) bad(param, `${param} must be at least ${formatUnits(min)} USDC.`);
 }
 
 /**
@@ -206,7 +222,7 @@ async function permitOf(body: Record<string, unknown>, owner: Address, spender: 
   const value = uint(body, "permit.value");
   const permitDeadline = deadline(uint(body, "permit.deadline"), "permit.deadline", { maxAheadSeconds: 3 * 3600 });
   const sig = signature(body, "permit.signature");
-  const nonce = (await publicClient().readContract({ address: chain.contracts.stablecoin, abi: iausdAbi, functionName: "nonces", args: [owner] })) as bigint;
+  const nonce = (await publicClient().readContract({ address: chain.contracts.stablecoin, abi: iusdcAbi, functionName: "nonces", args: [owner] })) as bigint;
   await assertSigner(
     owner,
     recoverTypedDataAddress({
@@ -264,6 +280,7 @@ async function pay(body: Record<string, unknown>, chain: ChainConfig): Promise<R
     signer: buyer,
     sessionId: session.id,
     merchantId: merchant.id,
+    memo: orderMemo(nonce, "pay", session.chain.orderId),
   });
   return respond("pay", { ...result, ids: { paymentId: nonce, orderKey: nonce, ...result.ids } }, session.id);
 }
@@ -318,6 +335,7 @@ async function openPlan(body: Record<string, unknown>, chain: ChainConfig): Prom
     signer: buyer,
     sessionId: session.id,
     merchantId: merchant.id,
+    memo: orderMemo(orderKeyOf(session.chain.merchant, session.chain.orderId), "plan", session.chain.orderId),
   });
   return respond("openPlan", result, session.id);
 }
@@ -374,6 +392,7 @@ async function subscribe(body: Record<string, unknown>, chain: ChainConfig): Pro
     signer: buyer,
     sessionId: session.id,
     merchantId: merchant.id,
+    memo: orderMemo(orderKeyOf(session.chain.merchant, session.chain.orderId), "subscribe", session.chain.orderId),
   });
   return respond("subscribe", result, session.id);
 }
@@ -386,6 +405,7 @@ export function sendNonce(linkKey: Address, expiresAt: bigint): Hex {
 }
 
 async function send(body: Record<string, unknown>, chain: ChainConfig): Promise<RelayResponse> {
+  const route = sendRoute(body, chain);
   const sender = address(body, "sender");
   const linkKey = address(body, "linkKey");
   const amount = uint(body, "amount");
@@ -401,10 +421,10 @@ async function send(body: Record<string, unknown>, chain: ChainConfig): Promise<
   await assertSigner(
     sender,
     recoverTypedDataAddress({
-      domain: stablecoinDomain(chain),
+      domain: route.tokenDomain,
       types: TYPES.ReceiveWithAuthorization,
       primaryType: "ReceiveWithAuthorization",
-      message: { from: sender, to: chain.contracts.send, value: amount, validAfter, validBefore, nonce: sendNonce(linkKey, expiresAt) },
+      message: { from: sender, to: route.send, value: amount, validAfter, validBefore, nonce: sendNonce(linkKey, expiresAt) },
       signature: sig,
     }),
     "send",
@@ -412,7 +432,7 @@ async function send(body: Record<string, unknown>, chain: ChainConfig): Promise<
   await assertSigner(
     linkKey,
     recoverTypedDataAddress({
-      domain: polarisDomain("send", chain.id, chain.contracts.send),
+      domain: polarisDomain("send", chain.id, route.send),
       types: TYPES.Open,
       primaryType: "Open",
       message: { sender, amount, expiresAt },
@@ -426,7 +446,7 @@ async function send(body: Record<string, unknown>, chain: ChainConfig): Promise<
   const result = await carry({
     kind: "send",
     relayId: relayIdOf("send", sig, linkSig),
-    to: chain.contracts.send,
+    to: route.send,
     data: encodeFunctionData({
       abi: polarisSendAbi,
       functionName: "send",
@@ -438,6 +458,7 @@ async function send(body: Record<string, unknown>, chain: ChainConfig): Promise<
 }
 
 async function claim(body: Record<string, unknown>, chain: ChainConfig): Promise<RelayResponse> {
+  const route = sendRoute(body, chain);
   const linkKey = address(body, "linkKey");
   const to = address(body, "to");
   const claimDeadline = deadline(uint(body, "deadline"), "deadline", { maxAheadSeconds: 3600 });
@@ -445,7 +466,7 @@ async function claim(body: Record<string, unknown>, chain: ChainConfig): Promise
   await assertSigner(
     linkKey,
     recoverTypedDataAddress({
-      domain: polarisDomain("send", chain.id, chain.contracts.send),
+      domain: polarisDomain("send", chain.id, route.send),
       types: TYPES.Claim,
       primaryType: "Claim",
       message: { to, deadline: claimDeadline },
@@ -458,7 +479,7 @@ async function claim(body: Record<string, unknown>, chain: ChainConfig): Promise
   const result = await carry({
     kind: "claim",
     relayId: relayIdOf("claim", sig),
-    to: chain.contracts.send,
+    to: route.send,
     data: encodeFunctionData({ abi: polarisSendAbi, functionName: "claim", args: [linkKey, to, claimDeadline, v, r, s] }),
     signer: linkKey,
   });
@@ -466,17 +487,18 @@ async function claim(body: Record<string, unknown>, chain: ChainConfig): Promise
 }
 
 async function cancelSend(body: Record<string, unknown>, chain: ChainConfig): Promise<RelayResponse> {
+  const route = sendRoute(body, chain);
   const linkKey = address(body, "linkKey");
   const cancelDeadline = deadline(uint(body, "deadline"), "deadline", { maxAheadSeconds: 3600 });
   const sig = signature(body, "signature");
-  const link = (await publicClient().readContract({ address: chain.contracts.send, abi: polarisSendAbi, functionName: "linkOf", args: [linkKey] })) as { sender: Address };
+  const link = (await publicClient().readContract({ address: route.send, abi: polarisSendAbi, functionName: "linkOf", args: [linkKey] })) as { sender: Address };
   if (!link.sender || getAddress(link.sender) === "0x0000000000000000000000000000000000000000") {
     throw new HttpError(404, "link_not_found", "This link has already been claimed or cancelled.");
   }
   await assertSigner(
     link.sender,
     recoverTypedDataAddress({
-      domain: polarisDomain("send", chain.id, chain.contracts.send),
+      domain: polarisDomain("send", chain.id, route.send),
       types: TYPES.Cancel,
       primaryType: "Cancel",
       message: { linkKey, deadline: cancelDeadline },
@@ -489,7 +511,7 @@ async function cancelSend(body: Record<string, unknown>, chain: ChainConfig): Pr
   const result = await carry({
     kind: "cancelSend",
     relayId: relayIdOf("cancelSend", sig),
-    to: chain.contracts.send,
+    to: route.send,
     data: encodeFunctionData({ abi: polarisSendAbi, functionName: "cancel", args: [linkKey, cancelDeadline, v, r, s] }),
     signer: link.sender,
   });
@@ -536,7 +558,7 @@ async function repay(body: Record<string, unknown>, chain: ChainConfig): Promise
  * gone (a collections run skipped it with InsufficientAllowance) signs one
  * ERC-2612 permit again: spender PolarisLoanEngine, value at least everything
  * they owe it (a permit replaces the allowance). PolarisCheckout.reauthorize
- * applies it and emits Reauthorized, and the CRE collections workflow's EVM
+ * applies it and emits Reauthorized, and the keeper's collections run's EVM
  * log trigger collects what is due in the same minute
  * (CollectionsReceiver.dueTasksFor). Refused before any gas when nothing is
  * owed, when the allowance already covers it, or when the permit is short.
@@ -549,7 +571,7 @@ async function reauthorize(body: Record<string, unknown>, chain: ChainConfig): P
   const client = publicClient();
   const [owed, allowance] = await Promise.all([
     client.readContract({ address: chain.contracts.loanEngine, abi: polarisLoanEngineAbi, functionName: "activeDebtOf", args: [buyer] }) as Promise<bigint>,
-    client.readContract({ address: chain.contracts.stablecoin, abi: iausdAbi, functionName: "allowance", args: [buyer, chain.contracts.loanEngine] }) as Promise<bigint>,
+    client.readContract({ address: chain.contracts.stablecoin, abi: iusdcAbi, functionName: "allowance", args: [buyer, chain.contracts.loanEngine] }) as Promise<bigint>,
   ]);
   if (owed === 0n) throw new HttpError(409, "nothing_owed", "You don't owe anything on Pay in 4 right now.");
   if (allowance >= owed) throw new HttpError(409, "already_authorised", "Your payments are already set up. Each one is collected on its date.");
@@ -569,7 +591,7 @@ async function reauthorize(body: Record<string, unknown>, chain: ChainConfig): P
 }
 
 /**
- * A secured Pay in 4 line with no MON: the borrower signs one ERC-2612 permit
+ * A secured Pay in 4 line with no gas of their own: the borrower signs one ERC-2612 permit
  * (spender CollateralVault, value the amount) and the relayer sends
  * CollateralVault.lockWithPermit, which locks it into the borrower's own
  * position (it can move it nowhere else). ScoreManager counts it toward the
@@ -591,7 +613,7 @@ async function lockCollateral(body: Record<string, unknown>, chain: ChainConfig)
   if (permit.value !== amount) {
     throw new HttpError(400, "wrong_amount", "The amount you confirmed isn't the amount to lock. Try again.", { param: "permit.value" });
   }
-  const balance = (await publicClient().readContract({ address: chain.contracts.stablecoin, abi: iausdAbi, functionName: "balanceOf", args: [borrower] })) as bigint;
+  const balance = (await publicClient().readContract({ address: chain.contracts.stablecoin, abi: iusdcAbi, functionName: "balanceOf", args: [borrower] })) as bigint;
   if (balance < amount) throw new HttpError(409, "insufficient_balance", "You don't have that much to set aside right now.", { param: "amount" });
   countVerified(borrower, { open: true });
   const result = await carry({
@@ -609,11 +631,11 @@ async function lockCollateral(body: Record<string, unknown>, chain: ChainConfig)
 }
 
 /**
- * Take out of Boost with no MON: the borrower signs CollateralVault's EIP-712
+ * Take out of Boost with no gas of their own: the borrower signs CollateralVault's EIP-712
  * `Withdraw` (borrower, amount, the vault's `nonces(borrower)`, a deadline
  * within the hour) and the relayer sends `withdrawWithSig`, which pays the
  * borrower and nobody else, under `withdraw`'s own rules. Refused before any
- * gas when the network's vault predates signed withdrawal (Monad testnet's
+ * gas when the network's vault predates signed withdrawal (Arc testnet's
  * today: "not available on this network yet"), below the relayer's minimum,
  * when it would strand less than the minimum in Boost, when the signature
  * isn't the borrower's, when it's more than they have in Boost, or while
@@ -657,7 +679,7 @@ async function withdrawCollateral(body: Record<string, unknown>, chain: ChainCon
   const left = locked - amount;
   const min = getConfig().relayerLimits.minTransferUnits;
   if (left > 0n && left < min) {
-    bad("amount", `That would leave less than ${formatUnits(min)} AUSD in Boost. Take it all out, or leave more.`);
+    bad("amount", `That would leave less than ${formatUnits(min)} USDC in Boost. Take it all out, or leave more.`);
   }
   countVerified(borrower, { open: true });
   const result = await carry({
@@ -736,7 +758,7 @@ export async function relayTransfer(input: {
     relayId: relayIdOf("transfer", input.signature),
     to: chain.contracts.stablecoin,
     data: encodeFunctionData({
-      abi: iausdAbi,
+      abi: iusdcAbi,
       functionName: "transferWithAuthorization",
       args: [input.from, input.to, input.value, input.validAfter, input.validBefore, input.nonce, v, r, s],
     }),

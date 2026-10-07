@@ -1,7 +1,7 @@
 {
   "name": "polarispay-sdk",
   "version": "0.3.0",
-  "description": "Polaris for any app on Monad: hosted checkout (Pay now, Pay in 4 on Polaris credit, Subscribe), gasless direct pay in AUSD, and signed webhooks.",
+  "description": "Polaris for any app on Arc: hosted checkout (Pay now, Pay in 4 on Polaris credit, Subscribe), direct pay in USDC with gas paid by Polaris, and signed webhooks.",
   "license": "MIT",
   "author": "Polaris Team",
   "homepage": "https://github.com/nickthelegend/polarispay-keeperhub/tree/main/packages/sdk#readme",
@@ -14,8 +14,10 @@
     "url": "https://github.com/nickthelegend/polarispay-keeperhub/issues"
   },
   "keywords": [
-    "monad",
-    "ausd",
+    "arc",
+    "usdc",
+    "circle",
+    "eurc",
     "payments",
     "checkout",
     "bnpl",

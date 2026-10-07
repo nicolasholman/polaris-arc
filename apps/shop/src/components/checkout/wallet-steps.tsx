@@ -6,7 +6,7 @@ import { AlertIcon, CheckIcon, Spinner } from "@/components/icons";
 export type WalletPhase = "idle" | "connecting" | "signing" | "submitting" | "confirming" | "waiting" | "paid" | "error";
 
 const STEPS = [
-  { id: "connect", label: "Connect your wallet on Monad Testnet" },
+  { id: "connect", label: "Connect your wallet on Arc Testnet" },
   { id: "sign", label: "Confirm the payment in your wallet" },
   { id: "relay", label: "Polaris sends it, gas-free" },
   { id: "confirm", label: "Payment confirmed" },

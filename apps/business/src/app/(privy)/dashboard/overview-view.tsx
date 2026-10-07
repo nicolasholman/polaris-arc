@@ -493,7 +493,7 @@ function Figure({ label, value, note, tone }: { label: string; value: string; no
   );
 }
 
-/* ── Collections: the Chainlink CRE workflow's last and next run ────────── */
+/* ── Collections: the Polaris keeper's last and next run ────────── */
 
 function CollectionsPanel({ plans, collector }: { plans?: Plan[]; collector?: Overview["collector"] }) {
   const now = useNow(1000);
@@ -503,7 +503,7 @@ function CollectionsPanel({ plans, collector }: { plans?: Plan[]; collector?: Ov
   const lastAt = run?.source === "live" ? Date.parse(run.data.lastRun.at) : null;
   const ago = (ms: number) => (ms < 90_000 ? `${Math.max(0, Math.round(ms / 1000))} s ago` : formatAgo(new Date(now - ms).toISOString(), now));
   return (
-    <Panel title="Collections" subtitle="Chainlink CRE workflow" action={<SeeAll href="/dashboard/chainlink">Chainlink</SeeAll>}>
+    <Panel title="Collections" subtitle="Polaris keeper" action={<SeeAll href="/dashboard/automation">Chainlink</SeeAll>}>
       {!run ? (
         <Skeleton shape="tile" height={260} className="mt-5" />
       ) : run.source === "not_connected" ? (
@@ -604,7 +604,7 @@ function EnvioFeed({ overview, className }: { overview: QueryState<Overview>; cl
       ) : feed.source === "not_connected" ? (
         <PanelEmpty icon={<BadgeCheck />} title={indexerError ? "The indexer didn't answer" : "Indexer not configured"} description={feed.reason} />
       ) : events.length === 0 ? (
-        <PanelEmpty icon={<BadgeCheck />} title="No chain events yet" description="Payments, plans and payouts appear here as the indexer sees them on Monad." />
+        <PanelEmpty icon={<BadgeCheck />} title="No chain events yet" description="Payments, plans and payouts appear here as the indexer sees them on Arc." />
       ) : (
         <ul className="mt-3 grid min-w-0 grid-cols-[minmax(0,1fr)]">
           <AnimatePresence initial={false}>

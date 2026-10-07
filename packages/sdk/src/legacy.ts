@@ -3,7 +3,7 @@
  * where the buyer holds gas. `createPolaris` loads this module on first use,
  * so a page that only opens the hosted checkout never downloads ethers.
  *
- * On Monad, `pay()` doesn't come here: it's a signature through
+ * On Arc, `pay()` doesn't come here: it's a signature through
  * PolarisPayments.payWithAuthorization (see pay/direct.ts). The approve-then-
  * pay path below is what `pay()` does on the 0.2 Sepolia deployment, whose
  * PolarisPayments predates it.
@@ -188,7 +188,7 @@ export function createLegacyMethods(options: LegacyOptions) {
 
     /**
      * Split a purchase into instalments, the 0.2 way: the buyer approves the
-     * loan engine and your backend opens the plan. On Monad, prefer the hosted
+     * loan engine and your backend opens the plan. On Arc, prefer the hosted
      * checkout's Pay in 4 (a signed intent, no approval transaction).
      */
     async payLater(p: {

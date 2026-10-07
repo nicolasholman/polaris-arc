@@ -16,53 +16,62 @@ import { getAddress, isAddress, isHex, type Address, type Hex } from "viem";
 export type Deployment = {
   network: string;
   chainId: number;
+  chainName?: string;
+  rpcUrl?: string;
+  explorerUrl?: string | null;
   contracts: Record<string, { address: Address; abi?: string; kind?: string; blockNumber?: number } | undefined>;
   config?: { minInterval?: number; minPeriod?: number; feeBps?: number; interestRateBps?: number; graceSeconds?: number };
   eip712?: Record<string, { domain: { name?: string; version?: string; chainId?: number; verifyingContract?: Address } } | undefined>;
   demo?: { merchant?: Address; merchantName?: string; merchantPrivateKey?: Hex };
-  /** The Chainlink CRE block the deploy script writes (packages/contracts lib/deploy.js). */
-  cre?: DeploymentCre;
+  roles?: { keeper?: Address; relayer?: Address | null };
+  /** The Circle contracts on this Arc network (packages/contracts lib/networks.js), null on a local node. */
+  circle?: CircleConfig | null;
+  /** What the deploy script records about the keeper and its receivers. */
+  keeper?: DeploymentKeeper;
 };
 
-/** What the deploy script records about the CRE workflows and their receivers. */
-export type DeploymentCre = {
-  forwarderKind?: "local" | "simulation" | "production";
-  forwarder?: Address;
-  simulationTransmitter?: Address | null;
-  workflowOwner?: Address | null;
-  workflows?: {
-    collections?: {
-      name?: string;
-      receiver?: Address;
-      workflowId?: Hex;
-      retry?: { trigger?: string; contract?: Address; event?: string; topic0?: Hex; view?: string };
-    };
-    underwrite?: { name?: string; receiver?: Address; workflowId?: Hex };
-    guardian?: {
-      name?: string;
-      receiver?: Address;
-      workflowId?: Hex;
-      priceFeed?: { chainId?: number; chainSelectorName?: string | null; address?: Address; decimals?: number; description?: string; kind?: "chainlink" | "mock" };
-      feed?: { description?: string; decimals?: number; address?: Address };
-    };
-  };
-  /** After lock-receivers (lock-receivers:monad): the receivers accept only the deployed workflows. */
-  locked?: { at?: string; workflowOwner?: Address; forwarderKind?: string } | null;
+/** Circle's contracts on Arc, as the deployment record copies them. */
+export type CircleConfig = {
+  usdc: Address;
+  eurc: Address | null;
+  usyc?: Address | null;
+  cctpDomain: number;
+  tokenMessengerV2: Address;
+  messageTransmitterV2: Address;
+  gatewayWallet?: Address;
+  gatewayMinter?: Address;
+  stableFxEscrow?: Address;
+  memo: Address | null;
+  multicall3From?: Address;
+  irisApiUrl: string;
+};
+
+/** The keeper block of the deployment record. */
+export type DeploymentKeeper = {
+  address?: Address;
+  collections?: { receiver?: Address; retry?: { event?: string; view?: string } };
+  underwriting?: { receiver?: Address };
+  guard?: { contract?: Address };
 };
 
 export type ContractAddresses = {
+  /** USDC on Arc (MockUSDC on a local node). */
   stablecoin: Address;
+  /** EURC on Arc, for euro send-by-link; null where the deployment has none. */
+  eurc: Address | null;
   checkout: Address;
   payments: Address;
   send: Address;
-  /** PolarisSplit, split-the-bill links; null for a deployment that predates it (Monad testnet's of 28 Sep 2026). */
+  /** PolarisSend on EURC; null where the deployment has none. */
+  sendEurc: Address | null;
+  /** PolarisSplit, split-the-bill links. */
   split: Address | null;
   loanEngine: Address;
   registry: Address;
   scoreManager: Address;
   collections: Address | null;
   underwriting: Address | null;
-  /** GuardianReceiver: the CRE guardian's attestations, and the credit guard PolarisCheckout.openPlan asks. */
+  /** CreditGuard: the guard PolarisCheckout.openPlan asks, reading the pool live. */
   guardian: Address | null;
   /** CollateralVault: a secured Pay in 4 line, locked with the borrower's permit (lockWithPermit), relayed. */
   vault: Address | null;
@@ -73,28 +82,31 @@ export type ChainConfig = {
   name: string;
   rpcUrl: string;
   /**
-   * Where the chain sync reads logs (eth_getLogs), when not `rpcUrl`: Envio's
-   * HyperRPC for Monad (POLARIS_LOGS_RPC_URL), which serves wide block ranges
-   * from its index instead of the public RPC's 100-block cap.
+   * Where the chain sync reads logs (eth_getLogs), when not `rpcUrl`
+   * (POLARIS_LOGS_RPC_URL): an indexer's RPC that serves wide block ranges.
    */
   logsRpcUrl: string | null;
   explorerUrl: string;
   contracts: ContractAddresses;
-  /** The CRE workflows as deployed: names, forwarder, the guardian's price feed (the deployment record's `cre` block). */
-  cre: DeploymentCre | null;
-  /** The stablecoin's EIP-712 name and version (real AUSD: "Agora Dollar", "1"). */
+  /** The keeper as deployed: its address and receivers (the deployment record's `keeper` block). */
+  keeper: DeploymentKeeper | null;
+  /** Circle's contracts on this network (CCTP, Memo, EURC, USYC); null on a local node. */
+  circle: CircleConfig | null;
+  /** The stablecoin's EIP-712 name and version (USDC on Arc: "USDC", "2"). */
   stablecoinDomain: { name: string; version: string };
+  /** EURC's EIP-712 name and version ("EURC", "2"), when the deployment has EURC. */
+  eurcDomain: { name: string; version: string } | null;
   /** Shortest instalment interval the loan engine accepts, in seconds. */
   minIntervalSeconds: number;
   minPeriodSeconds: number;
   feeBps: number;
   /**
-   * A chain on this machine: a Hardhat node (31337 or 1337), or `pnpm
-   * demo:local`'s anvil fork of Monad testnet (chain 10143 with
-   * POLARIS_LOCAL_FORK=1 and an RPC on loopback). The raw-key relayer, the
-   * local registry activator and the local dashboard session need it.
+   * A chain on this machine: a Hardhat node (31337 or 1337). The local
+   * registry activator and the local dashboard session need it.
    */
   local: boolean;
+  /** Arc mainnet (5042): the raw-key relayer is never allowed here. */
+  mainnet: boolean;
   /** The first block with a Polaris contract in it (the deployment's), where per-address history starts. */
   fromBlock?: number | null;
 };
@@ -116,16 +128,16 @@ export type ServerConfig = {
   chainProblem: string | null;
   relayer: RelayerConfig;
   /**
-   * What the relayer refuses to spend its MON on, whoever asks:
-   * - `minTransferUnits`: the smallest AUSD transfer or send by link it
-   *   carries (also a condition in the Privy policy), so moving 0 AUSD
+   * What the relayer refuses to spend its gas (USDC) on, whoever asks:
+   * - `minTransferUnits`: the smallest USDC transfer or send by link it
+   *   carries (also a condition in the Privy policy), so moving 0 USDC
    *   between throwaway keys is not free gas;
    * - `maxGas` and `maxFeePerGasWei`: caps on any one transaction, which the
    *   Privy policy can't express.
    */
   relayerLimits: { minTransferUnits: bigint; maxGas: bigint; maxFeePerGasWei: bigint };
   activator: ActivatorConfig;
-  /** Per-merchant Pay in 4 cap set on activation, in AUSD base units. */
+  /** Per-merchant Pay in 4 cap set on activation, in USDC base units. */
   activationCapUnits: bigint;
   /**
    * Settlement history a merchant needs before it is activated for Pay in 4
@@ -172,20 +184,20 @@ export type ServerConfig = {
   /** Background loops (webhooks, chain sync, payouts) in this process. */
   workers: boolean;
   /**
-   * The CRE underwriting workflow: where its HTTP trigger listens
-   * (`cre workflow simulate ./underwriting --listen` serves
-   * http://localhost:2000/trigger), how far apart runs must be (CRE fires an
-   * HTTP trigger at most once per 30 s), and the secret its signed
-   * callbacks to /api/cre/callback carry.
+   * The Polaris keeper (services/keeper): where it takes credit review
+   * requests (KEEPER_UNDERWRITING_URL, e.g. http://127.0.0.1:2000/underwrite),
+   * how far apart this server sends them, and the shared secret both ways are
+   * signed with (requests to the keeper, and its callbacks to
+   * /api/keeper/callback).
    */
-  cre: { underwritingTriggerUrl: string | null; minTriggerIntervalMs: number; callbackSecret: string | null };
+  keeper: { underwritingUrl: string | null; minRequestIntervalMs: number; callbackSecret: string | null };
   /** The underwriting gateway (apps/gateway), which explains an attested decision in the buyer's words. */
   underwriting: { gatewayUrl: string | null; apiToken: string | null };
   /**
-   * The Polaris Envio indexer's GraphQL endpoint (POLARIS_INDEXER_URL, and
-   * POLARIS_INDEXER_TOKEN on a paid plan): the Overview's event feed reads
-   * it, and the webhook dispatcher reads its `Activity` outbox
-   * (webhooks/outbox.ts), with the chain sync as backup.
+   * The Polaris Envio indexer's GraphQL endpoint on Arc (POLARIS_INDEXER_URL,
+   * and POLARIS_INDEXER_TOKEN on a paid plan), optional: the Overview's event
+   * feed reads it, and the webhook dispatcher reads its `Activity` outbox
+   * (webhooks/outbox.ts). Without it the built-in chain sync is the source.
    */
   indexer: { url: string | null; token: string | null };
   /**
@@ -197,17 +209,20 @@ export type ServerConfig = {
 };
 
 const DEFAULT_RPC: Record<number, string> = {
-  10143: "https://testnet-rpc.monad.xyz",
-  143: "https://rpc.monad.xyz",
-  31337: "http://127.0.0.1:8545",
+  5042002: "https://rpc.testnet.arc.io",
+  5042: "https://rpc.mainnet.arc.io",
+  31337: "http://127.0.0.1:8600",
 };
 const DEFAULT_EXPLORER: Record<number, string> = {
-  10143: "https://testnet.monadvision.com",
-  143: "https://monadvision.com",
+  5042002: "https://explorer.testnet.arc.io",
+  5042: "https://explorer.arc.io",
   // A local Hardhat node has no explorer: receipts carry no link.
   31337: "",
 };
-const CHAIN_NAME: Record<number, string> = { 10143: "Monad Testnet", 143: "Monad", 31337: "Local Hardhat" };
+const CHAIN_NAME: Record<number, string> = { 5042002: "Arc Testnet", 5042: "Arc", 31337: "Local Hardhat" };
+
+/** Arc mainnet's chain id. */
+export const ARC_MAINNET_ID = 5042;
 
 function env(name: string): string | undefined {
   const v = process.env[name];
@@ -252,7 +267,7 @@ function deploymentPath(): string | null {
   const file = env("POLARIS_DEPLOYMENT_FILE");
   const cwd = process.cwd();
   if (file) return isAbsolute(file) ? file : resolve(/*turbopackIgnore: true*/ cwd, file);
-  const name = env("POLARIS_DEPLOYMENT") ?? "monad-testnet";
+  const name = env("POLARIS_DEPLOYMENT") ?? "arc-testnet";
   const candidates = [
     join(/*turbopackIgnore: true*/ cwd, "..", "..", "packages", "contracts", "deployments", `${name}.json`),
     join(/*turbopackIgnore: true*/ cwd, "packages", "contracts", "deployments", `${name}.json`),
@@ -267,7 +282,7 @@ export function loadDeployment(): { deployment: Deployment | null; problem: stri
     return {
       deployment: null,
       path: null,
-      problem: `No deployment record found for ${env("POLARIS_DEPLOYMENT") ?? "monad-testnet"}. Deploy the contracts (pnpm --filter @polarispay/contracts deploy:monad) or set POLARIS_DEPLOYMENT_FILE.`,
+      problem: `No deployment record found for ${env("POLARIS_DEPLOYMENT") ?? "arc-testnet"}. Deploy the contracts (pnpm --filter @polarispay/contracts deploy:testnet) or set POLARIS_DEPLOYMENT_FILE.`,
     };
   }
   try {
@@ -290,17 +305,19 @@ function contractsFrom(d: Deployment): ContractAddresses {
     return a && isAddress(a) ? getAddress(a) : null;
   };
   return {
-    stablecoin: need("Stablecoin"),
+    stablecoin: need("USDC"),
+    eurc: maybe("EURC"),
     checkout: need("PolarisCheckout"),
     payments: need("PolarisPayments"),
     send: need("PolarisSend"),
+    sendEurc: maybe("PolarisSendEURC"),
     split: maybe("PolarisSplit"),
     loanEngine: need("PolarisLoanEngine"),
     registry: need("MerchantRegistry"),
     scoreManager: need("ScoreManager"),
     collections: maybe("CollectionsReceiver"),
     underwriting: maybe("UnderwritingReceiver"),
-    guardian: maybe("GuardianReceiver"),
+    guardian: maybe("CreditGuard"),
     vault: maybe("CollateralVault"),
   };
 }
@@ -324,24 +341,26 @@ export function isLoopbackUrl(url: string): boolean {
 
 function chainFrom(d: Deployment): ChainConfig {
   const id = d.chainId;
-  const stable = d.eip712?.Stablecoin?.domain;
-  const rpcUrl = env("POLARIS_RPC_URL") ?? DEFAULT_RPC[id] ?? "";
-  // demo:local's fork of Monad testnet: testnet's chain id and contracts, on a node on this machine.
-  const fork = flag("POLARIS_LOCAL_FORK") && id !== 143 && isLoopbackUrl(rpcUrl);
+  const stable = d.eip712?.USDC?.domain;
+  const eurc = d.eip712?.EURC?.domain;
+  const rpcUrl = env("POLARIS_RPC_URL") ?? d.rpcUrl ?? DEFAULT_RPC[id] ?? "";
+  const local = id === 31337 || id === 1337;
   return {
     id,
-    name: fork ? `${CHAIN_NAME[id] ?? `Chain ${id}`} (local fork)` : (CHAIN_NAME[id] ?? `Chain ${id}`),
+    name: d.chainName ?? CHAIN_NAME[id] ?? `Chain ${id}`,
     rpcUrl,
     logsRpcUrl: env("POLARIS_LOGS_RPC_URL") ?? null,
-    // A fork's transactions exist only on this machine: no explorer link.
-    explorerUrl: (env("POLARIS_EXPLORER_URL") ?? (fork ? "" : DEFAULT_EXPLORER[id]) ?? "").replace(/\/+$/, ""),
+    explorerUrl: (env("POLARIS_EXPLORER_URL") ?? d.explorerUrl ?? DEFAULT_EXPLORER[id] ?? "").replace(/\/+$/, ""),
     contracts: contractsFrom(d),
-    cre: d.cre ?? null,
-    stablecoinDomain: { name: stable?.name ?? "Agora Dollar", version: stable?.version ?? "1" },
+    keeper: d.keeper ?? null,
+    circle: d.circle ?? null,
+    stablecoinDomain: { name: stable?.name ?? "USDC", version: stable?.version ?? "2" },
+    eurcDomain: d.contracts.EURC ? { name: eurc?.name ?? "EURC", version: eurc?.version ?? "2" } : null,
     minIntervalSeconds: d.config?.minInterval ?? 3600,
     minPeriodSeconds: d.config?.minPeriod ?? 3600,
     feeBps: d.config?.feeBps ?? 50,
-    local: id === 31337 || id === 1337 || fork,
+    local,
+    mainnet: id === ARC_MAINNET_ID,
     fromBlock: deployedFrom(d),
   };
 }
@@ -349,12 +368,12 @@ function chainFrom(d: Deployment): ChainConfig {
 function relayerFrom(chain: ChainConfig | null): RelayerConfig {
   const mode = (env("RELAYER_MODE") ?? (env("PRIVY_RELAYER_WALLET_ID") ? "privy" : "off")).toLowerCase();
   if (!chain) return { mode: "off", reason: "No chain is configured." };
-  if (mode === "off") return { mode: "off", reason: "RELAYER_MODE is off. Set it to privy (production) or local (a Hardhat node)." };
+  if (mode === "off") return { mode: "off", reason: "RELAYER_MODE is off. Set it to privy (production) or local (a local node, or Arc testnet knowingly)." };
   if (mode === "local") {
-    if (chain.id === 143) throw new Error("RELAYER_MODE=local is never allowed on Monad mainnet: use the Privy relayer.");
+    if (chain.mainnet) throw new Error("RELAYER_MODE=local is never allowed on Arc mainnet: use the Privy relayer.");
     if (!chain.local && !flag("RELAYER_LOCAL_ALLOW_TESTNET")) {
       throw new Error(
-        "RELAYER_MODE=local signs with a raw key and is for a local node. On Monad testnet use RELAYER_MODE=privy, or set RELAYER_LOCAL_ALLOW_TESTNET=1 knowingly.",
+        "RELAYER_MODE=local signs with a raw key and is for a local node. On Arc testnet use RELAYER_MODE=privy, or set RELAYER_LOCAL_ALLOW_TESTNET=1 knowingly.",
       );
     }
     const privateKey = hexKey("RELAYER_PRIVATE_KEY");
@@ -491,10 +510,10 @@ function build(): ServerConfig {
     },
     receiptTimeoutMs: int("RELAYER_RECEIPT_TIMEOUT_MS", 15_000),
     workers: flag("POLARIS_WORKERS", !production),
-    cre: {
-      underwritingTriggerUrl: env("CRE_UNDERWRITING_TRIGGER_URL") ?? null,
-      minTriggerIntervalMs: Math.max(0, int("CRE_TRIGGER_MIN_INTERVAL_MS", 30_000)),
-      callbackSecret: env("POLARIS_CRE_CALLBACK_SECRET") ?? null,
+    keeper: {
+      underwritingUrl: httpUrl(env("KEEPER_UNDERWRITING_URL"), "KEEPER_UNDERWRITING_URL"),
+      minRequestIntervalMs: Math.max(0, int("KEEPER_REQUEST_MIN_INTERVAL_MS", 2_000)),
+      callbackSecret: env("POLARIS_KEEPER_CALLBACK_SECRET") ?? null,
     },
     underwriting: {
       gatewayUrl: (env("UNDERWRITING_GATEWAY_URL") ?? "").replace(/\/+$/, "") || null,
@@ -549,7 +568,7 @@ export function productionProblems(config = getConfig()): string[] {
     problems.push("POLARIS_TRUSTED_PROXIES is not set: per-IP rate limits can't tell a client's own X-Forwarded-For from the one our proxy wrote.");
   }
   if (!config.checkoutOrigin) problems.push("POLARIS_CHECKOUT_ORIGIN is not set: payment links and checkout sessions have nowhere to send buyers.");
-  if (!config.publicUrl) problems.push("POLARIS_PUBLIC_URL is not set: merchants can't register on Monad (it goes in their registry metadata).");
+  if (!config.publicUrl) problems.push("POLARIS_PUBLIC_URL is not set: merchants can't register on Arc (it goes in their registry metadata).");
   return problems;
 }
 

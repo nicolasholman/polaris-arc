@@ -33,7 +33,7 @@ export const LIMITS = {
   healthPerIp: { name: "health-ip", perMinute: 1200, burst: 300 },
   apiPerKey: { name: "api-key", perMinute: 300, burst: 100 },
   onboardPerMerchant: { name: "onboard", perMinute: 6, burst: 3 },
-  /** Underwriting is once per account, and the CRE trigger runs once per 30 s for everyone: a few tries an hour, a few a day. */
+  /** Underwriting is once per account, and the keeper trigger runs once per 30 s for everyone: a few tries an hour, a few a day. */
   underwritePerAccount: { name: "underwrite", perMinute: 4 / 60, burst: 2 },
   underwritePerAccountDaily: { name: "underwrite-day", perMinute: 6 / 1440, burst: 6 },
   /** Opening a payment link makes a session (its price is pinned on chain when someone pays it). */

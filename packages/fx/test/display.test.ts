@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatLocalAmount, isFreshRate, localAmount, parseFxLookup, rateAgeText } from "../src/display.ts";
+import { eurcToUsd, formatLocalAmount, isFreshRate, localAmount, parseFxLookup, rateAgeText } from "../src/display.ts";
 
 const usd = (dollars: number) => BigInt(Math.round(dollars * 1e6));
 /** Intl puts a no-break space between the code and the number. */
@@ -64,8 +64,8 @@ describe("parseFxLookup", () => {
   });
 
   it("keeps the rate's own source limit, and gives an older API's rate the 26 h cap", () => {
-    const monad = { ...ok, rate: { ...ok.rate, maxAgeSeconds: 840 } };
-    expect(parseFxLookup(monad)).toEqual(monad);
+    const fast = { ...ok, rate: { ...ok.rate, maxAgeSeconds: 627 } };
+    expect(parseFxLookup(fast)).toEqual(fast);
     const { maxAgeSeconds: _, ...older } = ok.rate;
     expect(parseFxLookup({ ...ok, rate: older })?.rate?.maxAgeSeconds).toBe(26 * 3600);
     expect(parseFxLookup({ ...ok, rate: { ...ok.rate, maxAgeSeconds: 10 ** 9 } })?.rate?.maxAgeSeconds).toBe(26 * 3600);
@@ -88,5 +88,14 @@ describe("parseFxLookup", () => {
     expect(parseFxLookup({ ...ok, rate: { ...ok.rate, source: { ...ok.rate.source, chain: "solana" } } })).toBeNull();
     expect(parseFxLookup({ ...ok, rate: { ...ok.rate, source: { ...ok.rate.source, address: "0x123" } } })).toBeNull();
     expect(parseFxLookup({ ...ok, rate: null })).toBeNull();
+  });
+});
+
+describe("EURC", () => {
+  it("is one euro, so an EURC amount in dollars is the euros over the EUR rate", () => {
+    // 100 EURC at 0.8787 euros per dollar is about $113.80.
+    expect(eurcToUsd(100_000_000n, 0.8787307613)).toBeCloseTo(113.8005, 4);
+    expect(eurcToUsd(100_000_000n, 0)).toBeNull();
+    expect(eurcToUsd(100_000_000n, Number.NaN)).toBeNull();
   });
 });

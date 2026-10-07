@@ -44,7 +44,7 @@ describe("POST /api/relay type=pay (Pay now)", () => {
     expect(sent?.to).toBe(ADDR.checkout);
     expect(sent?.chainId).toBe(31337);
     expect(sent?.value).toBe(0n);
-    expect(sent?.gas).toBe(230_000n); // 200k estimate + 15%: Monad bills the limit
+    expect(sent?.gas).toBe(230_000n); // 200k estimate + 15%: a call that needs more fails
 
     const stored = await getDb().sessions.get(session.id);
     expect(stored?.status).toBe("complete");

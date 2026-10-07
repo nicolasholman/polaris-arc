@@ -20,7 +20,7 @@ import { emitLikeTheContracts, merchantWithKeys, newSession, orderKey, signPayNo
 /**
  * A checkout session is paid only by what it asked for. The order id is
  * public (the session id, or the hosted checkout's view), so anyone can
- * settle the session's order on chain some other way: 1 micro-AUSD straight
+ * settle the session's order on chain some other way: 1 micro-USDC straight
  * to PolarisPayments, a smaller Pay in 4, a cheaper plan. None of that may
  * complete the session, count on its link, or send the webhook a merchant
  * fulfils on. And the price is pinned on chain before the order id is out.
@@ -117,7 +117,7 @@ describe("the session's price is pinned on chain before the session is handed ou
 });
 
 describe("a settlement that doesn't match the session never completes it", () => {
-  it("1 micro-AUSD paid straight to PolarisPayments for a $200 session: still unpaid, no payment.succeeded, can't be relayed", async () => {
+  it("1 micro-USDC paid straight to PolarisPayments for a $200 session: still unpaid, no payment.succeeded, can't be relayed", async () => {
     await syncChain();
     const session = await newSession(merchant);
     const key = orderKey(merchant.account.address, session.orderId);

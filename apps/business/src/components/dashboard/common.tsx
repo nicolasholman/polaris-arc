@@ -88,7 +88,7 @@ export function DataModeNotice({ empty, className }: { empty: boolean; className
 }
 
 /**
- * The payout wallet's balance couldn't be read from Monad (the server's
+ * The payout wallet's balance couldn't be read from Arc (the server's
  * `balanceCents` is null). Said as such, with a retry: never $0.00, and
  * nothing to withdraw against until it reads.
  */
@@ -98,7 +98,7 @@ export function BalanceUnknown({ onRetry, retrying, className }: { onRetry: () =
       tone="down"
       role="alert"
       className={className}
-      title="Couldn't read your balance from Monad"
+      title="Couldn't read your balance from Arc"
       action={
         <Button variant="outline" size="sm" icon={<RotateCcw />} loading={retrying} onClick={onRetry}>
           Retry

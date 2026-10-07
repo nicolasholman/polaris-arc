@@ -35,7 +35,7 @@ const event = {
     fee: "1.00",
     currency: "USD",
     txHash: "0xabababababababababababababababababababababababababababababababab",
-    chainId: 10143,
+    chainId: 5042002,
   },
 };
 const body = JSON.stringify(event);

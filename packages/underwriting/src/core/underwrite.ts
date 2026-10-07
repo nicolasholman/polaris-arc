@@ -1,11 +1,11 @@
 /**
- * The one function the CRE `underwrite` workflow and the Node service both
- * call: evidence in; Facts, the on-chain report, the score and the product
- * decision out.
+ * The one function the Polaris keeper (through the Node service) and the app's
+ * preview both call: evidence in; Facts, the on-chain report, the score and
+ * the product decision out.
  *
- * Pure and deterministic. It reads no clock (the caller passes DON time as
+ * Pure and deterministic. It reads no clock (the caller passes its time as
  * `observedAt`), no network and no environment, and uses nothing outside
- * ECMAScript, so it compiles to WASM with the workflow.
+ * ECMAScript, so the same evidence always gives the same report bytes.
  *
  *   const out = underwrite({ user, observedAt, account, linked, linkVerified });
  *   if (!out.final) throw new Error(`not final: ${out.missing.join(", ")}`); // no report, the app retries
@@ -25,7 +25,7 @@ import type { Address, CreditDecision, Facts, Hex, SubjectEvidence } from "./typ
 export interface UnderwriteInput {
   /** The buyer's Polaris account: the address ScoreManager scores. */
   user: Address;
-  /** Unix seconds. In CRE, `runtime.now()`; never the node's own clock. */
+  /** Unix seconds: the caller's clock, read once per assessment. */
   observedAt: number | bigint;
   account: SubjectEvidence;
   linked?: SubjectEvidence | null;
@@ -47,7 +47,7 @@ export interface UnderwriteOutcome {
   /** Every fact the report depends on was read (and a linked wallet's ownership proven). */
   final: boolean;
   /**
-   * The DON may attest this: final, and the facts pass the thin-file gate
+   * The keeper may report this: final, and the facts pass the thin-file gate
    * (attest.ts). Exactly when `report` is set. A final outcome that does not
    * attest is a thin file: send nothing, and do not retry until the account
    * has more history; `decision.thinFile` says what is short.
@@ -66,7 +66,7 @@ export interface UnderwriteOutcome {
    * Nothing can be attested, and that is for want of provider keys rather
    * than of history or of a source that may answer later: not final only
    * because absent risk checks are, or a thin file whose history was absent.
-   * The CRE workflow reports this as "unavailable", never as a thin file.
+   * The keeper reports this as "unavailable", never as a thin file.
    */
   unavailable: boolean;
   facts: Facts;
@@ -108,7 +108,7 @@ export function underwrite(input: UnderwriteInput): UnderwriteOutcome {
   const waitsOnKeys = !final && missing.some((m) => absent.includes(m));
 
   // A report for an empty account opens ScoreManager's $200 floor unsecured: thin facts are never attested
-  // (declines are). The same gate as the CRE workflow's; see attest.ts.
+  // (declines are). The keeper applies the same gate; see attest.ts.
   const gaps = attestGaps(derivation.facts);
   const attest = final && gaps.length === 0;
   // A thin file whose age or activity no configured provider could read may not be thin at all.

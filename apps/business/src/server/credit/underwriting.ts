@@ -9,43 +9,39 @@ import { afterResponse } from "../background";
 import { polarisLoanEngineAbi, scoreManagerAbi } from "../chain/abis";
 import { publicClient, requireChain } from "../chain/client";
 import { formatUnits } from "../chain/money";
-import { deliveryOf, PROVENANCE_LABEL, reportForwarder } from "../cre/provenance";
+import { deliveryOf, PROVENANCE_LABEL, reportSender } from "../keeper/provenance";
 import { getDb } from "../db";
 import { explorerTxUrl, getConfig } from "../env";
 import { HttpError } from "../http";
 import { consume, LIMITS } from "../ratelimit";
 import { address, signature } from "../relayer/parse";
+import { signKeeperCallback } from "./callback-signature";
 import { explainUnderwriting } from "./explain";
 import { evidenceStaleness, linkMessage, underwriteConsentMessage } from "./messages";
 
 /**
- * Underwriting, fired by the product (plan §5.5).
+ * Underwriting, fired by the product.
  *
- * ScoreManager opens an account's unsecured Pay in 4 line only from a CRE
- * underwriting report (`requireUnderwriting`), and the workflow runs on an
- * HTTP trigger. This is what fires it:
+ * ScoreManager opens an account's unsecured Pay in 4 line only from an
+ * underwriting report (`requireUnderwriting`), and only the Polaris keeper
+ * (services/keeper) can write one. This is what asks it:
  *
  * 1. The app asks for the texts to sign (`consentMessages`): the account's
  *    consent, and for "Bring your history" the history wallet's link proof.
  * 2. It posts the signatures (`requestUnderwriting`). We verify them here
- *    too, so strangers can't spend the trigger's rate limit or queue runs
- *    for someone else's account; the DON verifies them again, so a
+ *    too, so strangers can't spend the keeper's rate limit or queue reviews
+ *    for someone else's account; the keeper verifies them again, so a
  *    compromised API still can't underwrite anyone who didn't ask.
  * 3. Requests are queued, and `runUnderwritingQueue` (a worker loop, and the
- *    cron tick) sends them to the trigger one at a time, at most one per
- *    `CRE_TRIGGER_MIN_INTERVAL_MS` (CRE fires an HTTP trigger once per 30 s).
- * 4. The workflow writes the facts through the forwarder; ScoreManager
- *    scores them. Its signed callback (`/api/cre/callback`) records the
- *    outcome, and `creditStatus` shows it with the line read from the chain.
- *    When the review needs a data provider the workflow has no key for
- *    (`credit.unavailable`), nothing is decided: the request fails with
+ *    cron tick) sends them to the keeper one at a time, signed with
+ *    POLARIS_KEEPER_CALLBACK_SECRET, at most one per
+ *    `KEEPER_REQUEST_MIN_INTERVAL_MS`.
+ * 4. The keeper writes the facts to UnderwritingReceiver; ScoreManager
+ *    scores them on chain. Its signed callback (`/api/keeper/callback`)
+ *    records the outcome, and `creditStatus` shows it with the line read from
+ *    the chain. When the review needs a data provider the keeper has no key
+ *    for (`credit.unavailable`), nothing is decided: the request fails with
  *    `unavailableMessage`, naming the provider and the key it needs.
- *
- * Under simulation the trigger is `cre workflow simulate ./underwriting
- * --listen` (http://localhost:2000/trigger, body `{ "input": payload }`).
- * A deployed workflow is fired through Chainlink's gateway with a JWT signed
- * by one of its authorised keys, which needs deploy access; point
- * CRE_UNDERWRITING_TRIGGER_URL at a gateway proxy then.
  */
 
 type Fetch = typeof fetch;
@@ -136,7 +132,7 @@ function toPublic(r: UnderwritingRequestRecord) {
 export async function requestUnderwriting(body: Record<string, unknown>) {
   const config = getConfig();
   const chain = requireChain();
-  if (!config.cre.underwritingTriggerUrl) {
+  if (!config.keeper.underwritingUrl) {
     throw new HttpError(503, "underwriting_unavailable", "Credit reviews aren't running on this server yet. Pay now still works.");
   }
   const account = address(body, "account");
@@ -200,25 +196,25 @@ export async function requestUnderwriting(body: Record<string, unknown>) {
 async function positionOf(r: UnderwritingRequestRecord): Promise<{ ahead: number; startsInSeconds: number }> {
   if (r.state !== "queued") return { ahead: 0, startsInSeconds: 0 };
   const ahead = await getDb().underwritingRequests.count({ state: "queued", createdAt: { lt: r.createdAt } });
-  return { ahead, startsInSeconds: Math.ceil(((ahead + 1) * getConfig().cre.minTriggerIntervalMs) / 1000) };
+  return { ahead, startsInSeconds: Math.ceil(((ahead + 1) * getConfig().keeper.minRequestIntervalMs) / 1000) };
 }
 
 export type UnderwritingQueueSummary = { sent: number; failed: number; waiting: number };
 
 /**
- * Send the oldest queued request to the CRE trigger, if the last one went at
- * least `minTriggerIntervalMs` ago. One per call: the loop calls it every few
+ * Send the oldest queued request to the keeper, if the last one went at
+ * least `minRequestIntervalMs` ago. One per call: the loop calls it every few
  * seconds. A consent that went stale while it waited is failed (the buyer
- * signs again); a trigger that refuses is retried twice.
+ * signs again); a keeper that refuses is retried twice.
  */
 export async function runUnderwritingQueue(nowMs = Date.now()): Promise<UnderwritingQueueSummary> {
-  const { cre } = getConfig();
+  const { keeper } = getConfig();
   const db = getDb();
   const summary: UnderwritingQueueSummary = { sent: 0, failed: 0, waiting: await db.underwritingRequests.count({ state: "queued" }) };
-  if (!cre.underwritingTriggerUrl || summary.waiting === 0) return summary;
+  if (!keeper.underwritingUrl || summary.waiting === 0) return summary;
 
   const last = await db.underwritingRequests.findOne({ sentAt: { gt: "" } }, { orderBy: "sentAt", direction: "desc" });
-  if (last?.sentAt && nowMs - Date.parse(last.sentAt) < cre.minTriggerIntervalMs) return summary;
+  if (last?.sentAt && nowMs - Date.parse(last.sentAt) < keeper.minRequestIntervalMs) return summary;
 
   const next = await db.underwritingRequests.findOne({ state: "queued" }, { orderBy: "createdAt" });
   if (!next) return summary;
@@ -236,15 +232,13 @@ export async function runUnderwritingQueue(nowMs = Date.now()): Promise<Underwri
 
   let error: string | null = null;
   try {
-    const res = await (fetchImpl ?? fetch)(cre.underwritingTriggerUrl, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ input: claimed.payload }),
-      signal: AbortSignal.timeout(10_000),
-    });
-    if (!res.ok) error = `The trigger answered ${res.status}: ${(await res.text().catch(() => "")).slice(0, 200)}`;
+    const body = JSON.stringify({ input: claimed.payload });
+    const headers: Record<string, string> = { "content-type": "application/json" };
+    if (keeper.callbackSecret) headers["polaris-signature"] = signKeeperCallback(keeper.callbackSecret, body, Math.floor(nowMs / 1000));
+    const res = await (fetchImpl ?? fetch)(keeper.underwritingUrl, { method: "POST", headers, body, signal: AbortSignal.timeout(10_000) });
+    if (!res.ok) error = `The keeper answered ${res.status}: ${(await res.text().catch(() => "")).slice(0, 200)}`;
   } catch (e) {
-    error = `The trigger couldn't be reached: ${e instanceof Error ? e.message : String(e)}`;
+    error = `The keeper couldn't be reached: ${e instanceof Error ? e.message : String(e)}`;
   }
   if (!error) {
     summary.sent++;
@@ -259,7 +253,7 @@ export async function runUnderwritingQueue(nowMs = Date.now()): Promise<Underwri
 }
 
 /**
- * Explain a decision once, from the report the DON wrote (explain.ts), and
+ * Explain a decision once, from the report the keeper wrote (explain.ts), and
  * keep the answer on the decision. A failure is kept as "no explanation"
  * with a log line; the decision itself stands either way.
  */
@@ -278,32 +272,30 @@ export async function explainDecision(accountLower: string): Promise<void> {
 
 /**
  * The report behind a decision, as the app links it, and who stands behind
- * it (cre/provenance.ts): "Verified by Chainlink CRE" only for a report the
- * DON signed (Chainlink's KeystoneForwarder); a simulated run (the CLI through
- * Chainlink's MockKeystoneForwarder) or a local one says so instead.
+ * it (keeper/provenance.ts): "Reviewed by the Polaris keeper", with the
+ * report transaction on Arc's explorer.
  */
 async function verifiedBy(decision: { txHash: Hex | null; at: string; report?: { txHash: Hex; at: string; blockNumber: number } | null }) {
   const txHash = decision.report?.txHash ?? decision.txHash;
   if (!txHash) return null;
   const chain = getConfig().chain;
-  const forwarder = chain ? await reportForwarder(txHash, chain.contracts.underwriting) : null;
-  const delivery = chain ? deliveryOf(forwarder, chain) : "unknown";
+  const sender = chain ? await reportSender(txHash) : null;
+  const delivery = chain ? deliveryOf(sender, chain) : "unknown";
   return {
-    by: "Chainlink CRE" as const,
-    workflow: "polaris-underwrite" as const,
+    by: "Polaris keeper" as const,
     txHash,
     /** The block time of the report when the chain sync has seen it, else when its callback arrived. */
     at: decision.report?.at ?? decision.at,
     blockNumber: decision.report?.blockNumber ?? null,
     explorerUrl: explorerTxUrl(txHash),
-    /** Which forwarder delivered it, and what the app may call it: only `don` is "Verified by Chainlink CRE". */
+    /** The keeper EOA that sent it. */
+    keeper: sender,
     delivery,
-    forwarder,
     label: PROVENANCE_LABEL[delivery],
   };
 }
 
-/** Where an account's credit stands: the line on chain, the latest request, and what the workflow decided. */
+/** Where an account's credit stands: the line on chain, the latest request, and what the keeper decided. */
 export async function creditStatus(account: Address) {
   const db = getDb();
   await explainDecision(account.toLowerCase());
@@ -314,7 +306,7 @@ export async function creditStatus(account: Address) {
   ]);
   return {
     account,
-    underwritingAvailable: Boolean(getConfig().cre.underwritingTriggerUrl),
+    underwritingAvailable: Boolean(getConfig().keeper.underwritingUrl),
     onChain: chainState
       ? {
           underwritten: chainState.profile.underwritten,
@@ -344,9 +336,9 @@ export async function creditStatus(account: Address) {
           /** The reasons, line by line, each with the provider behind it ("nansen", "zerion", …). */
           explanation: decision.explanation ?? null,
           /**
-           * Provenance: the report transaction the Chainlink CRE underwriting
-           * workflow wrote (from the chain sync when it has seen it land, else
-           * the callback's), when it landed, and where to see it.
+           * Provenance: the report transaction the keeper wrote (from the
+           * chain sync when it has seen it land, else the callback's), when
+           * it landed, and where to see it.
            */
           verified: await verifiedBy(decision),
         }
@@ -354,7 +346,7 @@ export async function creditStatus(account: Address) {
   };
 }
 
-/** The data providers a review can need, and the variable each is configured with (in workflows/.env, or the CRE secrets). */
+/** The data providers a review can need, and the variable each is configured with (in the keeper's environment). */
 const REVIEW_PROVIDERS: Record<string, { name: string; env: string }> = {
   nansen: { name: "Nansen", env: "NANSEN_API_KEY" },
   zerion: { name: "Zerion", env: "ZERION_API_KEY" },
@@ -377,7 +369,7 @@ export function unavailableMessage(providers: readonly string[]): string {
 }
 
 /**
- * The workflow could not review an account for want of provider keys: close
+ * The keeper could not review an account for want of provider keys: close
  * its open requests as failed with `unavailableMessage`. No decision is
  * recorded (none was made), so the buyer can ask again once the key is set.
  */
@@ -391,7 +383,7 @@ export async function recordUnavailable(input: { user: Address; providers: reado
   }
 }
 
-/** Record the workflow's decision for an account, and close its request. */
+/** Record the keeper's decision for an account, and close its request. */
 export async function recordDecision(input: {
   callbackId: string;
   status: "applied" | "refused" | "thin";

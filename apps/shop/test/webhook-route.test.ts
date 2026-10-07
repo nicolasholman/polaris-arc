@@ -45,7 +45,7 @@ const MERCHANT = "0x1111111111111111111111111111111111111111" as const;
 const paidEvent = (overrides: { orderId?: string; sessionId?: string | null; amount?: string } = {}) =>
   event("payment.succeeded", {
     txHash: TX,
-    chainId: 10143,
+    chainId: 5042002,
     orderId: overrides.orderId ?? payRef,
     sessionId: overrides.sessionId === undefined ? "cs_test_1" : overrides.sessionId,
     metadata: {},
@@ -105,7 +105,7 @@ describe("POST /api/webhooks/polaris", () => {
 
   it("answers 409 to an instalment that beats its plan, so Polaris redelivers it", async () => {
     const res = await deliver(
-      event("installment.collected", { txHash: TX, chainId: 10143, planId: "42", orderId: payRef, installment: 2, installments: 4, amount: "87.25", remaining: "174.50" }),
+      event("installment.collected", { txHash: TX, chainId: 5042002, planId: "42", orderId: payRef, installment: 2, installments: 4, amount: "87.25", remaining: "174.50" }),
     );
     expect(res.status).toBe(409);
     const data = await orderStore().read();
@@ -127,7 +127,7 @@ describe("POST /api/webhooks/polaris", () => {
   });
 
   it("acknowledges payouts, which aren't about an order", async () => {
-    const payout = event("payout.paid", { txHash: TX, chainId: 10143, payoutId: "po_1", amount: "100.00", destination: ADDR, automatic: true });
+    const payout = event("payout.paid", { txHash: TX, chainId: 5042002, payoutId: "po_1", amount: "100.00", destination: ADDR, automatic: true });
     const res = await deliver(payout);
     expect(res.status).toBe(200);
     expect(await res.json()).toMatchObject({ outcome: "ignored" });

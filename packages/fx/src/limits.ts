@@ -7,9 +7,9 @@ export const FX_HEARTBEAT_SLACK_SECONDS = 10 * 60;
 /**
  * How old one feed's rate may be before the next source in its currency's
  * list is tried: twice its heartbeat, or its heartbeat plus 10 minutes,
- * whichever is longer, and never past `cap` (26 h). A Monad FX feed
- * (240 s heartbeat) that stopped is stale after 14 min, not 26 h, so the
- * fresher fallback is read; an Ethereum one (24 h) keeps the 26 h cap.
+ * whichever is longer, and never past `cap` (26 h). A Polygon FX feed
+ * (27 s heartbeat) that stopped is stale after about 10 min, not 26 h, so the
+ * fallback is read; an Ethereum one (24 h) keeps the 26 h cap.
  */
 export function sourceMaxAgeSeconds(source: { heartbeatSeconds: number }, cap: number = FX_MAX_AGE_SECONDS): number {
   const own = Math.max(2 * source.heartbeatSeconds, source.heartbeatSeconds + FX_HEARTBEAT_SLACK_SECONDS);

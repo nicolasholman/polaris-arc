@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "license": "MIT",
-  "description": "The Polaris gateway: serves the Nansen-powered underwriting API (score, limit, Pay in 4 decision and plain-language reasons) on port 3510.",
+  "description": "The Polaris gateway: serves the underwriting API for Polaris on Arc (score, limit, Pay in 4 decision and plain-language reasons) on port 3510.",
   "engines": {
     "node": ">=22.6.0"
   },

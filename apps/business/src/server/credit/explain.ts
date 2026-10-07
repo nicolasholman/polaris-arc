@@ -1,31 +1,27 @@
 import "server-only";
 
 import { decodeUnderwritingReport, explainOnChainFacts } from "@polarispay/underwriting/core";
-import { decodeFunctionData, parseAbi, slice, type Address, type Hex } from "viem";
+import { decodeFunctionData, parseAbi, type Address, type Hex } from "viem";
 
 import { publicClient, requireChain } from "../chain/client";
 import { polarisLoanEngineAbi } from "../chain/abis";
 import { getConfig } from "../env";
 
 /**
- * "Why is my limit this?", from what the DON actually attested.
+ * "Why is my limit this?", from what the keeper actually reported.
  *
- * The underwriting report the CRE workflow wrote (its Facts: account age,
- * who funded it, related wallets, balances, from Nansen, Zerion and the
- * chain) is in the calldata of the transaction that delivered it through the
- * Keystone forwarder. We read that transaction, cut the forwarder's 109-byte
- * metadata off the raw report, and turn those facts into the buyer's
- * reasons with @polarispay/underwriting (`explainOnChainFacts`, the same
- * code the gateway's `POST /v1/explain` runs): plain lines, each with the
- * points it earned and the provider it came from, so the app can say "from
- * Nansen" next to it. Nothing is recomputed from fresh data: the reasons are
- * the on-chain decision's. With UNDERWRITING_GATEWAY_URL set the gateway
- * explains it instead (one service for every app).
+ * The underwriting report the keeper wrote (its Facts: account age, who
+ * funded it, related wallets, balances, from Arc and the linked wallet's
+ * chains) is the calldata of its `UnderwritingReceiver.submitReport(report)`
+ * transaction. We read that transaction and turn those facts into the
+ * buyer's reasons with @polarispay/underwriting (`explainOnChainFacts`, the
+ * same code the gateway's `POST /v1/explain` runs): plain lines, each with
+ * the points it earned and the provider it came from. Nothing is recomputed
+ * from fresh data: the reasons are the on-chain decision's. With
+ * UNDERWRITING_GATEWAY_URL set the gateway explains it instead.
  */
 
-const FORWARDER_ABI = parseAbi(["function report(address receiver, bytes rawReport, bytes reportContext, bytes[] signatures)"]);
-/** The Keystone forwarder's metadata before the report body (MockKeystoneForwarder.METADATA_LENGTH). */
-const METADATA_LENGTH = 109;
+const RECEIVER_ABI = parseAbi(["function submitReport(bytes report)"]);
 
 export type ExplainedReason = { text: string; points: number | null; kind: string | null; provider: string | null };
 export type Explanation = { score: number | null; limitUnits: string | null; reasons: ExplainedReason[]; source: "gateway" | "package" };
@@ -38,13 +34,11 @@ export function configureExplainForTests(options: { fetch?: Fetch | null }): voi
   fetchImpl = options.fetch ?? null;
 }
 
-/** The report body a forwarder transaction delivered, or null when it isn't one. */
-export function reportFromForwarderCall(input: Hex): Hex | null {
+/** The report a keeper `submitReport` transaction carried, or null when it isn't one. */
+export function reportFromKeeperCall(input: Hex): Hex | null {
   try {
-    const call = decodeFunctionData({ abi: FORWARDER_ABI, data: input });
-    const raw = call.args[1] as Hex;
-    if ((raw.length - 2) / 2 <= METADATA_LENGTH) return null;
-    return slice(raw, METADATA_LENGTH);
+    const call = decodeFunctionData({ abi: RECEIVER_ABI, data: input });
+    return call.args[0] as Hex;
   } catch {
     return null;
   }
@@ -68,7 +62,7 @@ export async function explainUnderwriting(user: Address, txHash: Hex, linked: bo
   const chain = requireChain();
   const client = publicClient();
   const tx = await client.getTransaction({ hash: txHash });
-  const report = reportFromForwarderCall(tx.input);
+  const report = reportFromKeeperCall(tx.input);
   if (!report) return null;
   const activeDebt = (await client
     .readContract({ address: chain.contracts.loanEngine, abi: polarisLoanEngineAbi, functionName: "activeDebtOf", args: [user] })

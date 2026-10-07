@@ -1,8 +1,9 @@
 /**
  * `@polarispay/underwriting/core`: the dependency-free, deterministic half.
  *
- * Safe to bundle into the Chainlink CRE workflow (compiled to WASM): no Node
- * APIs, no DOM, no clock, no randomness, no Intl. `tsconfig.core.json`
+ * Pure: no Node APIs, no DOM, no clock, no randomness, no Intl, so the same
+ * inputs give the same Facts and the same report bytes wherever it runs (the
+ * Polaris keeper, the business app, a browser). `tsconfig.core.json`
  * typechecks this directory with no `node` or `dom` types, so any such use
  * fails the build.
  */
@@ -59,3 +60,4 @@ export * as nansen from "./providers/nansen.ts";
 export * as zerion from "./providers/zerion.ts";
 export * as etherscan from "./providers/etherscan.ts";
 export * as rpc from "./providers/rpc.ts";
+export * as blockscout from "./providers/blockscout.ts";

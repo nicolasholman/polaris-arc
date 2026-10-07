@@ -4,10 +4,10 @@
  * Our payout signer (a Privy key quorum whose private key the server holds)
  * is added to the merchant's embedded wallet with this as its override
  * policy. So the only thing our server can ever get that wallet to sign is an
- * AUSD `TransferWithAuthorization` on this chain, from the merchant's own
+ * USDC `TransferWithAuthorization` on this chain, from the merchant's own
  * wallet, to the payout address the merchant chose, up to a per-payout cap.
  * Every other method has no rule, and Privy denies unmatched requests. The
- * relayer then submits the authorisation, so the merchant never holds MON.
+ * relayer then submits the authorisation, so the merchant never needs gas.
  *
  * Plain, erasable TypeScript: the setup scripts import it too.
  */
@@ -65,7 +65,7 @@ export function buildPayoutPolicy(input: {
     chain_type: "ethereum",
     rules: [
       {
-        name: "AUSD to the payout address only",
+        name: "USDC to the payout address only",
         method: "eth_signTypedData_v4",
         action: "ALLOW",
         conditions: [

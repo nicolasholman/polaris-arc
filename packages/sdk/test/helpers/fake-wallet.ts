@@ -1,4 +1,4 @@
-import { AbiCoder, type BaseWallet, Interface, Wallet, getAddress, keccak256, toUtf8Bytes } from "ethers";
+import { AbiCoder, type BaseWallet, Interface, TypedDataEncoder, Wallet, getAddress, keccak256, toUtf8Bytes } from "ethers";
 
 import { PAYMENTS_ABI, TOKEN_ABI } from "../../src/pay/eip3009.js";
 import type { Eip1193Provider } from "../../src/types.js";
@@ -18,11 +18,21 @@ export type ChainState = {
   balance: bigint;
   paid: { payer: string; merchant: string; amount: bigint; paidAt: bigint } | null;
   quoted: bigint;
-  /** ERC-5267 domain the token reports; null makes eip712Domain() revert. */
+  /**
+   * ERC-5267 domain the token reports; null (the default, like USDC and EURC
+   * on Arc) makes eip712Domain() revert.
+   */
   domain: { fields: string; name: string; version: string; salt: string } | null;
-  /** For the pre-5267 fallback. */
+  /** What name() returns. Default "USDC". */
   legacyName: string;
-  domainSeparator: string;
+  /** What version() returns; null makes version() revert. Default "2". */
+  tokenVersion: string | null;
+  /**
+   * What DOMAIN_SEPARATOR() returns; null makes it revert. Default: the hash
+   * of { name: legacyName, version: tokenVersion ?? "2", chainId, token },
+   * computed on the chain the wallet is on, as FiatToken does.
+   */
+  domainSeparator: string | null | undefined;
   receiptStatus: "0x1" | "0x0";
 };
 
@@ -43,17 +53,18 @@ export type FakeWalletOptions = Partial<ChainState> & {
 export function createFakeWallet(tokenAddress: string, paymentsAddress: string, options: FakeWalletOptions = {}) {
   const wallet = options.wallet ?? Wallet.createRandom();
   const state: ChainState = {
-    chainId: options.chainId ?? 10143,
+    chainId: options.chainId ?? 5042002,
     decimals: options.decimals ?? 6,
     balance: options.balance ?? 1_000_000_000n,
     paid: options.paid ?? null,
     quoted: options.quoted ?? 0n,
-    domain: options.domain === undefined ? { fields: "0x0f", name: "Agora Dollar", version: "1", salt: `0x${"00".repeat(32)}` } : options.domain,
-    legacyName: options.legacyName ?? "AUSD",
-    domainSeparator: options.domainSeparator ?? `0x${"11".repeat(32)}`,
+    domain: options.domain ?? null,
+    legacyName: options.legacyName ?? "USDC",
+    tokenVersion: options.tokenVersion === undefined ? "2" : options.tokenVersion,
+    domainSeparator: options.domainSeparator,
     receiptStatus: options.receiptStatus ?? "0x1",
   };
-  const knownChains = new Set(options.knownChains ?? [10143, 143, 11155111, 31337]);
+  const knownChains = new Set(options.knownChains ?? [5042002, 5042, 11155111, 31337]);
   const calls: Array<{ method: string; params?: unknown }> = [];
   const signed: Array<{ domain: Record<string, unknown>; types: Record<string, unknown>; primaryType: string; message: Record<string, string> }> = [];
   const sent: Array<{ from: string; to: string; data: string; gas: string; value: string }> = [];
@@ -81,9 +92,20 @@ export function createFakeWallet(tokenAddress: string, paymentsAddress: string, 
         case "name":
           return token.encodeFunctionResult("name", [state.legacyName]);
         case "version":
-          return token.encodeFunctionResult("version", ["1"]);
-        case "DOMAIN_SEPARATOR":
-          return token.encodeFunctionResult("DOMAIN_SEPARATOR", [state.domainSeparator]);
+          if (state.tokenVersion === null) throw Object.assign(new Error("execution reverted"), { code: 3 });
+          return token.encodeFunctionResult("version", [state.tokenVersion]);
+        case "DOMAIN_SEPARATOR": {
+          if (state.domainSeparator === null) throw Object.assign(new Error("execution reverted"), { code: 3 });
+          const separator =
+            state.domainSeparator ??
+            TypedDataEncoder.hashDomain({
+              name: state.legacyName,
+              version: state.tokenVersion ?? "2",
+              chainId: state.chainId,
+              verifyingContract: getAddress(tokenAddress),
+            });
+          return token.encodeFunctionResult("DOMAIN_SEPARATOR", [separator]);
+        }
       }
     }
     if (addr === getAddress(paymentsAddress)) {

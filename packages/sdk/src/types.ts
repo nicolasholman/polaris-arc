@@ -22,7 +22,7 @@ export const CHECKOUT_MODES: readonly CheckoutMode[] = ["now", "later", "subscri
 
 /**
  * Anything EIP-1193: MetaMask's `window.ethereum`, a Privy or WalletConnect
- * provider, a Mera account wrapped by viem, or Hardhat's `network.provider`.
+ * provider, a passkey account wrapped by viem, or Hardhat's `network.provider`.
  */
 export interface Eip1193Provider {
   request(args: { method: string; params?: readonly unknown[] | object }): Promise<unknown>;

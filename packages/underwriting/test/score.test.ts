@@ -1,6 +1,6 @@
 /**
  * The score is ScoreManager's, not ours. These hold the TypeScript mirror to
- * the hand-computed table in packages/contracts/test/metropolis/Underwrite.test.js
+ * the hand-computed table in packages/contracts' Underwrite.test.js
  * and, across a seeded sweep, to the JavaScript mirror that suite holds to the
  * contract. TS == JS == Solidity, so the app can never show a limit the chain
  * will not give.
@@ -26,7 +26,7 @@ const jsMirror = require("../../contracts/test/helpers/underwrite-mirror.js") as
   EXCHANGE_FUNDED_POINTS: bigint;
 };
 
-const AUSD = (n: number) => BigInt(Math.round(n * 1e6));
+const USDC = (n: number) => BigInt(Math.round(n * 1e6));
 const EMPTY: Facts = {
   walletAgeDays: 0,
   txCount: 0,
@@ -40,7 +40,7 @@ const EMPTY: Facts = {
 const BEST: Partial<Facts> = {
   walletAgeDays: 900,
   txCount: 1250,
-  stableBalance: AUSD(5_000),
+  stableBalance: USDC(5_000),
   defiTenureDays: 900,
   exchangeFunded: true,
 };
@@ -56,10 +56,10 @@ const VECTORS: Array<{ name: string; f: Partial<Facts>; score: number; declined:
   { name: "activity earns a point per 25 transactions", f: { txCount: 124 }, score: 524, declined: false },
   { name: "activity caps at 50 points", f: { txCount: 1250 }, score: 570, declined: false },
   { name: "activity far past the cap earns nothing more", f: { txCount: 999_999 }, score: 570, declined: false },
-  { name: "a balance one unit under $100 earns nothing", f: { stableBalance: AUSD(100) - 1n }, score: 520, declined: false },
-  { name: "balance earns a point per $100", f: { stableBalance: AUSD(250) }, score: 522, declined: false },
-  { name: "balance caps at 50 points", f: { stableBalance: AUSD(5_000) }, score: 570, declined: false },
-  { name: "a $10M balance earns nothing more", f: { stableBalance: AUSD(10_000_000) }, score: 570, declined: false },
+  { name: "a balance one unit under $100 earns nothing", f: { stableBalance: USDC(100) - 1n }, score: 520, declined: false },
+  { name: "balance earns a point per $100", f: { stableBalance: USDC(250) }, score: 522, declined: false },
+  { name: "balance caps at 50 points", f: { stableBalance: USDC(5_000) }, score: 570, declined: false },
+  { name: "a $10M balance earns nothing more", f: { stableBalance: USDC(10_000_000) }, score: 570, declined: false },
   { name: "DeFi tenure earns a point a month", f: { defiTenureDays: 95 }, score: 523, declined: false },
   { name: "DeFi tenure caps at 30 points", f: { defiTenureDays: 900 }, score: 550, declined: false },
   { name: "DeFi tenure far past the cap earns nothing more", f: { defiTenureDays: 36_500 }, score: 550, declined: false },
@@ -79,7 +79,7 @@ const VECTORS: Array<{ name: string; f: Partial<Facts>; score: number; declined:
   { name: "a strong wallet declines on its cluster alone", f: { ...BEST, relatedWallets: 25 }, score: 676, declined: true },
   {
     name: "an ordinary wallet sums every signal",
-    f: { walletAgeDays: 200, txCount: 300, stableBalance: AUSD(1_234.56), defiTenureDays: 61, relatedWallets: 5 },
+    f: { walletAgeDays: 200, txCount: 300, stableBalance: USDC(1_234.56), defiTenureDays: 61, relatedWallets: 5 },
     score: 554,
     declined: false,
   },
@@ -149,7 +149,7 @@ describe("scoreFromFacts mirrors ScoreManager", () => {
 
 describe("the breakdown", () => {
   it("adds up to the unclamped score, term by term", () => {
-    const b = scoreBreakdown(f({ walletAgeDays: 730, txCount: 300, stableBalance: AUSD(1_240), defiTenureDays: 400, exchangeFunded: true, relatedWallets: 6, priorLiquidations: 1 }));
+    const b = scoreBreakdown(f({ walletAgeDays: 730, txCount: 300, stableBalance: USDC(1_240), defiTenureDays: 400, exchangeFunded: true, relatedWallets: 6, priorLiquidations: 1 }));
     assert.equal(b.age, 48, "two years is 24 whole months, doubled");
     assert.equal(b.activity, 12);
     assert.equal(b.balance, 12);

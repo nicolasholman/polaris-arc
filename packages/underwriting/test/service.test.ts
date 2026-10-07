@@ -7,7 +7,8 @@ import type { Address, KeyedProvider } from "../src/core/types.ts";
 import { fixtureTransport } from "../src/testing/fixtures.ts";
 import type { HttpTransport } from "../src/node/http.ts";
 import { NansenClient } from "../src/node/nansen.ts";
-import { CreditMeter, Underwriter } from "../src/node/service.ts";
+import { accountChainFromEnv, CreditMeter, Underwriter } from "../src/node/service.ts";
+import { ARC_MAINNET, ARC_TESTNET } from "../src/core/constants.ts";
 import { ACCOUNT, fixtureProviders, host, LINKED, networkDown, NOW, scripted, TEST_KEYS } from "./helpers.ts";
 
 // A throwaway key generated for this test; it controls nothing.
@@ -42,7 +43,7 @@ describe("Underwriter.assess", () => {
     assert.deepEqual(a.linkProof, { verified: true, reason: null });
     assert.equal(a.final, true);
     assert.equal(a.breakdown.score, 692);
-    assert.deepEqual(a.providers, { nansen: "live", zerion: "live", etherscan: "live", rpc: "live" });
+    assert.deepEqual(a.providers, { nansen: "live", zerion: "live", etherscan: "live", rpc: "live", blockscout: "live" });
     assert.deepEqual(a.notConfigured, []);
     assert.deepEqual(a.absent, []);
     assert.equal(a.retryAfterSeconds, null);
@@ -94,14 +95,14 @@ describe("Underwriter.assess", () => {
 
   it("builds from the environment: live with a key, not configured without, public RPCs always live", () => {
     const none = Underwriter.fromEnv({});
-    assert.deepEqual(none.modes(), { nansen: "not_configured", zerion: "not_configured", etherscan: "not_configured", rpc: "live" });
+    assert.deepEqual(none.modes(), { nansen: "not_configured", zerion: "not_configured", etherscan: "not_configured", rpc: "live", blockscout: "live" });
     assert.deepEqual(none.notConfigured(), [
       { provider: "nansen", env: "NANSEN_API_KEY" },
       { provider: "zerion", env: "ZERION_API_KEY" },
       { provider: "etherscan", env: "ETHERSCAN_API_KEY" },
     ]);
     const some = Underwriter.fromEnv({ ETHERSCAN_API_KEY: "ek", NANSEN_API_KEY: "" });
-    assert.deepEqual(some.modes(), { nansen: "not_configured", zerion: "not_configured", etherscan: "live", rpc: "live" });
+    assert.deepEqual(some.modes(), { nansen: "not_configured", zerion: "not_configured", etherscan: "live", rpc: "live", blockscout: "live" });
     assert.equal(Underwriter.fromEnv({ NANSEN_API_KEY: "nk", UNDERWRITING_MODE: "live" }).modes().nansen, "live");
   });
 
@@ -133,38 +134,75 @@ describe("Underwriter.assess with providers not configured", () => {
     assert.ok(a.issues.some((i) => i.code === "not_configured" && /NANSEN_API_KEY is not set/.test(i.message)));
   });
 
-  it("the account alone needs no Nansen or Zerion: Etherscan's transfers answer, the rest is absent, and it may be attested", async () => {
-    const t = scripted(fixtureTransport(), []);
-    const a = await underwriterOn(t, new CreditMeter(), ["nansen", "zerion"]).assess({ account: ACCOUNT.zerionBlind });
-    assert.equal(t.calls.some((c) => c.url.includes("api.zerion.io") || c.url.includes("api.nansen.ai")), false);
-    assert.deepEqual(a.notConfigured, [{ provider: "zerion", env: "ZERION_API_KEY" }]);
-    assert.equal(a.final, true);
-    assert.equal(a.evidence.account.sentCount.source, "etherscan.tokentx");
-    assert.equal(a.evidence.account.sentCount.status, "fallback");
-    assert.deepEqual(a.absent, []);
-  });
-
-  it("with no keyed provider at all, the account's history is absent: no points, and never called a thin file", async () => {
+  it("the account alone needs no keyed provider: Arc's RPC and explorer answer, and it may be attested", async () => {
     const t = scripted(fixtureTransport(), []);
     const a = await underwriterOn(t, new CreditMeter(), ["nansen", "zerion", "etherscan"]).assess({ account: ACCOUNT.regular });
     assert.equal(
       t.calls.every((c) => !/api\.(nansen\.ai|zerion\.io|etherscan\.io)/.test(c.url)),
       true,
-      "only the public RPC is asked",
+      "only Arc's public RPC and explorer are asked",
     );
-    assert.deepEqual(
-      a.notConfigured.map((n) => n.env),
-      ["ZERION_API_KEY", "ETHERSCAN_API_KEY"],
-    );
-    assert.deepEqual(a.absent.sort(), ["account.firstSeenAt", "account.sentCount"]);
-    assert.equal(a.evidence.account.sentCount.status, "not_configured");
-    assert.equal(a.facts.txCount, 0, "absent, not counted");
-    assert.equal(a.facts.walletAgeDays, 0);
+    assert.deepEqual(a.notConfigured, [], "nothing the account needs is keyed");
+    assert.deepEqual(a.absent, []);
+    assert.equal(a.evidence.account.sentCount.source, "blockscout.tokentx");
+    assert.equal(a.evidence.account.firstSeenAt.source, "blockscout.tokentx");
+    assert.equal(a.final, true);
+    assert.equal(a.attest, true, "130 days and 67 transfers clear the thin-file gate");
+    assert.equal(a.decision.limit, 200_000_000n);
+  });
+
+  it("with no explorer for the account chain, the account's age is absent: no points, and never called a thin file", async () => {
+    const t = scripted(fixtureTransport(), []);
+    const uw = underwriterOn(t, new CreditMeter(), ["nansen", "zerion", "etherscan"]);
+    const local = new Underwriter({ providers: { ...uw.providers, explorer: null }, now: () => NOW });
+    const a = await local.assess({ account: ACCOUNT.selfPaying });
+    assert.equal(t.calls.some((c) => c.url.includes("explorer")), false);
+    assert.equal(local.modes().blockscout, "not_configured");
+    assert.deepEqual(a.absent, ["account.firstSeenAt"]);
+    assert.equal(a.facts.walletAgeDays, 0, "absent, not counted");
+    assert.equal(a.facts.txCount, 3, "the nonce still counts");
     assert.equal(a.final, true, "nothing to wait for");
     assert.equal(a.attest, false, "too thin to attest");
-    assert.equal(a.unavailable, true, "thin only for want of keys");
-    assert.equal(a.decision.headline, "Credit reviews aren't fully set up here yet.");
+    assert.equal(a.unavailable, true, "thin only for want of an explorer");
     assert.equal(a.decision.nextSteps.some((s) => s.id === "build-history"), false, "no promise about when it opens");
-    assert.ok(a.decision.reasons.some((r) => r.label === "Some of this account's history can't be read here yet, so it doesn't count"));
+  });
+});
+
+describe("accountChainFromEnv", () => {
+  it("defaults to Arc testnet: its RPC, its explorer, USDC and EURC", () => {
+    assert.deepEqual(accountChainFromEnv({}), {
+      chainId: ARC_TESTNET.chainId,
+      rpcUrl: ARC_TESTNET.rpcUrl,
+      explorerApiUrl: ARC_TESTNET.explorerApiUrl,
+      tokens: [ARC_TESTNET.usdc, ARC_TESTNET.eurc],
+    });
+  });
+
+  it("knows Arc mainnet by its chain id, and takes overrides", () => {
+    const main = accountChainFromEnv({ UNDERWRITING_ACCOUNT_CHAIN_ID: "5042" });
+    assert.equal(main.rpcUrl, ARC_MAINNET.rpcUrl);
+    assert.equal(main.explorerApiUrl, ARC_MAINNET.explorerApiUrl);
+    assert.deepEqual(main.tokens, [ARC_MAINNET.usdc, ARC_MAINNET.eurc]);
+    const own = accountChainFromEnv({ UNDERWRITING_ACCOUNT_RPC_URL: "https://my-arc-node.example", UNDERWRITING_ACCOUNT_EXPLORER_API_URL: "none" });
+    assert.equal(own.rpcUrl, "https://my-arc-node.example");
+    assert.equal(own.explorerApiUrl, null);
+  });
+
+  it("a custom chain (a local node) needs its RPC and its dollar tokens, and has no explorer unless given one", () => {
+    assert.throws(() => accountChainFromEnv({ UNDERWRITING_ACCOUNT_CHAIN_ID: "31337" }), /UNDERWRITING_ACCOUNT_RPC_URL is required/);
+    assert.throws(() => accountChainFromEnv({ UNDERWRITING_ACCOUNT_CHAIN_ID: "31337", UNDERWRITING_ACCOUNT_RPC_URL: "http://127.0.0.1:8600" }), /UNDERWRITING_ACCOUNT_TOKENS is required/);
+    assert.throws(() => accountChainFromEnv({ UNDERWRITING_ACCOUNT_CHAIN_ID: "x" }), /not a chain id/);
+    const local = accountChainFromEnv({
+      UNDERWRITING_ACCOUNT_CHAIN_ID: "31337",
+      UNDERWRITING_ACCOUNT_RPC_URL: "http://127.0.0.1:8600",
+      UNDERWRITING_ACCOUNT_TOKENS: "0x5FbDB2315678afecb367f032d93F642f64180aa3, 0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
+    });
+    assert.deepEqual(local, {
+      chainId: 31337,
+      rpcUrl: "http://127.0.0.1:8600",
+      explorerApiUrl: null,
+      tokens: ["0x5FbDB2315678afecb367f032d93F642f64180aa3", "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512"],
+    });
+    assert.equal(Underwriter.fromEnv({ UNDERWRITING_ACCOUNT_CHAIN_ID: "31337", UNDERWRITING_ACCOUNT_RPC_URL: "http://127.0.0.1:8600", UNDERWRITING_ACCOUNT_TOKENS: "0x5FbDB2315678afecb367f032d93F642f64180aa3" }).modes().blockscout, "not_configured");
   });
 });

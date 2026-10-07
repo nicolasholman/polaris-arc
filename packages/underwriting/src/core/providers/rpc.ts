@@ -2,9 +2,9 @@
  * Plain JSON-RPC, where it beats both APIs (data.md §4.1): a sent-transaction
  * count in one call whatever the history length, and exact dollar balances.
  *
- * Inside CRE, balances are EVM reads (`callContract`) and nonces are HTTP
- * POSTs, because `EVMClient` has no nonce method. These builders produce the
- * HTTP form.
+ * These builders produce the JSON-RPC POSTs; a caller that already reads
+ * balances through contract calls can pass `accountBalance` to the recipe
+ * instead.
  */
 
 import { isObject, lower, ParseError, type RequestSpec } from "./common.ts";

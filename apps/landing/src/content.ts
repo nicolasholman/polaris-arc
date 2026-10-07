@@ -11,12 +11,12 @@
  * anchor until NEXT_PUBLIC_APP_URL / NEXT_PUBLIC_BUSINESS_URL are set.
  */
 
-import { APP_URL, BUSINESS_URL, linkTo } from "./lib/links";
+import { APP_URL, BUSINESS_URL, REPO_URL, linkTo } from "./lib/links";
 
 export const site = {
-  title: "Polaris: Stripe for every app on Monad",
+  title: "Polaris: Stripe for every app on Arc",
   description:
-    "Payment links, pay-in-4 credit and subscriptions for every app on Monad. Settled in dollars in under a second.",
+    "One link to get paid now, later or every month, in USDC. Buyers pay from any chain via CCTP, it's final on Arc in under a second, and Polaris pays the gas.",
   name: "Polaris",
 };
 
@@ -32,7 +32,7 @@ export const nav = {
 
 export const hero = {
   headline: ["Credit, built into", "the payment."],
-  sub: "Payment links, pay-in-4 credit and subscriptions for every app on Monad. Settled in dollars in under a second.",
+  sub: "One link to get paid now, later or every month, in USDC on Arc. From any chain, final in under a second.",
   cta: { label: "Get started", href: "#product" },
   card: {
     title: "Payments",
@@ -68,31 +68,30 @@ export const hero = {
 };
 
 export const logos = {
-  pill: "Built on Monad, with the best in crypto infra",
+  pill: "Built on Arc, with the best in stablecoin infra",
   items: [
-    { name: "Monad", glyph: "monad" },
-    { name: "Privy", glyph: "privy" },
-    { name: "Chainlink", glyph: "chainlink" },
-    { name: "Agora AUSD", glyph: "agora" },
-    { name: "Envio", glyph: "envio" },
-    { name: "Nansen", glyph: "nansen" },
+    { name: "Arc", glyph: "arc" },
     { name: "Circle USDC", glyph: "circle" },
+    { name: "CCTP", glyph: "cctp" },
+    { name: "EURC", glyph: "eurc" },
+    { name: "Privy", glyph: "privy" },
+    { name: "Nansen", glyph: "nansen" },
     { name: "Zerion", glyph: "zerion" },
   ] as const,
 };
 
 export const stripe = {
-  heading: ["Stripe for every", "app on Monad"],
+  heading: ["Stripe for every", "app on Arc"],
   primary: { label: "Start accepting", href: linkTo(BUSINESS_URL, "/login", "#pricing") },
   secondary: { label: "Read the docs", href: "#faq" },
   paragraphs: [
     {
       lead: "Experience checkout without a wallet",
-      rest: "— buyers pay with Face ID, merchants get dollars.",
+      rest: "— buyers pay with Face ID from any chain via CCTP, merchants get USDC.",
     },
     {
       lead: "The power of Stripe,",
-      rest: "with credit built in. Links, a checkout API, subscriptions and payouts, with pay-in-4 on every order and the merchant paid up front.",
+      rest: "with credit built in. Links, a checkout API, subscriptions and payouts, with pay-in-4 on every order and the merchant paid up front. Gas is USDC, and Polaris pays it.",
     },
   ],
   mint: {
@@ -160,15 +159,15 @@ export const faq = {
   items: [
     {
       q: "Do my customers need a crypto wallet?",
-      a: "No. They open your link and create an account with Face ID in a few seconds. There's no wallet to install, no seed phrase and no gas to hold. Prices are in dollars, and they tap Confirm once.",
+      a: "No. They open your link and create an account with a passkey (Face ID) in a few seconds. There's no wallet to install, no seed phrase and no gas to hold: gas on Arc is paid in USDC, and Polaris pays it. Prices are in dollars, and they tap Confirm once. Already hold USDC on another chain? They can pay from there through Circle's CCTP.",
     },
     {
       q: "How does pay-in-4 work?",
-      a: "At checkout the buyer can split an order into four payments against a credit line read from their payment history. You're paid 100% up front. They pay 10% APR, pro-rated, so a $200 order becomes 4 × $50.38, shown before they confirm.",
+      a: "At checkout the buyer can split an order into four payments against a credit line read from their payment history and reviewed by the Polaris keeper. An on-chain credit guard reads the pool live at every pay-in-4 checkout. You're paid 100% up front. They pay 10% APR, pro-rated, so a $200 order becomes 4 × $50.38, shown before they confirm.",
     },
     {
       q: "When do I get paid?",
-      a: "The moment the payment lands. Monad finalises in under a second, so you see Paid before the page could reload, in dollars, and you can withdraw the same minute.",
+      a: "The moment the payment lands. Arc is final in under a second, so you see Paid before the page could reload, in USDC, and you can withdraw the same minute.",
     },
     {
       q: "What does it cost?",
@@ -176,7 +175,7 @@ export const faq = {
     },
     {
       q: "Is it live?",
-      a: "On Monad testnet today. Payment links, pay-in-4, subscriptions and send-by-link run end to end there. Credit stays on testnet while we're in beta; mainnet starts with Pay now and Send, capped.",
+      a: "On Arc testnet today. Payment links, pay-in-4, subscriptions and send-by-link run end to end there. Credit stays on testnet while we're in beta; mainnet starts with Pay now and Send, capped.",
     },
   ],
 };
@@ -189,7 +188,7 @@ export const testimonials = {
   intervalMs: 6000,
   items: [
     {
-      name: "Halcyon, the demo shop on Monad testnet",
+      name: "Halcyon, the demo shop on Arc testnet",
       quote:
         "“One link, and the order was paid in dollars before the buyer closed the tab. Pay in 4 at checkout, with the credit risk never ours to carry.”",
     },
@@ -208,11 +207,11 @@ export const testimonials = {
 
 export const blog = {
   heading: "From the blog",
-  showAll: { label: "Show all", href: "https://github.com/nickthelegend/polaris-monad#readme" },
+  showAll: { label: "Show all", href: `${REPO_URL}#readme` },
   articles: [
-    { title: "Checkout on Monad, without a wallet", href: "https://github.com/nickthelegend/polaris-monad#mera-the-entire-account-layer" },
-    { title: "Pay in 4, paid in full: credit at checkout", href: "https://github.com/nickthelegend/polaris-monad#pay-in-4-end-to-end" },
-    { title: "Subscriptions that skip a month, not stack it", href: "https://github.com/nickthelegend/polaris-monad#monad-track-02-consumer-products-and-payments" },
+    { title: "Checkout on Arc, without a wallet", href: `${REPO_URL}/tree/main/apps/app#readme` },
+    { title: "Pay in 4, paid in full: credit at checkout", href: `${REPO_URL}/tree/main/packages/underwriting#readme` },
+    { title: "Subscriptions that skip a month, not stack it", href: `${REPO_URL}/tree/main/apps/business#readme` },
   ],
 };
 
@@ -225,7 +224,7 @@ export const talk = {
 };
 
 export const footer = {
-  blurb: "Stripe for every app on Monad: payment links, credit at checkout and subscriptions, settled in dollars in under a second.",
+  blurb: "Stripe for every app on Arc: one link to get paid now, later or every month, in USDC, final in under a second.",
   more: { label: "More about us", href: "#product" },
   links: [
     { label: "Product", href: "#product" },
@@ -239,10 +238,10 @@ export const footer = {
   },
   location: {
     title: "Location",
-    lines: ["Remote-first, on Monad.", "Built for Monad Metropolis 2026"],
+    lines: ["Remote-first, on Arc.", "Live on Arc testnet"],
   },
   socials: [
-    { label: "GitHub", icon: "github", href: "https://github.com/nickthelegend/polaris-monad" },
+    { label: "GitHub", icon: "github", href: REPO_URL },
   ] as const,
   copyright: ["© 2026 — Polaris", "All rights reserved"],
   languagesLabel: "Languages",

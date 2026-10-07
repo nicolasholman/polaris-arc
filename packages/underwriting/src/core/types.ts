@@ -3,9 +3,8 @@
  * providers produce, and the decision the product shows.
  *
  * Everything here is plain data. The core never touches the network, the
- * clock or the filesystem, so the Chainlink CRE workflow (compiled to WASM)
- * and the Node service run the same code on the same inputs and get the same
- * bytes out.
+ * clock or the filesystem, so the Polaris keeper and the app's preview run
+ * the same code on the same inputs and get the same bytes out.
  */
 
 export type Address = `0x${string}`;
@@ -14,7 +13,7 @@ export type Hex = `0x${string}`;
 /**
  * `ScoreManager.Facts`, field for field and in the same order.
  *
- * uint64 fields are `bigint`; the narrower ones are `number`. The DON attests
+ * uint64 fields are `bigint`; the narrower ones are `number`. The keeper reports
  * these and `ScoreManager.scoreFromFacts` turns them into a score on chain.
  */
 export interface Facts {
@@ -32,14 +31,14 @@ export interface Facts {
   relatedWallets: number;
   /** First topped up from a known exchange. */
   exchangeFunded: boolean;
-  /** uint64. Unix seconds when the facts were read (DON time). */
+  /** uint64. Unix seconds when the facts were read (the keeper's clock). */
   observedAt: bigint;
 }
 
 /** The data providers, for provenance and for "from Nansen" badges. */
-export type Provider = "nansen" | "zerion" | "etherscan" | "rpc" | "polaris";
+export type Provider = "nansen" | "zerion" | "etherscan" | "rpc" | "blockscout" | "polaris";
 
-/** The providers that need an API key. Public RPCs need none. */
+/** The providers that need an API key. Public RPCs and Arc's explorer need none. */
 export type KeyedProvider = "nansen" | "zerion" | "etherscan";
 
 /**
@@ -88,7 +87,7 @@ export interface Funder {
 /**
  * What we know about one subject: the buyer's Polaris account, or a history
  * wallet they linked (plan §5.5). JSON-safe (numbers, strings, booleans,
- * null), so a CRE workflow can pass it through consensus.
+ * null), so it can be stored, logged or sent as is.
  */
 export interface SubjectEvidence {
   address: Address;
@@ -197,7 +196,7 @@ export interface CreditDecision {
     quote: (PlanQuote & { fits: boolean }) | null;
   };
   /**
-   * Set when the facts are too thin for the DON to attest (attest.ts): no
+   * Set when the facts are too thin for the keeper to report (attest.ts): no
    * report is sent and the account stays secured-only, so `limit` is 0 and
    * collateral counts at face value. Each entry is one way out, with what the
    * facts show and what it needs; reaching any one clears the gate. Null when

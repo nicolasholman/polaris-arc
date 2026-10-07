@@ -1,6 +1,6 @@
 /**
- * The core runs inside the CRE workflow, compiled to WASM, where Node APIs do
- * not exist and every node must compute the same bytes. tsconfig.core.json
+ * The core is pure: it must run where Node APIs do not exist (a browser, an
+ * edge runtime) and compute the same report bytes wherever it runs. tsconfig.core.json
  * enforces the first at compile time; this test also catches the
  * nondeterministic calls that do typecheck (Date.now, Math.random) and any
  * import that reaches outside the core.

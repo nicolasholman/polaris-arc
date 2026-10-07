@@ -8,7 +8,7 @@ const TX = "0xabababababababababababababababababababababababababababababababab";
 const MERCHANT = "0x1111111111111111111111111111111111111111";
 const BUYER = "0x2222222222222222222222222222222222222222";
 const ORDER = { orderId: "INV-2041", sessionId: "cs_test_a1B2c3D4e5F6g7H8", metadata: { invoice: "2041" } };
-const CHAIN = { txHash: TX, chainId: 10143 } as const;
+const CHAIN = { txHash: TX, chainId: 5042002 } as const;
 
 /** One well-formed event of every type, as the API sends them. Typed, so they can't drift from events.ts. */
 const DATA: WebhookEventDataMap = {
@@ -51,7 +51,7 @@ const DATA: WebhookEventDataMap = {
     reason: "insufficient_funds",
     attempt: 1,
     nextAttemptAt: "2026-10-15T18:00:00.000Z",
-    chainId: 10143,
+    chainId: 5042002,
   },
   "plan.completed": { ...CHAIN, planId: "7", orderId: "INV-2041", total: "201.534246" },
   "plan.liquidated": { ...CHAIN, planId: "7", orderId: "INV-2041", outstanding: "100.767123", recovered: "100.767123" },
@@ -106,10 +106,10 @@ describe("validateWebhookEvent", () => {
         id: "0x3f1c2f0c6b4c6d5a3a3e8b8a1d0c9e7f5a6b4c3d2e1f0a9b8c7d6e5f4a3b2c1d",
         orderId: "INV-2041",
         amount: "25000000",
-        currency: "ausd",
+        currency: "usdc",
         mode: "PAY_NOW",
         merchant: MERCHANT,
-        transaction: { hash: TX, chainId: 10143 },
+        transaction: { hash: TX, chainId: 5042002 },
       },
     };
     const problems = validateWebhookEvent(indexed);
@@ -157,7 +157,7 @@ describe("validateWebhookEvent", () => {
 
   it("assertWebhookEvent throws with every problem listed", () => {
     expect(() => assertWebhookEvent(envelope("payment.succeeded", DATA["payment.succeeded"]))).not.toThrow();
-    const bad = envelope("payment.succeeded", { ...DATA["payment.succeeded"], amount: "25000000", currency: "ausd" as never });
-    expect(() => assertWebhookEvent(bad)).toThrow(/Not a well-formed payment.succeeded:\n {2}data.amount .*base units\n {2}data.currency must be "USD", got "ausd"/);
+    const bad = envelope("payment.succeeded", { ...DATA["payment.succeeded"], amount: "25000000", currency: "usdc" as never });
+    expect(() => assertWebhookEvent(bad)).toThrow(/Not a well-formed payment.succeeded:\n {2}data.amount .*base units\n {2}data.currency must be "USD", got "usdc"/);
   });
 });

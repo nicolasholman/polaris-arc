@@ -33,7 +33,7 @@ export const TOKEN_ABI = [
 export const payments = new Interface(PAYMENTS_ABI);
 export const token = new Interface(TOKEN_ABI);
 
-/** EIP-712 field lists, field for field with Circle's FiatToken and Agora's AUSD. */
+/** EIP-712 field lists, field for field with Circle's FiatToken (USDC and EURC on Arc). */
 export const RECEIVE_WITH_AUTHORIZATION_TYPES = {
   ReceiveWithAuthorization: [
     { name: "from", type: "address" },
@@ -63,8 +63,8 @@ const FIELD = { name: 0x01, version: 0x02, chainId: 0x04, verifyingContract: 0x0
 
 /**
  * Keep only the domain members a contract's `fields` bitmap says it uses.
- * AUSD reports `salt = 0x00…00` but its bitmap (0x0f) excludes it; signing
- * with the salt included is rejected.
+ * A token may report `salt = 0x00…00` while its bitmap (0x0f) excludes it;
+ * signing with the salt included is rejected.
  */
 export function domainFromErc5267(
   raw: { name: string; version: string; chainId: bigint | number; verifyingContract: string; salt: string },
@@ -80,47 +80,64 @@ export function domainFromErc5267(
   return domain;
 }
 
+/** FiatToken's EIP-712 version, used when a token has no `version()`. USDC and EURC on Arc are "2". */
+export const DEFAULT_TOKEN_DOMAIN_VERSION = "2";
+
 /**
  * Read a token's EIP-712 domain from the token, never from a guess.
  *
- * ERC-5267 first. Failing that, rebuild it from `name()`, `version()` (default
- * "1"), the chain and the address, and accept it only if it hashes to the
- * token's own `DOMAIN_SEPARATOR()`. AUSD's `name()` is "AUSD" but its domain
- * name is "Agora Dollar", which is exactly the mistake this refuses to make.
+ * USDC and EURC on Arc are Circle FiatTokens: they have no ERC-5267
+ * `eip712Domain()`, so the domain is rebuilt from `name()`, `version()`
+ * (default "2"), the chain and the address, and accepted only if it hashes to
+ * the token's own `DOMAIN_SEPARATOR()`. A token whose `name()` is not its
+ * domain name fails that check; only then is ERC-5267 tried, and its answer
+ * too must match `DOMAIN_SEPARATOR()` when the token has one.
  */
 export async function readDomain(provider: Eip1193Provider, verifyingContract: string, chainId: number): Promise<Eip712Domain> {
+  const call = async (fn: "name" | "version" | "DOMAIN_SEPARATOR") =>
+    token.decodeFunctionResult(fn, await ethCall(provider, verifyingContract, token.encodeFunctionData(fn)))[0] as string;
+
+  let separator: string | undefined;
+  let fiatTokenError: unknown;
+  try {
+    const [name, sep] = await Promise.all([call("name"), call("DOMAIN_SEPARATOR")]);
+    separator = sep;
+    const version = await call("version").catch(() => DEFAULT_TOKEN_DOMAIN_VERSION);
+    const domain: Eip712Domain = { name, version, chainId, verifyingContract: getAddress(verifyingContract) as Address };
+    if (TypedDataEncoder.hashDomain(domain) === separator) return domain;
+  } catch (err) {
+    fiatTokenError = err;
+  }
+
+  let domain: Eip712Domain;
   try {
     const out = await ethCall(provider, verifyingContract, token.encodeFunctionData("eip712Domain"));
     const [fields, name, version, cid, contract, salt, extensions] = token.decodeFunctionResult("eip712Domain", out);
     if ((extensions as unknown[]).length > 0) throw new Error("EIP-712 domain extensions are not supported");
-    return domainFromErc5267(
+    domain = domainFromErc5267(
       { name: name as string, version: version as string, chainId: cid as bigint, verifyingContract: contract as string, salt: salt as string },
       fields as string,
     );
   } catch (erc5267Error) {
-    const call = async (fn: "name" | "version" | "DOMAIN_SEPARATOR") =>
-      token.decodeFunctionResult(fn, await ethCall(provider, verifyingContract, token.encodeFunctionData(fn)))[0] as string;
-    let name: string;
-    let separator: string;
-    try {
-      [name, separator] = await Promise.all([call("name"), call("DOMAIN_SEPARATOR")]);
-    } catch {
-      throw new PolarisError(`Couldn't read the EIP-712 domain of ${verifyingContract}.`, {
-        type: "wallet_error",
-        code: "domain_unreadable",
-        cause: erc5267Error,
-      });
-    }
-    const version = await call("version").catch(() => "1");
-    const domain: Eip712Domain = { name, version, chainId, verifyingContract: getAddress(verifyingContract) as Address };
-    if (TypedDataEncoder.hashDomain(domain) !== separator) {
+    if (separator !== undefined) {
       throw new PolarisError(`Couldn't reconstruct the EIP-712 domain of ${verifyingContract}; refusing to sign against a guess.`, {
         type: "wallet_error",
         code: "domain_mismatch",
       });
     }
-    return domain;
+    throw new PolarisError(`Couldn't read the EIP-712 domain of ${verifyingContract}.`, {
+      type: "wallet_error",
+      code: "domain_unreadable",
+      cause: fiatTokenError ?? erc5267Error,
+    });
   }
+  if (separator !== undefined && TypedDataEncoder.hashDomain(domain) !== separator) {
+    throw new PolarisError(`The EIP-712 domain ${verifyingContract} reports doesn't match its DOMAIN_SEPARATOR; refusing to sign.`, {
+      type: "wallet_error",
+      code: "domain_mismatch",
+    });
+  }
+  return domain;
 }
 
 export type Authorization = {

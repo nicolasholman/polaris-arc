@@ -8,7 +8,7 @@ import { SECRET, TX, ADDR, event, signed } from "./helpers";
 const body = JSON.stringify(
   event("payment.succeeded", {
     txHash: TX,
-    chainId: 10143,
+    chainId: 5042002,
     orderId: "hc_x",
     sessionId: "cs_test_1",
     metadata: {},

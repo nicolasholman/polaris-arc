@@ -20,7 +20,7 @@ import { polarisDomain, TYPES } from "./relayer/typed-data";
  * The merchant's Privy embedded wallet signs a MerchantRegistry
  * `Registration` (its own address, the business name, where payouts go), and
  * the relayer, a registry operator, sends `registerFor`. The merchant never
- * holds MON. The operator can deliver a registration but not write one: every
+ * holds USDC (gas). The operator can deliver a registration but not write one: every
  * field that decides where money goes is in the merchant's signature.
  *
  * Then, when a registry admin is configured (REGISTRY_ACTIVATOR), the
@@ -76,7 +76,7 @@ export async function refreshRegistration(merchant: MerchantRecord): Promise<Mer
 function metadataUri(merchant: MerchantRecord): string {
   const base = getConfig().publicUrl;
   if (!base) {
-    throw new HttpError(503, "not_configured", "Registration on Monad opens once this server's public URL is configured.");
+    throw new HttpError(503, "not_configured", "Registration on Arc opens once this server's public URL is configured.");
   }
   return `${base}/api/public/merchants/${merchant.publicId}`;
 }

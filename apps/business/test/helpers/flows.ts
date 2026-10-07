@@ -10,7 +10,8 @@ import { TYPES } from "@/server/relayer/typed-data";
 import type { LogSpec, SentTx } from "./fake-chain";
 import { ADDR, json, params, request, signIn, type TestEnv } from "./env";
 
-export const stablecoinDomain = { name: "Agora Dollar", version: "1", chainId: 31337, verifyingContract: ADDR.stablecoin } as const;
+export const stablecoinDomain = { name: "USDC", version: "2", chainId: 31337, verifyingContract: ADDR.stablecoin } as const;
+export const eurcDomain = { name: "EURC", version: "2", chainId: 31337, verifyingContract: ADDR.eurc } as const;
 export const checkoutDomain = { name: "PolarisCheckout", version: "1", chainId: 31337, verifyingContract: ADDR.checkout } as const;
 
 export type Merchant = { account: LocalAccount; userId: string; secret: string; publishableKey: string; webhookSecret: string | null };

@@ -9,12 +9,12 @@ import { ingestLogs, ingestReceipt, watchedContracts } from "./ingest";
 
 /**
  * The chain sync: read our contracts' logs block range by block range and
- * ingest them, so events nobody here sent (CRE collections, renewals and
+ * ingest them, so events nobody here sent (keeper collections, renewals and
  * liquidations; direct payments from a buyer's own wallet) still become
  * records and webhooks. The cursor only advances past a range once every
  * log in it was handled.
  *
- * With POLARIS_LOGS_RPC_URL set to Envio's HyperRPC for Monad, the logs come
+ * With POLARIS_LOGS_RPC_URL set to Envio's HyperRPC for Arc, the logs come
  * from Envio's index (the dashboard, payouts, the buyer's book and every
  * webhook then run on Envio data), 10,000 blocks per request instead of the
  * public RPC's 100; receipts and reads still use POLARIS_RPC_URL.
@@ -29,16 +29,16 @@ const CURSOR_ID = "logs";
 export function chunkSize(chainId: number, hyperRpc = false): number {
   const configured = Number(process.env.POLARIS_SYNC_CHUNK_BLOCKS ?? "");
   if (Number.isInteger(configured) && configured > 0) return configured;
-  // Monad's public RPC caps eth_getLogs at 100 blocks (40 s of chain); Envio's HyperRPC serves wide ranges from its index.
+  // Arc's public RPC serves eth_getLogs ranges up to a few thousand blocks (a block is ~0.5 s);
+  // an indexer's RPC (POLARIS_LOGS_RPC_URL) serves wider ones.
   if (hyperRpc) return 10_000;
-  return chainId === 31337 ? 2_000 : 100;
+  return chainId === 31337 ? 2_000 : 2_000;
 }
 
 /**
  * POLARIS_SYNC_FROM_BLOCK as a block number, or null when it is unset or
  * blank. (`Number("")` is 0: read naively, an unset variable meant "from
- * genesis", which on a fork of Monad testnet is tens of millions of blocks
- * of 100-block reads.)
+ * genesis", which on Arc testnet is tens of millions of blocks.)
  */
 export function configuredFromBlock(raw: string | undefined = process.env.POLARIS_SYNC_FROM_BLOCK): number | null {
   const text = raw?.trim();

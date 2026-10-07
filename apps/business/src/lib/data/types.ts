@@ -1,7 +1,7 @@
 /**
  * The dashboard's domain, as the browser sees it.
  *
- * Money is integer US cents everywhere. AUSD carries 6 decimals on chain; the
+ * Money is integer US cents everywhere. USDC carries 6 decimals on chain; the
  * indexer converts at its boundary, so nothing in the UI ever does float maths
  * on a balance. Times are ISO-8601 strings in UTC.
  */
@@ -81,7 +81,7 @@ export type Payment = {
   amountCents: Cents;
   feeCents: Cents;
   netCents: Cents;
-  /** What reached the merchant, in AUSD micro-units, so totals add up before they are truncated to cents. */
+  /** What reached the merchant, in USDC micro-units, so totals add up before they are truncated to cents. */
   netUnits?: string;
   linkId: string | null;
   /** Set once the indexer has seen the settling transaction. */
@@ -117,7 +117,7 @@ export type CollectorStatus = {
   state: "running" | "degraded" | "stopped";
   lastPassAt: IsoDate | null;
   /**
-   * Where collections run: the `polaris-collections` CRE workflow, the only
+   * Where collections run: the `polaris-collections` keeper, the only
    * runner. There is no fallback keeper: every collection action is
    * permissionless on chain, so anyone can run one (workflows/README.md).
    */
@@ -128,7 +128,7 @@ export type CollectorStatus = {
 
 export type Overview = {
   merchant: Merchant;
-  /** The payout wallet's AUSD balance; null when the chain couldn't be read (never shown as $0). */
+  /** The payout wallet's USDC balance; null when the chain couldn't be read (never shown as $0). */
   balanceCents: Cents | null;
   today: {
     count: number;
@@ -163,7 +163,7 @@ export type Insights = {
     | { source: "envio"; events: import("./insights").IndexedEvent[]; progressBlock: number | null }
     | { source: "envio-error"; error: string }
     | { source: "chain-sync"; events: import("./insights").IndexedEvent[] };
-  /** Null until a CRE underwriting decision with reasons exists for one of this merchant's Pay in 4 buyers. */
+  /** Null until a keeper underwriting decision with reasons exists for one of this merchant's Pay in 4 buyers. */
   underwriting: import("./insights").Underwriting | null;
 };
 
@@ -195,7 +195,7 @@ export type AutoPayouts = {
 };
 
 export type PayoutsState = {
-  /** The payout wallet's AUSD balance; null when the chain couldn't be read (never shown as $0). */
+  /** The payout wallet's USDC balance; null when the chain couldn't be read (never shown as $0). */
   balanceCents: Cents | null;
   /** The balance's change over the last 24 hours as the chain has it (truncated like the balance); null when nothing moved. Absent: work it out from the lists. */
   changeTodayCents?: Cents | null;

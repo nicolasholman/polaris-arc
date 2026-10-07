@@ -13,7 +13,7 @@ import { DOMAIN_NAMES, type Domain } from "./relayer/typed-data";
  * and the EIP-712 domain it signs under.
  *
  * Read from the vault itself, not the deployment record: a vault built
- * before signed withdrawal (Monad testnet's of 28 Sep 2026, still deployed
+ * before signed withdrawal (Arc testnet's of 28 Sep 2026, still deployed
  * while the testnet contracts are frozen) has no `eip712Domain()`, so the
  * call reverts and the answer is null: "not available on this network".
  * A vault that answers must name itself ("CollateralVault", version "1") on

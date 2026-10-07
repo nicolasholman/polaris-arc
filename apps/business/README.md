@@ -49,7 +49,7 @@ is unavailable) and every dashboard route answers 503. The landing page and
 | `/dashboard/links` | Payment links: create (dialog), share with a QR code, turn off. |
 | `/dashboard/plans` | The Pay in 4 ledger with instalment ticks; rows open a plan drawer. |
 | `/dashboard/payouts` | The balance card, one-tap withdraw (review, confirm, receipt), automatic daily payouts with **Pay out now**, history. |
-| `/dashboard/chainlink` | The three Chainlink CRE workflows as they run (More > Chainlink, and the Overview's collections card): the risk guard's verdict, its checks against the thresholds and how old its last check is; the pool-health feed (`GuardianReceiver.latestRoundData`, "computed by CRE"); each workflow's triggers and latest reports on Monad, each with its transaction and what it did; how reports reach the receivers. On a server with nothing deployed it says so, and shows nothing else. |
+| `/dashboard/automation` | The three Chainlink CRE workflows as they run (More > Chainlink, and the Overview's collections card): the risk guard's verdict, its checks against the thresholds and how old its last check is; the pool-health feed (`GuardianReceiver.latestRoundData`, "computed by CRE"); each workflow's triggers and latest reports on Monad, each with its transaction and what it did; how reports reach the receivers. On a server with nothing deployed it says so, and shows nothing else. |
 | `/dashboard/developers` | The integration (merchant ID, `baseUrl`, registration), API keys, webhooks with a test event and the delivery log (attempts, **Retry now**), the SDK snippet, the demo shop. |
 | `/gallery` | Every `@polaris/ui` component, beside the reference it reproduces. |
 
@@ -445,8 +445,8 @@ report, and the workflow runs on an HTTP trigger. The product fires it:
    `CRE_TRIGGER_MIN_INTERVAL_MS` (CRE fires an HTTP trigger once per 30 s).
    Under simulation that is `cre workflow simulate ./underwriting --listen
    --broadcast`, at `http://localhost:2000/trigger`.
-4. The workflow's signed callback, `POST /api/cre/callback`
-   (`Polaris-Signature`, HMAC with `POLARIS_CRE_CALLBACK_SECRET`), records
+4. The workflow's signed callback, `POST /api/keeper/callback`
+   (`Polaris-Signature`, HMAC with `POLARIS_KEEPER_CALLBACK_SECRET`), records
    `credit.underwritten`, `credit.refused` or `credit.thin`; a
    `collections.run` callback runs the chain sync at once.
 5. `GET /api/public/credit/{account}`: the line and score from ScoreManager
@@ -526,7 +526,7 @@ after settlement, the read route's signature and freshness).
 
 ## Chainlink: the risk guard, signing again, and what each CRE report did
 
-- **The risk guard.** `GET /api/public/credit-guard` (`src/server/cre/guardian.ts`)
+- **The risk guard.** `GET /api/public/credit-guard` (`src/server/keeper/guard.ts`)
   reads `PolarisCheckout.creditPaused()`, which is what `openPlan` applies,
   and GuardianReceiver's `creditStatus`, `currentInputs` (the pool as the
   receiver reads it, the thresholds, the acknowledged bad debt),
@@ -555,7 +555,7 @@ after settlement, the read route's signature and freshness).
   a buyer within 15 minutes of their Reauthorized is shown beside it (the
   instant retry). An UnderwritingApplied keeps its transaction on the
   account's credit decision, which `GET /api/public/credit/{account}` returns
-  as `verified`, with who delivered it (`src/server/cre/provenance.ts`):
+  as `verified`, with who delivered it (`src/server/keeper/provenance.ts`):
   `delivery` is `don` only for a report that came through Chainlink's
   KeystoneForwarder (DON-signed; "Verified by Chainlink CRE" in the app),
   `simulation` for the CLI's simulator through Chainlink's
@@ -592,7 +592,7 @@ See [`.env.example`](.env.example) for every variable. The essentials:
 | `POLARIS_PUBLIC_URL` | This server's URL, signed into each merchant's registry metadata. Required in production: registration waits for it |
 | `CRON_SECRET` | For `/api/cron/tick`, and for the list of production problems on `/api/health` |
 | `POLARIS_INDEXER_URL` (+ `POLARIS_INDEXER_TOKEN`) | The Envio indexer's GraphQL endpoint: the Overview's "Indexed by Envio" feed, and the webhook outbox ([Webhooks](#where-events-come-from-the-chain-sync-and-the-envio-indexers-outbox)) |
-| `CRE_UNDERWRITING_TRIGGER_URL`, `POLARIS_CRE_CALLBACK_SECRET` | The CRE underwriting trigger, and the secret its callbacks are signed with |
+| `CRE_UNDERWRITING_TRIGGER_URL`, `POLARIS_KEEPER_CALLBACK_SECRET` | The CRE underwriting trigger, and the secret its callbacks are signed with |
 | `POLARIS_TRUSTED_PROXIES` | How many proxies append to `X-Forwarded-For` in front of this server (per-IP limits; `POLARIS_TRUST_PROXY=1`, the older setting, means 1) |
 
 ## Code map

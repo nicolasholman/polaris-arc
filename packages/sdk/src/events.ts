@@ -3,9 +3,9 @@ import type { Address, CheckoutMode, Hex } from "./types.js";
 /**
  * Webhook events, exactly the nine plan §5.8 lists. Every event is built
  * from an indexed chain event (Envio), never from a client, so "paid" in a
- * webhook means paid on Monad.
+ * webhook means paid on Arc.
  *
- * Amounts are USD decimal strings with 2 to 6 decimals (AUSD's precision):
+ * Amounts are USD decimal strings with 2 to 6 decimals (USDC's precision):
  * "200.00", "1.00005", never base units. `validateWebhookEvent` checks an
  * event against these types at runtime.
  */
@@ -88,7 +88,7 @@ export type InstallmentCollectedData = OnChain & {
   remaining: string;
 };
 
-/** Why a collection was skipped, from the CRE collections workflow. */
+/** Why a collection was skipped, from the Polaris keeper's collections run. */
 export type InstallmentFailureReason = "insufficient_funds" | "allowance_lost" | "other";
 
 export type InstallmentFailedData = {

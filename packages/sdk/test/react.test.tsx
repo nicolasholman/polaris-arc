@@ -264,10 +264,10 @@ describe("PolarisPayButton", () => {
     act(() => stage!("signing"));
     expect(button().textContent).toContain("Confirm in your wallet");
 
-    const paid: PayResult = { ok: true, transactionHash: "0xab", explorerUrl: "https://testnet.monadvision.com/tx/0xab" };
+    const paid: PayResult = { ok: true, transactionHash: "0xab", explorerUrl: "https://explorer.testnet.arc.io/tx/0xab" };
     await act(async () => result.resolve(paid));
     expect(button().textContent).toBe("Paid $25.00");
-    expect(container.querySelector<HTMLAnchorElement>("a")!.href).toBe("https://testnet.monadvision.com/tx/0xab");
+    expect(container.querySelector<HTMLAnchorElement>("a")!.href).toBe("https://explorer.testnet.arc.io/tx/0xab");
     expect(onSuccess).toHaveBeenCalledWith(paid);
   });
 

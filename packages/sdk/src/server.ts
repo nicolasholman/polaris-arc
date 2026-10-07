@@ -37,7 +37,7 @@ export { WEBHOOK_EVENT_TYPES, isWebhookEventType } from "./events.js";
 export type * from "./events.js";
 export { PolarisError, PolarisSignatureVerificationError, isPolarisError } from "./errors.js";
 export type { PolarisErrorType, SignatureFailureReason } from "./errors.js";
-export { MONAD, MONAD_TESTNET } from "./chains.js";
+export { ARC, ARC_TESTNET } from "./chains.js";
 export { VERSION } from "./version.js";
 export { CREDIT_PAUSED_MESSAGE } from "./credit.js";
 export type { CreditGuardReason, CreditGuardStatus } from "./credit.js";

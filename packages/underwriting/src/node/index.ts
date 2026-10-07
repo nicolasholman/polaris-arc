@@ -2,8 +2,9 @@
  * `@polarispay/underwriting`: the pure core plus the Node side (provider
  * clients, the evidence collector, the service and the HTTP handler).
  *
- * For the CRE workflow import `@polarispay/underwriting/core` instead: it has
- * no Node dependency. Test doubles for the provider APIs (fixture files and
+ * The Polaris keeper calls `Underwriter.fromEnv().assess(...)`. For the pure
+ * half alone (Facts, scores, report bytes) import `@polarispay/underwriting/core`:
+ * it has no Node dependency. Test doubles for the provider APIs (fixture files and
  * transports) are in `@polarispay/underwriting/testing`, for tests only.
  */
 
@@ -30,12 +31,15 @@ export { NansenClient } from "./nansen.ts";
 export { ZerionClient } from "./zerion.ts";
 export { EtherscanClient } from "./etherscan.ts";
 export { RpcClient } from "./rpc.ts";
+export { BlockscoutClient } from "./blockscout.ts";
 export { collectAccount, collectLinked, sender, type Providers, type CollectOptions } from "./collect.ts";
 export {
   Underwriter,
   CreditMeter,
   verifyLinkProof,
+  accountChainFromEnv,
   SERVICE_VERSION,
+  type AccountChain,
   type AssessRequest,
   type Assessment,
   type NotConfigured,

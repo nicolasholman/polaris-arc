@@ -1,8 +1,8 @@
 /**
- * POST /api/relay type=withdrawCollateral: take out of Boost with no MON.
+ * POST /api/relay type=withdrawCollateral: take out of Boost with no gas of their own.
  * The borrower signs CollateralVault's EIP-712 Withdraw and the relayer sends
  * CollateralVault.withdrawWithSig, which pays the borrower and nobody else.
- * Where the network's vault predates signed withdrawal (Monad testnet's
+ * Where the network's vault predates signed withdrawal (Arc testnet's
  * today), the relayer says so before anything is signed or sent.
  */
 import { zeroHash, type Address } from "viem";
@@ -66,7 +66,7 @@ describe("POST /api/relay type=withdrawCollateral", () => {
     expect(env.chain.relayed[0]?.args[1]).toBe(USD(300));
   });
 
-  it("on a vault that predates signed withdrawal (Monad testnet's today) says it isn't available, before any gas", async () => {
+  it("on a vault that predates signed withdrawal (Arc testnet's today) says it isn't available, before any gas", async () => {
     delete env.chain.reads.eip712Domain; // the old vault has no eip712Domain(): the call reverts
     const res = await relay(await signWithdraw(USD(50)));
     expect(res.status).toBe(409);

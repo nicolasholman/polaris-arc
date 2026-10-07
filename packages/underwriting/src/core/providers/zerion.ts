@@ -3,9 +3,9 @@
  *
  * Shapes follow Zerion's OpenAPI (docs/research/data.md §3). All GET, HTTP
  * Basic with the key as the username. Paths need the trailing slash: without
- * it Zerion answers 301 and CRE does not follow redirects. `X-Env: testnet`
- * works on positions and transactions only, which is how the buyer's Monad
- * testnet account is read (`monad-test-v2`).
+ * it Zerion answers 301, and the clients do not follow redirects. `X-Env:
+ * testnet` works on positions and transactions only. Zerion reads a linked
+ * history wallet; a Polaris account on Arc is read from Arc's explorer.
  *
  * Zerion is the documented fallback for Nansen (a wallet's age when Nansen has
  * no first funder, or is down) and the primary source for exact balances and

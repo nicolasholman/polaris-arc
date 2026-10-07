@@ -27,7 +27,7 @@ const WALLET_LABEL: Partial<Record<WalletPhase, string>> = {
   connecting: "Connecting your wallet…",
   signing: "Confirm in your wallet…",
   submitting: "Sending, gas-free…",
-  confirming: "Confirming on Monad…",
+  confirming: "Confirming on Arc…",
   waiting: "Waiting for Polaris…",
   paid: "Paid",
   error: "Try again",
@@ -56,7 +56,7 @@ export function CheckoutView({
   const shop = useShop();
   const router = useRouter();
   const { polaris, polarisConfig, setCurrentOrderId } = shop;
-  // The network a wallet payment signs on: Monad testnet, or `pnpm demo:local`'s chain.
+  // The network a wallet payment signs on: Arc testnet, or `pnpm demo:local`'s chain.
   const chain = useMemo(() => chainFor(polarisConfig), [polarisConfig]);
   const chainHex = `0x${chain.chainId.toString(16)}`;
 
@@ -403,7 +403,7 @@ export function CheckoutView({
     toReceipt(orderId, "wallet");
   }, [polaris, valid, revealInvalid, place, router, setCurrentOrderId, moveWallet, walletMessage, toReceipt, chainHex]);
 
-  /** Switch the wallet to Monad Testnet (adding it if the wallet has never seen it), then carry on paying. */
+  /** Switch the wallet to Arc Testnet (adding it if the wallet has never seen it), then carry on paying. */
   const switchNetwork = useCallback(async () => {
     const eth = browserWallet();
     if (!eth) return;
@@ -545,10 +545,10 @@ export function CheckoutView({
                 walletPanel={
                   needsSwitch ? (
                     <div className="mt-5 rounded-xl bg-sand px-4 py-4" role="group" aria-label="Switch network">
-                      <p className="text-[0.94rem] text-ink">Your wallet is on another network. Polaris takes payments on Monad Testnet.</p>
+                      <p className="text-[0.94rem] text-ink">Your wallet is on another network. Polaris takes payments on Arc Testnet.</p>
                       <button type="button" onClick={switchNetwork} disabled={switching} aria-busy={switching || undefined} className="btn btn-line mt-3 bg-paper">
                         {switching ? <Spinner size={16} /> : null}
-                        Switch to Monad Testnet
+                        Switch to Arc Testnet
                       </button>
                       {walletError ? (
                         <p role="alert" className="mt-3 text-[0.9rem] text-alert">

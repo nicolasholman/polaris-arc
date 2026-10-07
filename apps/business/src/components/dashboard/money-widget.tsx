@@ -104,7 +104,7 @@ export type MoneyWidgetProps = {
 };
 
 /**
- * Ref E's trade widget, mapped to Polaris money: WITHDRAW sends your AUSD
+ * Ref E's trade widget, mapped to Polaris money: WITHDRAW sends your USDC
  * balance to an address (the two stacked cards, the swap button, "Withdraw",
  * "Change payout address" and the outlined balance card); REQUEST creates a
  * payment link (amount and description over the ways a buyer can pay).
@@ -160,7 +160,7 @@ export function MoneyWidget({
         {tab === "request" ? <RequestPanel onCreated={onLinkCreated} onSwitch={() => setTab("withdraw")} secondary={requestSecondary} /> : null}
       </div>
 
-      <Dialog open={qr} onOpenChange={setQr} size="sm" title="Your payout wallet" description="Send AUSD on Monad to this address to top up your balance.">
+      <Dialog open={qr} onOpenChange={setQr} size="sm" title="Your payout wallet" description="Send USDC on Arc to this address to top up your balance.">
         <Dialog.Body className="grid justify-items-center gap-5">
           {wallet ? (
             <>
@@ -279,7 +279,7 @@ function WithdrawPanel({ payouts, payments, onSwitch }: { payouts: QueryState<Pa
         top={
           <SwapCard
             coin={<PolarisCoin size={42} />}
-            symbol="AUSD"
+            symbol="USDC"
             caption="You send"
             value={amount}
             onValueChange={(v) => {

@@ -89,7 +89,7 @@ export function buildCreateBody(params: CheckoutSessionCreateParams): CheckoutSe
   }
   const currency = params.currency ?? "USD";
   if (currency !== "USD") {
-    throw invalidRequest("invalid_currency", 'currency must be "USD": every Polaris payment settles in AUSD, a dollar.', "currency");
+    throw invalidRequest("invalid_currency", 'currency must be "USD": every Polaris payment settles in USDC, a dollar.', "currency");
   }
   if (typeof params.description !== "string" || params.description.trim() === "" || params.description.length > 500) {
     throw invalidRequest("invalid_description", "description is required, up to 500 characters.", "description");

@@ -1,20 +1,18 @@
 import type { Address } from "viem";
 
 /**
- * The two texts a buyer signs to be underwritten, byte-for-byte as the CRE
- * underwriting workflow checks them inside the DON:
+ * The two texts a buyer signs to be underwritten, byte-for-byte as the
+ * keeper checks them (services/keeper/src/underwriting.ts):
  *
- * - the account's consent (`underwriteConsentMessage`, in
- *   workflows/src/underwriting/consent.ts, `@polaris/cre-workflows/consent`):
+ * - the account's consent (`underwriteConsentMessage`):
  *   the account itself asks to be underwritten, once, with exactly this
  *   history wallet (or none), on this chain;
  * - the history wallet's link proof (`linkMessage`, in
  *   packages/underwriting/src/core/link.ts): the wallet agrees to count
  *   toward this account.
  *
- * They are copies because neither package is a dependency of this app yet;
- * test/credit.test.ts pins both texts, so a change on either side fails a
- * test here. Once the branches meet, import them instead.
+ * test/credit.test.ts pins both texts, and the keeper's tests pin its copy
+ * of the consent, so a change on either side fails a test.
  *
  * Both are EIP-191 personal messages, good for 15 minutes
  * (ScoreManager.MAX_EVIDENCE_AGE).
@@ -56,7 +54,7 @@ export function linkMessage(p: { account: Address; wallet: Address; issuedAt: nu
   ].join("\n");
 }
 
-/** Null when fresh, else why not (the DON applies the same rule). */
+/** Null when fresh, else why not (the keeper applies the same rule). */
 export function evidenceStaleness(issuedAt: number, nowSeconds: number): string | null {
   if (!Number.isFinite(issuedAt)) return "unreadable issue time";
   if (issuedAt > nowSeconds + 60) return "issued in the future";

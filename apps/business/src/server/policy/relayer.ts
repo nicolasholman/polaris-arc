@@ -13,7 +13,7 @@
  * Every call that moves money carries its owner's own signature (the
  * buyer's ERC-3009 authorisation or EIP-712 intent, the link key's claim,
  * the merchant's registration or transfer), so the relayer can carry money
- * but can't choose where it goes. And it never sends MON: every rule
+ * but can't choose where it goes. And it never sends native USDC: every rule
  * requires a zero value, and a DENY rule refuses any value at all.
  *
  * Two calls are the exception, and are marked `signedBy: "operator"`: the
@@ -49,10 +49,10 @@
  * the setup scripts load it directly with Node's type stripping.
  */
 
-import { decodeFunctionData, getAddress, type Abi, type Address, type Hex } from "viem";
+import { decodeFunctionData, getAddress, parseAbi, type Abi, type Address, type Hex } from "viem";
 import {
   collateralVaultAbi,
-  iausdAbi,
+  iusdcAbi,
   merchantRegistryAbi,
   polarisCheckoutAbi,
   polarisLoanEngineAbi,
@@ -61,7 +61,22 @@ import {
   polarisSplitAbi,
 } from "@polarispay/contracts/abi";
 
-export type RelayerContract = "checkout" | "payments" | "send" | "split" | "loanEngine" | "registry" | "stablecoin" | "vault";
+export type RelayerContract =
+  | "checkout"
+  | "payments"
+  | "send"
+  | "sendEurc"
+  | "split"
+  | "loanEngine"
+  | "registry"
+  | "stablecoin"
+  | "vault"
+  | "messageTransmitter"
+  | "memo";
+
+/** Circle's contracts on Arc the relayer may call: CCTP V2's MessageTransmitterV2, and Arc's Memo. */
+const MESSAGE_TRANSMITTER_ABI = parseAbi(["function receiveMessage(bytes message, bytes attestation) returns (bool)"]);
+const MEMO_ABI = parseAbi(["function memo(address target, bytes data, bytes32 memoId, bytes memoData)"]);
 
 export type AllowedCall = {
   contract: RelayerContract;
@@ -77,11 +92,11 @@ export type AllowedCall = {
    */
   signedBy: "owner" | "operator";
   /**
-   * The argument holding the amount of AUSD the call moves, when it may not
+   * The argument holding the amount of USDC the call moves, when it may not
    * be below the relayer's minimum (`RELAYER_MIN_TRANSFER_UNITS`). The two
    * calls a stranger can make with nothing but their own fresh key (a
    * transfer, a send by link) would otherwise let anyone spend the
-   * relayer's MON moving 0 AUSD between throwaway keys.
+   * relayer's gas (USDC) moving 0 USDC between throwaway keys.
    */
   minAmountArg?: string;
 };
@@ -90,7 +105,7 @@ export const RELAYER_CALLS: readonly AllowedCall[] = [
   { contract: "checkout", functionName: "pay", rule: "Pay now: PolarisCheckout.pay", why: "Buyer's ERC-3009 ReceiveWithAuthorization, nonce = order key", signedBy: "owner" },
   { contract: "checkout", functionName: "openPlan", rule: "Pay in 4: PolarisCheckout.openPlan", why: "Buyer's PlanIntent + ERC-2612 permit", signedBy: "owner" },
   { contract: "checkout", functionName: "subscribe", rule: "Subscribe: PolarisCheckout.subscribe", why: "Buyer's SubscribeIntent + ERC-2612 permit", signedBy: "owner" },
-  { contract: "checkout", functionName: "reauthorize", rule: "Re-sign: PolarisCheckout.reauthorize", why: "Buyer's ERC-2612 permit to the loan engine, restoring a lost allowance (the CRE retry collects on its event)", signedBy: "owner" },
+  { contract: "checkout", functionName: "reauthorize", rule: "Re-sign: PolarisCheckout.reauthorize", why: "Buyer's ERC-2612 permit to the loan engine, restoring a lost allowance (the keeper's retry collects on its event)", signedBy: "owner" },
   { contract: "payments", functionName: "payWithAuthorization", rule: "Direct pay: PolarisPayments.payWithAuthorization", why: "polarispay-sdk pay(): buyer's ERC-3009 authorisation", signedBy: "owner" },
   { contract: "payments", functionName: "cancelWithSignature", rule: "Cancel subscription: cancelWithSignature", why: "Subscriber's CancelSubscription signature", signedBy: "owner" },
   { contract: "payments", functionName: "createPlanFor", rule: "Publish plan: PolarisPayments.createPlanFor", why: "Operator: a merchant's subscription terms from a checkout session (moves nothing)", signedBy: "operator" },
@@ -98,6 +113,9 @@ export const RELAYER_CALLS: readonly AllowedCall[] = [
   { contract: "send", functionName: "send", rule: "Send by link: PolarisSend.send", why: "Sender's ERC-3009 authorisation + the link key's Open", signedBy: "owner", minAmountArg: "amount" },
   { contract: "send", functionName: "claim", rule: "Claim a link: PolarisSend.claim", why: "The link key's Claim naming the recipient", signedBy: "owner" },
   { contract: "send", functionName: "cancel", rule: "Cancel a link: PolarisSend.cancel", why: "Sender's Cancel signature", signedBy: "owner" },
+  { contract: "sendEurc", functionName: "send", rule: "Send euros by link: PolarisSend(EURC).send", why: "Sender's EURC ERC-3009 authorisation + the link key's Open", signedBy: "owner", minAmountArg: "amount" },
+  { contract: "sendEurc", functionName: "claim", rule: "Claim euros: PolarisSend(EURC).claim", why: "The link key's Claim naming the recipient", signedBy: "owner" },
+  { contract: "sendEurc", functionName: "cancel", rule: "Cancel euros: PolarisSend(EURC).cancel", why: "Sender's Cancel signature", signedBy: "owner" },
   { contract: "split", functionName: "createSplit", rule: "Split a bill: PolarisSplit.createSplit", why: "Organiser's CreateSplit signature (the shares, the link's words, the expiry)", signedBy: "owner" },
   { contract: "split", functionName: "payShare", rule: "Pay a share: PolarisSplit.payShare", why: "Friend's ERC-3009 authorisation for exactly their share, nonce = split and share", signedBy: "owner" },
   { contract: "split", functionName: "closeSplit", rule: "Close a split: PolarisSplit.closeSplit", why: "Organiser's CloseSplit signature (unpaid shares can no longer be paid)", signedBy: "owner" },
@@ -106,7 +124,7 @@ export const RELAYER_CALLS: readonly AllowedCall[] = [
     contract: "vault",
     functionName: "lockWithPermit",
     rule: "Secure a line: CollateralVault.lockWithPermit",
-    why: "Borrower's ERC-2612 permit to the vault, locked into their own position (a secured Pay in 4 line with no MON)",
+    why: "Borrower's ERC-2612 permit to the vault, locked into their own position (a secured Pay in 4 line with no gas of their own)",
     signedBy: "owner",
     minAmountArg: "amount",
   },
@@ -120,31 +138,54 @@ export const RELAYER_CALLS: readonly AllowedCall[] = [
   },
   { contract: "registry", functionName: "registerFor", rule: "Onboard: MerchantRegistry.registerFor", why: "Merchant's Registration signature (Privy embedded wallet)", signedBy: "owner" },
   { contract: "registry", functionName: "updatePayoutAddressWithSig", rule: "Payout address: updatePayoutAddressWithSig", why: "Merchant's PayoutUpdate signature", signedBy: "owner" },
-  { contract: "stablecoin", functionName: "transferWithAuthorization", rule: "Payouts: AUSD transferWithAuthorization", why: "Owner's ERC-3009 TransferWithAuthorization (withdrawals, payouts, sends to a user)", signedBy: "owner", minAmountArg: "value" },
+  { contract: "stablecoin", functionName: "transferWithAuthorization", rule: "Payouts: USDC transferWithAuthorization", why: "Owner's ERC-3009 TransferWithAuthorization (withdrawals, payouts, sends to a user)", signedBy: "owner", minAmountArg: "value" },
+  {
+    contract: "messageTransmitter",
+    functionName: "receiveMessage",
+    rule: "Arrive on Arc: CCTP receiveMessage",
+    why: "Finish a buyer's CCTP V2 transfer into Arc: Circle's attestation of a burn on another chain mints USDC to the recipient it names (never the caller)",
+    signedBy: "owner",
+  },
+  {
+    contract: "memo",
+    functionName: "memo",
+    rule: "Order reference: Arc Memo around checkout",
+    why: "Arc's Memo contract around a PolarisCheckout call (pay, openPlan, subscribe), so the payment carries the order reference on chain; the inner call is checked on its own first",
+    signedBy: "owner",
+  },
 ];
 
 export const CONTRACT_ABIS: Record<RelayerContract, Abi> = {
   checkout: polarisCheckoutAbi as unknown as Abi,
   payments: polarisPaymentsAbi as unknown as Abi,
   send: polarisSendAbi as unknown as Abi,
+  sendEurc: polarisSendAbi as unknown as Abi,
   split: polarisSplitAbi as unknown as Abi,
   loanEngine: polarisLoanEngineAbi as unknown as Abi,
   registry: merchantRegistryAbi as unknown as Abi,
-  stablecoin: iausdAbi as unknown as Abi,
+  stablecoin: iusdcAbi as unknown as Abi,
   vault: collateralVaultAbi as unknown as Abi,
+  messageTransmitter: MESSAGE_TRANSMITTER_ABI as unknown as Abi,
+  memo: MEMO_ABI as unknown as Abi,
 };
 
 /**
  * Where each contract the relayer calls lives. Two are optional, and a
  * deployment without one has no rule for it, so nothing may call it:
- * PolarisSplit (Monad testnet's deployment of 28 Sep 2026 predates it) and
+ * PolarisSplit (Arc testnet's deployment of 28 Sep 2026 predates it) and
  * the vault (one that predates `lockWithPermit` has no gasless collateral).
- * A vault that predates `withdrawWithSig` (Monad testnet's today) still gets
+ * A vault that predates `withdrawWithSig` (Arc testnet's today) still gets
  * that rule: no call to it can succeed there (the function doesn't exist, so
  * the simulation reverts before anything is signed), and the relay refuses
  * it first anyway (relay.ts `withdrawCollateral`, server/vault.ts).
  */
-export type RelayerAddresses = Record<Exclude<RelayerContract, "split" | "vault">, Address> & { split?: Address | null; vault?: Address | null };
+export type RelayerAddresses = Record<Exclude<RelayerContract, "split" | "vault" | "sendEurc" | "messageTransmitter" | "memo">, Address> & {
+  split?: Address | null;
+  vault?: Address | null;
+  sendEurc?: Address | null;
+  messageTransmitter?: Address | null;
+  memo?: Address | null;
+};
 
 /** The contracts a deployment actually has, with their addresses. */
 export function deployedContracts(addresses: RelayerAddresses): Array<[RelayerContract, Address]> {
@@ -182,7 +223,7 @@ function argNamed(abi: Abi, functionName: string, args: readonly unknown[], name
 
 /**
  * Refuse any transaction the relayer policy wouldn't allow: another chain,
- * any MON, a contract off the list, a function off the list, or (when
+ * any native USDC, a contract off the list, a function off the list, or (when
  * `minAmountUnits` is given) an amount below the relayer's minimum on the
  * calls that carry one.
  */
@@ -194,7 +235,7 @@ export function checkRelayerCall(
     throw new PolicyViolation("chain_id", `The relayer signs only on chain ${expected.chainId}, not ${tx.chainId}.`);
   }
   if (tx.value !== undefined && tx.value !== 0n) {
-    throw new PolicyViolation("Never send MON", "The relayer never sends MON.");
+    throw new PolicyViolation("Never send native USDC", "The relayer never sends native USDC.");
   }
   if (!tx.to) throw new PolicyViolation("to", "The relayer never deploys contracts.");
   const to = getAddress(tx.to);
@@ -207,6 +248,12 @@ export function checkRelayerCall(
     decoded = decodeFunctionData({ abi: CONTRACT_ABIS[contract], data: tx.data }) as { functionName: string; args?: readonly unknown[] };
   } catch {
     throw new PolicyViolation("function_name", `That isn't a function of ${contract}.`);
+  }
+  if (contract === "memo") {
+    const target = (decoded.args ?? [])[0];
+    if (typeof target !== "string" || getAddress(target) !== getAddress(expected.addresses.checkout)) {
+      throw new PolicyViolation("memo.target", "The relayer wraps only PolarisCheckout calls in a memo.");
+    }
   }
   const allowed = RELAYER_CALLS.find((c) => c.contract === contract && c.functionName === decoded.functionName);
   if (!allowed) {
@@ -241,16 +288,16 @@ export function functionFragments(abi: Abi, name: string): Abi {
 /**
  * The relayer's Privy policy (docs/research/privy.md §5.5).
  *
- * - `eth_signTransaction`: Privy signs, we broadcast to our own Monad RPC
- *   with the gas limit set from estimateGas + 15% (Monad bills the limit).
- * - One DENY rule refuses any transaction carrying MON. The Node SDK's viem
+ * - `eth_signTransaction`: Privy signs, we broadcast to our own Arc RPC
+ *   with the gas limit set from estimateGas + 15% (a call that needs more fails).
+ * - One DENY rule refuses any transaction carrying native value. The Node SDK's viem
  *   adapter omits a zero `value`, so "value = 0" can't be an ALLOW condition.
  * - One ALLOW rule per call whose contract the deployment has: this chain,
  *   this contract, this function, and
- *   for the calls that move an amount a stranger chooses (an AUSD transfer,
+ *   for the calls that move an amount a stranger chooses (an USDC transfer,
  *   a send by link) that amount at least `minAmountUnits`, so a compromised
- *   server can't be used to burn the relayer's MON on zero-value calls.
- * - Everything else (other contracts, `approve`, raw MON transfers,
+ *   server can't be used to burn the relayer's gas (USDC) on zero-value calls.
+ * - Everything else (other contracts, `approve`, raw native transfers,
  *   `personal_sign`, typed data, key export) matches no rule and is denied.
  *
  * Privy's transaction conditions can't see the gas limit or the fee, so
@@ -261,7 +308,7 @@ export function buildRelayerPolicy(input: { chainId: number; addresses: RelayerA
   const onChain: Condition = { field_source: "ethereum_transaction", field: "chain_id", operator: "eq", value: String(input.chainId) };
   const rules: PrivyRule[] = [
     {
-      name: "Never send MON",
+      name: "Never send native USDC",
       method: "eth_signTransaction",
       action: "DENY",
       conditions: [{ field_source: "ethereum_transaction", field: "value", operator: "gt", value: "0" }],
@@ -274,6 +321,10 @@ export function buildRelayerPolicy(input: { chainId: number; addresses: RelayerA
       onChain,
       { field_source: "ethereum_calldata", field: "function_name", abi, operator: "eq", value: call.functionName },
     ];
+    if (call.contract === "memo") {
+      // Only checkout calls go through Memo: its target must be PolarisCheckout.
+      conditions.push({ field_source: "ethereum_calldata", field: "memo.target", abi, operator: "in", value: bothCases(input.addresses.checkout) });
+    }
     if (call.minAmountArg && input.minAmountUnits !== undefined) {
       conditions.push({
         field_source: "ethereum_calldata",
@@ -307,7 +358,7 @@ export function buildRegistryAdminPolicy(input: { chainId: number; registry: Add
     chain_type: "ethereum",
     rules: [
       {
-        name: "Never send MON",
+        name: "Never send native USDC",
         method: "eth_signTransaction",
         action: "DENY",
         conditions: [{ field_source: "ethereum_transaction", field: "value", operator: "gt", value: "0" }],

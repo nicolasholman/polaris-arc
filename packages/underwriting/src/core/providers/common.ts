@@ -4,7 +4,7 @@
  */
 
 export interface RequestSpec {
-  provider: "nansen" | "zerion" | "etherscan" | "rpc";
+  provider: "nansen" | "zerion" | "etherscan" | "rpc" | "blockscout";
   /** Short endpoint name, used in evidence sources: `nansen.first-funder`. */
   endpoint: string;
   method: "GET" | "POST";
@@ -12,7 +12,7 @@ export interface RequestSpec {
   url: string;
   /** Non-secret headers. The caller adds auth. */
   headers: Record<string, string>;
-  /** The exact JSON text to send. Byte-identical on every node, so CRE's cache can share it. */
+  /** The exact JSON text to send. Byte-stable, so the response cache can key on it. */
   body?: string;
 }
 
@@ -115,7 +115,7 @@ export function floatToMicros(x: number): number {
 /**
  * Binary search for the largest edge where `hit(edge)` holds, given that a
  * hit at N implies a hit at every smaller edge. Returns null when none hits.
- * Synchronous, for CRE's `.result()` style; see `largestHitAsync`.
+ * Synchronous; see `largestHitAsync`.
  */
 export function largestHit(edges: readonly number[], hit: (edge: number) => boolean): number | null {
   let lo = 0;

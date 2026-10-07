@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Create the Polaris relayer in your Privy app: a policy-locked server wallet
-// that carries every buyer action to Monad (docs/research/privy.md §5.5, §7).
+// that carries every buyer action to Arc (docs/research/privy.md §5.5, §7).
 //
 //   pnpm --filter @polaris/business privy:setup-relayer            # dry run: prints the plan and the policy, calls nothing
 //   pnpm --filter @polaris/business privy:setup-relayer -- --apply # creates it in your Privy app
@@ -15,7 +15,7 @@
 //      never to the terminal, where scrollback and CI logs would keep it: move
 //      it offline (a password manager) and delete the file.
 //   2. a `relayer` key quorum: the key the server signs Privy requests with.
-//   3. the relayer policy (src/server/policy/relayer.ts): DENY any MON, and
+//   3. the relayer policy (src/server/policy/relayer.ts): DENY any native USDC, and
 //      one ALLOW per call the relayer carries, on this chain, to our
 //      contracts, for one function each. Everything else is denied by default.
 //   4. the relayer wallet, owned by `admin`, with the policy attached and the
@@ -25,7 +25,7 @@
 //
 // It writes the server's side (wallet ids, addresses, the relayer and registry
 // keys) to apps/business/.env.privy (git-ignored), and prints the next steps:
-// fund the relayer with testnet MON and grant it its contract roles.
+// fund the relayer with testnet USDC (gas) and grant it its contract roles.
 
 import { banner, flag, loadDeployment, loadEnv, mask, privyClient, writeAdminKey, writeEnvPrivy } from "./lib.mjs";
 import { buildRegistryAdminPolicy, buildRelayerPolicy, callsFor, lintPolicy } from "../../src/server/policy/relayer.ts";
@@ -36,7 +36,7 @@ const env = loadEnv();
 const deployment = loadDeployment(env);
 const capUnits = BigInt(env.MERCHANT_ACTIVATION_CAP_USD ?? "1000") * 1_000_000n;
 
-// The smallest AUSD transfer or send by link the relayer signs (the server applies the same floor).
+// The smallest USDC transfer or send by link the relayer signs (the server applies the same floor).
 const minAmountUnits = BigInt(env.RELAYER_MIN_TRANSFER_UNITS ?? "100000");
 const relayerPolicy = buildRelayerPolicy({ chainId: deployment.chainId, addresses: deployment.addresses, minAmountUnits });
 const registryPolicy = buildRegistryAdminPolicy({ chainId: deployment.chainId, registry: deployment.addresses.registry, capUnits });
@@ -52,7 +52,7 @@ console.log("The relayer may sign exactly these calls (eth_signTransaction, valu
 for (const c of callsFor(deployment.addresses)) console.log(`  ALLOW  ${c.contract.padEnd(10)} ${c.functionName.padEnd(28)} ${c.why}`);
 console.log(`  (transferWithAuthorization and PolarisSend.send only for ${minAmountUnits} base units or more)`);
 if (!deployment.addresses.split) console.log("  (no PolarisSplit in this deployment: its three calls are left out until deploy-split)");
-console.log("  DENY   any transaction that carries MON");
+console.log("  DENY   any transaction that carries USDC (gas)");
 console.log("  DENY   everything else (no rule matches → Privy denies)");
 
 if (!apply) {
@@ -131,7 +131,7 @@ if (adminKeyFile) {
   console.log("move it offline (a password manager), then delete the file.\n");
 }
 console.log("Next:");
-console.log(`  1. Send the relayer testnet MON for gas: ${relayer.wallet.address} (about 1 MON covers ~300 relayed payments).`);
+console.log(`  1. Send the relayer testnet USDC (gas) for gas: ${relayer.wallet.address} (about 1 USDC (gas) covers ~300 relayed payments).`);
 console.log(`  2. Give it its contract roles (PolarisPayments and MerchantRegistry operator, BatchSettlement settler):`);
 console.log(`       RELAYER_ADDRESS=${relayer.wallet.address} pnpm --filter @polarispay/contracts grant-relayer:monad`);
 if (withRegistry) {

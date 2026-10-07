@@ -5,7 +5,7 @@ import { getAddress, recoverTypedDataAddress, type Address, type Hex } from "vie
 
 import { money } from "@/lib/data/format";
 
-import { iausdAbi } from "../chain/abis";
+import { iusdcAbi } from "../chain/abis";
 import { publicClient, requireChain } from "../chain/client";
 import { centsToUnits, unitsToCents } from "../chain/money";
 import { getDb } from "../db";
@@ -20,14 +20,14 @@ import { TYPES } from "../relayer/typed-data";
 /**
  * Money out: the "easy withdraw" (plan §5.7).
  *
- * 1. One tap: the merchant's Privy embedded wallet signs an AUSD
+ * 1. One tap: the merchant's Privy embedded wallet signs an USDC
  *    `TransferWithAuthorization` to any address; the relayer submits it.
  * 2. Automatic daily payouts: our payout signer (a Privy key quorum, added
  *    to the merchant's wallet by the merchant with a policy that allows only
- *    AUSD transfers to their chosen payout address) signs the same
+ *    USDC transfers to their chosen payout address) signs the same
  *    authorisation from the server once a day, and the relayer submits it.
  *
- * Either way the merchant never holds MON, and `payout.paid` fires from the
+ * Either way the merchant never needs gas, and `payout.paid` fires from the
  * transfer's receipt.
  */
 
@@ -40,7 +40,7 @@ function stablecoinDomain(chain: ChainConfig) {
 
 export async function walletBalanceUnits(wallet: Address): Promise<bigint> {
   const chain = requireChain();
-  return (await publicClient().readContract({ address: chain.contracts.stablecoin, abi: iausdAbi, functionName: "balanceOf", args: [wallet] })) as bigint;
+  return (await publicClient().readContract({ address: chain.contracts.stablecoin, abi: iusdcAbi, functionName: "balanceOf", args: [wallet] })) as bigint;
 }
 
 async function recordAndRelay(input: {

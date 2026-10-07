@@ -97,7 +97,7 @@ export interface DecideInput {
    */
   pending?: "ownership" | "checks" | "unavailable" | null;
   /**
-   * The facts are too thin for the DON to attest (attest.ts): nothing is
+   * The facts are too thin for the keeper to report (attest.ts): nothing is
    * reported, so the account stays secured-only, as ScoreManager treats a
    * wallet not yet underwritten. Empty or null when they clear the floor.
    */

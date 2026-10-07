@@ -1,4 +1,4 @@
-// The core runs inside the Chainlink CRE workflow (WASM). No node or dom types
+// The core is pure, so it runs anywhere (the keeper, the business app, a browser). No node or dom types
 // here, so Buffer, process, fetch, setTimeout, TextEncoder or Intl anywhere in
 // src/core fails this check.
 {

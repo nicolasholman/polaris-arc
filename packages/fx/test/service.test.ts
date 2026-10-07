@@ -94,13 +94,13 @@ describe("reading recorded Chainlink answers", () => {
     });
   });
 
-  it("inverts EUR / USD from Monad mainnet, 18 decimals", async () => {
+  it("inverts EUR / USD from Polygon, 8 decimals", async () => {
     const result = await service().lookup("eur");
     expect(result.status).toBe("ok");
     if (result.status !== "ok") return;
-    expect(result.rate.perUsd).toBeCloseTo(1 / 1.138005, 9);
-    expect(result.rate.source).toMatchObject({ chain: "monad", chainId: 143, pair: "EUR / USD", decimals: 18 });
-    expect(result.rate.updatedAt).toBe(1_790_548_596);
+    expect(result.rate.perUsd).toBeCloseTo(1 / 1.13801, 9);
+    expect(result.rate.source).toMatchObject({ chain: "polygon", chainId: 137, pair: "EUR / USD", decimals: 8 });
+    expect(result.rate.updatedAt).toBe(1_790_548_605);
   });
 
   it("reads PHP from Polygon (8 decimals) first", async () => {
@@ -197,48 +197,48 @@ describe("the 26-hour limit", () => {
 
 describe("each feed's own heartbeat", () => {
   const EUR = FX_FEEDS.find((f) => f.currency === "EUR")!;
-  const [monad, polygon] = EUR.sources;
+  const [polygon, ethereum] = EUR.sources;
   const nowS = Math.floor(fixture.recordedAtMs / 1000);
   const at = () => nowS * 1000;
-  /** Monad's and Polygon's EUR / USD rounds, as the test sets them. */
-  const eur = (monadAgo: number, polygonAgo: number) =>
+  /** Polygon's and Ethereum's EUR / USD rounds, as the test sets them. */
+  const eur = (polygonAgo: number, ethereumAgo: number) =>
     service({
       at,
       edit: (chain, method, to, data) => {
         if (method !== "eth_call" || data !== LATEST_ROUND) return undefined;
-        if (chain === "monad" && to?.toLowerCase() === monad!.address.toLowerCase()) return roundAnswer(1_170_000_000_000_000_000n, BigInt(nowS - monadAgo));
-        // Polygon's rate is 5% off Monad's, so the test can tell which one was served.
-        if (chain === "polygon" && to?.toLowerCase() === polygon!.address.toLowerCase()) return roundAnswer(122_850_000n, BigInt(nowS - polygonAgo));
+        if (chain === "polygon" && to?.toLowerCase() === polygon!.address.toLowerCase()) return roundAnswer(117_000_000n, BigInt(nowS - polygonAgo));
+        // Ethereum's rate is 5% off Polygon's, so the test can tell which one was served.
+        if (chain === "ethereum" && to?.toLowerCase() === ethereum!.address.toLowerCase()) return roundAnswer(122_850_000n, BigInt(nowS - ethereumAgo));
         return undefined;
       },
     });
 
   it("gives each source twice its heartbeat, or its heartbeat plus 10 min, never past 26 h", () => {
-    expect(monad).toMatchObject({ chain: "monad", heartbeatSeconds: 240 });
-    expect(sourceMaxAgeSeconds(monad!)).toBe(240 + 600);
+    expect(polygon).toMatchObject({ chain: "polygon", heartbeatSeconds: 27 });
     expect(sourceMaxAgeSeconds(polygon!)).toBe(27 + 600);
-    expect(sourceMaxAgeSeconds({ heartbeatSeconds: 86_400 })).toBe(FX_MAX_AGE_SECONDS);
+    expect(sourceMaxAgeSeconds(ethereum!)).toBe(FX_MAX_AGE_SECONDS);
+    expect(sourceMaxAgeSeconds({ heartbeatSeconds: 240 })).toBe(240 + 600);
     expect(sourceMaxAgeSeconds({ heartbeatSeconds: 3_600 })).toBe(7_200);
     expect(sourceMaxAgeSeconds({ heartbeatSeconds: 3_600 }, 1_800)).toBe(1_800);
   });
 
-  // Security review (fx-staleness): a stopped 240 s Monad feed was served as
-  // "ok" for up to 26 h, and the fresher Polygon fallback was never read.
-  it("a Monad feed 25 h old is stale: the fresh Polygon fallback is read and served", async () => {
-    const s = eur(25 * 3600, 10);
+  // Security review (fx-staleness): a stopped fast feed must not be served as
+  // "ok" for up to 26 h while a fresher fallback goes unread.
+  it("a 27 s Polygon feed an hour old is stale: the Ethereum fallback is read and served", async () => {
+    const s = eur(3600, 10);
     const result = await s.lookup("EUR");
     expect(result.status).toBe("ok");
     if (result.status !== "ok") return;
-    expect(result.rate.source.chain).toBe("polygon");
+    expect(result.rate.source.chain).toBe("ethereum");
     expect(result.rate.perUsd).toBeCloseTo(1 / 1.2285, 10);
-    expect(result.rate.maxAgeSeconds).toBe(627);
-    expect(s.errors.map((e) => [e.source.chain, String(e.error)])).toEqual([["monad", expect.stringContaining("stale")]]);
+    expect(result.rate.maxAgeSeconds).toBe(FX_MAX_AGE_SECONDS);
+    expect(s.errors.map((e) => [e.source.chain, String(e.error)])).toEqual([["polygon", expect.stringContaining("stale")]]);
   });
 
-  it("a Monad feed a few minutes late is still Monad's; both stopped is stale", async () => {
-    const late = await eur(10 * 60, 10).lookup("EUR");
-    expect(late.status === "ok" && late.rate.source.chain).toBe("monad");
-    expect(await eur(20 * 60, 20 * 60).lookup("EUR")).toEqual({ currency: "EUR", status: "stale", rate: null });
+  it("a Polygon feed a few minutes late is still Polygon's; both stopped is stale", async () => {
+    const late = await eur(5 * 60, 10).lookup("EUR");
+    expect(late.status === "ok" && late.rate.source.chain).toBe("polygon");
+    expect(await eur(20 * 60, 27 * 3600).lookup("EUR")).toEqual({ currency: "EUR", status: "stale", rate: null });
   });
 
   it("stops serving a cached rate once it ages past its own source's limit", async () => {
@@ -246,15 +246,15 @@ describe("each feed's own heartbeat", () => {
     const s = createFxService({
       transport: replay({
         edit: (chain, method, to, data) =>
-          chain === "monad" && method === "eth_call" && data === LATEST_ROUND && to?.toLowerCase() === monad!.address.toLowerCase()
-            ? roundAnswer(1_170_000_000_000_000_000n, BigInt(nowS - 60))
+          chain === "polygon" && method === "eth_call" && data === LATEST_ROUND && to?.toLowerCase() === polygon!.address.toLowerCase()
+            ? roundAnswer(117_000_000n, BigInt(nowS - 60))
             : undefined,
       }),
       now: () => now,
       cacheMs: 48 * 3600 * 1000,
     });
     expect((await s.lookup("EUR")).status).toBe("ok");
-    now = (nowS + 900) * 1000; // 16 min after its update: past Monad's 14 min
+    now = (nowS + 900) * 1000; // 16 min after its update: past Polygon's 10.5 min
     expect((await s.lookup("EUR")).status).toBe("stale");
   });
 });
@@ -334,7 +334,7 @@ describe("configuration", () => {
     await s.lookup("ARS");
     await s.lookup("EUR");
     expect(seen.get("ethereum")).toEqual(["https://eth.example/a", "https://eth.example/b"]);
-    expect(seen.get("monad")).toEqual(["https://rpc.monad.xyz", "https://rpc1.monad.xyz"]);
+    expect(seen.get("polygon")).toEqual(["https://polygon-bor-rpc.publicnode.com", "https://1rpc.io/matic"]);
   });
 });
 
@@ -342,6 +342,7 @@ describe("perUsdFromAnswer", () => {
   it("normalises decimals and the direction of the pair", () => {
     expect(perUsdFromAnswer(161240650000n, 8, "USD / ARS")).toBeCloseTo(1612.4065, 9);
     expect(perUsdFromAnswer(1138005000000000000n, 18, "EUR / USD")).toBeCloseTo(0.8787307613, 9);
+    expect(perUsdFromAnswer(113800000n, 8, "EUR / USD")).toBeCloseTo(1 / 1.138, 9);
     expect(perUsdFromAnswer(5580n, 8, "IDR / USD")).toBeCloseTo(17921.146953, 5);
   });
 

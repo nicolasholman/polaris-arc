@@ -23,13 +23,13 @@ describe("the underwriting API", () => {
     assert.equal(res.status, 200);
     const body = JSON.parse(res.body);
     assert.equal(body.ok, true);
-    assert.deepEqual(body.modes, { nansen: "live", zerion: "live", etherscan: "live", rpc: "live" });
+    assert.deepEqual(body.modes, { nansen: "live", zerion: "live", etherscan: "live", rpc: "live", blockscout: "live" });
     assert.deepEqual(body.notConfigured, []);
     assert.deepEqual(body.version, { facts: 1, model: 3 });
 
     const partial = new Underwriter({ providers: fixtureProviders(undefined, { notConfigured: ["nansen", "zerion"] }), now: () => NOW });
     const h = JSON.parse((await createRouter(partial)(req({ method: "GET", url: "/health" }))).body);
-    assert.deepEqual(h.modes, { nansen: "not_configured", zerion: "not_configured", etherscan: "live", rpc: "live" });
+    assert.deepEqual(h.modes, { nansen: "not_configured", zerion: "not_configured", etherscan: "live", rpc: "live", blockscout: "live" });
     assert.deepEqual(h.notConfigured, [
       { provider: "nansen", env: "NANSEN_API_KEY" },
       { provider: "zerion", env: "ZERION_API_KEY" },
@@ -42,7 +42,7 @@ describe("the underwriting API", () => {
     const body = JSON.parse(res.body);
     assert.equal(body.final, true);
     assert.equal(body.attest, true);
-    assert.deepEqual(body.providers, { nansen: "live", zerion: "live", etherscan: "live", rpc: "live" });
+    assert.deepEqual(body.providers, { nansen: "live", zerion: "live", etherscan: "live", rpc: "live", blockscout: "live" });
     assert.deepEqual(body.notConfigured, []);
     assert.equal(body.decision.limit, "200000000");
     assert.equal(body.decision.thinFile, null);
@@ -55,7 +55,7 @@ describe("the underwriting API", () => {
     assert.ok(body.attribution.walletAgeDays);
   });
 
-  it("a thin file is final with no report: the app shows what is left and does not trigger the DON", async () => {
+  it("a thin file is final with no report: the app shows what is left and the keeper sends nothing", async () => {
     const res = await createRouter(uw())(req({ json: { account: ACCOUNT.fresh, purchase: "150.00" } }));
     const body = JSON.parse(res.body);
     assert.equal(body.final, true);
@@ -66,7 +66,7 @@ describe("the underwriting API", () => {
     assert.equal(body.decision.payIn4.allowed, false);
     assert.deepEqual(body.decision.thinFile, [
       { fact: "walletAgeDays", have: 3, need: 90 },
-      { fact: "txCount", have: 2, need: 10 },
+      { fact: "txCount", have: 1, need: 10 },
     ]);
   });
 
@@ -195,7 +195,7 @@ describe("the node:http server", () => {
     const res = await fetch(`${url}/v1/underwrite`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ account: ACCOUNT.regular }) });
     assert.equal(res.status, 200);
     const body = (await res.json()) as { facts: { walletAgeDays: number } };
-    assert.equal(body.facts.walletAgeDays, 90);
+    assert.equal(body.facts.walletAgeDays, 130);
     const big = await fetch(`${url}/v1/underwrite`, { method: "POST", headers: { "content-type": "application/json" }, body: "x".repeat(40_000) });
     assert.equal(big.status, 413);
   });

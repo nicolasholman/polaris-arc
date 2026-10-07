@@ -72,7 +72,7 @@ export function Payouts() {
             {tab === "once" ? (
               <>
                 <SwapStack
-                  top={<SwapCard coin={<PolarisCoin size={42} />} symbol="AUSD" caption="You send" amount="1,250.00" metaLabel="Balance" meta={(balance / 100).toLocaleString("en-US", { minimumFractionDigits: 2 })} />}
+                  top={<SwapCard coin={<PolarisCoin size={42} />} symbol="USDC" caption="You send" amount="1,250.00" metaLabel="Balance" meta={(balance / 100).toLocaleString("en-US", { minimumFractionDigits: 2 })} />}
                   bottom={<SwapCard coin={<DollarCoin size={42} />} symbol="USD" caption="Arrives" amount="1,250.00" metaLabel="To" meta="0x7a3f…91c2" />}
                 />
                 <div aria-live="polite" className="mt-1">

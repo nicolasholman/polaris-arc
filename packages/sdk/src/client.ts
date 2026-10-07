@@ -1,4 +1,4 @@
-import { MONAD, MONAD_TESTNET, SEPOLIA, assertDeployed, resolveChain, type PolarisChain, type PolarisContracts } from "./chains.js";
+import { ARC, ARC_TESTNET, SEPOLIA, assertDeployed, resolveChain, type PolarisChain, type PolarisContracts } from "./chains.js";
 import {
   createCheckoutLauncher,
   defaultCheckoutOrigin,
@@ -26,9 +26,9 @@ import type { Address, Eip1193Provider, Hex } from "./types.js";
  */
 
 export type PolarisOptions = {
-  /** Your publishable key (pk_test_… or pk_live_…). Test keys default to Monad testnet, live keys to Monad. */
+  /** Your publishable key (pk_test_… or pk_live_…). Test keys default to Arc testnet, live keys to Arc. */
   publishableKey?: string;
-  /** Chain preset: MONAD_TESTNET, MONAD, or your own. Overrides the key's default. */
+  /** Chain preset: ARC_TESTNET, ARC, or your own. Overrides the key's default. */
   chain?: PolarisChain | PolarisContracts;
   /** 0.2 name for `chain`. */
   contracts?: PolarisChain | PolarisContracts;
@@ -115,7 +115,7 @@ let warnedSepolia = false;
 function pickChain(options: PolarisOptions, livemode: boolean): { chain: PolarisChain; legacyDefault: boolean } {
   const explicit = options.chain ?? options.contracts;
   if (explicit) return { chain: resolveChain(explicit), legacyDefault: false };
-  if (options.publishableKey) return { chain: livemode ? MONAD : MONAD_TESTNET, legacyDefault: false };
+  if (options.publishableKey) return { chain: livemode ? ARC : ARC_TESTNET, legacyDefault: false };
   // 0.2 compatibility: no key and no chain meant the Sepolia deployment.
   return { chain: SEPOLIA, legacyDefault: true };
 }
@@ -126,7 +126,7 @@ function warnLegacyDefault(): void {
   warnedSepolia = true;
   console.warn(
     "polarispay-sdk: createPolaris() without a publishableKey or chain targets the 0.2 Sepolia deployment. " +
-      "Pass publishableKey (Monad) or chain: MONAD_TESTNET. This fallback goes away in 0.4.",
+      "Pass publishableKey (Arc) or chain: ARC_TESTNET. This fallback goes away in 0.4.",
   );
 }
 

@@ -94,7 +94,7 @@ describe("public routes", () => {
   it("/api/public/network serves the contracts and their EIP-712 domains", async () => {
     const res = await json(await network(request("GET", "/api/public/network"), params({})));
     expect(res.body.data.domains.checkout).toMatchObject({ name: "PolarisCheckout", version: "1", chainId: 31337 });
-    expect(res.body.data.domains.stablecoin).toMatchObject({ name: "Agora Dollar", version: "1" });
+    expect(res.body.data.domains.stablecoin).toMatchObject({ name: "USDC", version: "2" });
   });
 });
 

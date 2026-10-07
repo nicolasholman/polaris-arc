@@ -26,7 +26,7 @@ const TESTNET_RPC = process.env.NEXT_PUBLIC_MONAD_TESTNET_RPC || "";
 const READY_TIMEOUT_MS = 8000;
 
 // Point the embedded wallet at our own RPC when we have one; Privy has no
-// hosted RPC for Monad testnet, and the public one is rate-limited.
+// hosted RPC for Arc testnet, and the public one is rate-limited.
 const testnet = TESTNET_RPC ? addRpcUrlOverrideToChain(monadTestnet, TESTNET_RPC) : monadTestnet;
 
 type StaticImage = { src: string };

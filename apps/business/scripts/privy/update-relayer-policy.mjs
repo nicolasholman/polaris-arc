@@ -34,7 +34,7 @@ if (problems.length) throw new Error(`Policy ${policy.name} is invalid: ${proble
 
 banner(`Relayer policy for chain ${deployment.chainId}, from ${deployment.file}`);
 for (const c of callsFor(deployment.addresses)) console.log(`  ALLOW  ${c.contract.padEnd(10)} ${c.functionName.padEnd(28)} ${deployment.addresses[c.contract]}`);
-console.log("  DENY   any transaction that carries MON");
+console.log("  DENY   any transaction that carries USDC (gas)");
 if (deployment.addresses.vault && !deployment.vaultWithdraw) {
   console.log("\n  Note: the record's vault predates withdrawWithSig (no eip712.CollateralVault): its rule is harmless there (no such");
   console.log("  function, so no call to it can succeed), and the relayer refuses the call first.");

@@ -8,7 +8,7 @@ import { chunkSize, syncChain } from "@/server/ingest/sync";
 import { ADDR, setupServer } from "./helpers/env";
 
 /**
- * With POLARIS_LOGS_RPC_URL (Envio's HyperRPC for Monad), the chain sync
+ * With POLARIS_LOGS_RPC_URL (an indexer's RPC, e.g. Envio's for Arc), the chain sync
  * behind the dashboard, payouts, the buyer's book and every webhook reads
  * its logs from Envio's index, in wide ranges; everything else stays on
  * POLARIS_RPC_URL.
@@ -36,7 +36,7 @@ async function hyperRpc(): Promise<{ url: string; calls: Array<{ method: string;
   return { url: `http://127.0.0.1:${(server.address() as AddressInfo).port}/`, calls };
 }
 
-describe("the chain sync on Envio's HyperRPC", () => {
+describe("the chain sync on an indexer's RPC", () => {
   it("reads logs from POLARIS_LOGS_RPC_URL, for every Polaris contract", async () => {
     const rpc = await hyperRpc();
     const env = setupServer({ POLARIS_LOGS_RPC_URL: rpc.url, POLARIS_SYNC_FROM_BLOCK: "1" });
@@ -50,9 +50,9 @@ describe("the chain sync on Envio's HyperRPC", () => {
     expect(summary).toMatchObject({ from: 1, to: 5_000, caughtUp: true });
   });
 
-  it("asks for 10,000 blocks a request on HyperRPC and 100 on Monad's public RPC", () => {
+  it("asks for 10,000 blocks a request on an indexer's RPC and 2,000 on Arc's public RPC", () => {
     setupServer();
-    expect(chunkSize(10143, true)).toBe(10_000);
-    expect(chunkSize(10143, false)).toBe(100);
+    expect(chunkSize(5042002, true)).toBe(10_000);
+    expect(chunkSize(5042002, false)).toBe(2_000);
   });
 });

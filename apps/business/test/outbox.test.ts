@@ -253,7 +253,7 @@ describe("a restart resumes from the stored cursor", () => {
 
 /* ── The two sources ─────────────────────────────────────────────────────── */
 
-/** Put logs on the fake chain as if a transaction nobody here sent (CRE, a wallet) had emitted them. */
+/** Put logs on the fake chain as if a transaction nobody here sent (keeper, a wallet) had emitted them. */
 function chainEmits(specs: LogSpec[]): Hex {
   env.chain.blockNumber += 1n;
   const txHash = `0x${env.chain.blockNumber.toString(16).padStart(64, "0")}` as Hex;
@@ -313,7 +313,7 @@ describe("deduplicated against the chain sync by the event id", () => {
     await syncChain();
     await pollIndexerOutbox();
     const session = await openPlan();
-    // A CRE collection: on chain, then indexed, before this server's chain sync reads it.
+    // A keeper collection: on chain, then indexed, before this server's chain sync reads it.
     const tx = chainEmits([
       { ...engine, eventName: "InstallmentCollected", args: { loanId: 1n, caller: ADDR.collections, amount: 50_383_562n } },
       { ...engine, eventName: "InstallmentPaid", args: { loanId: 1n, borrower: buyer.address, installmentIndex: 0, amount: 50_383_562n, onTime: true } },

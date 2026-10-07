@@ -48,7 +48,7 @@ export type BrowserPolarisConfig =
       payInFourAprBps: number;
       /**
        * `pnpm demo:local`'s chain (development only): the contracts a direct
-       * wallet payment signs for. Null: Monad testnet, from polarispay-sdk.
+       * wallet payment signs for. Null: Arc testnet, from polarispay-sdk.
        */
       chain?: LocalChain | null;
       /** Polaris's risk guard when the page was served (`creditGuard()`): while paused, Pay in 4 is off. Null: couldn't be read (treated as open). */

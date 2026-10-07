@@ -180,14 +180,14 @@ export function PaymentOptions({
             <span className="inline-flex items-center gap-2 text-[1.02rem] font-medium">
               <WalletIcon size={20} /> Pay directly with a wallet
             </span>
-            <span className="text-[0.9rem] text-muted">{walletDisabled ? "Not for subscriptions" : "AUSD on Monad, no gas"}</span>
+            <span className="text-[0.9rem] text-muted">{walletDisabled ? "Not for subscriptions" : "USDC on Arc, no gas to pay"}</span>
           </span>
         </label>
         <Expand open={method === "wallet"}>
           <div className="px-5 pb-6 sm:px-6 sm:pl-[3.75rem]">
             <p className="text-[0.92rem] leading-relaxed text-ink-2">
-              Pay {formatUsd(total)} in AUSD from any browser wallet on Monad Testnet. You sign once; Polaris sends the payment, so you pay no
-              gas.
+              Pay {formatUsd(total)} in USDC from any browser wallet on Arc Testnet. You sign once; Polaris sends the payment and pays the
+              gas, and it is final in under a second.
             </p>
             {hasWallet === false ? (
               <p className="mt-3 rounded-lg bg-sand px-3.5 py-2.5 text-[0.88rem] text-ink-2">

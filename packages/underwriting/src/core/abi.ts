@@ -1,5 +1,5 @@
 /**
- * The bytes the DON signs, without a dependency.
+ * The report bytes the Polaris keeper submits, without a dependency.
  *
  * `Facts` is a static tuple of eight value types, so its ABI encoding is eight
  * 32-byte words, each left-padded big-endian, in declaration order:
@@ -13,8 +13,8 @@
  *   word 6  bool   exchangeFunded     (0 or 1)
  *   word 7  uint64 observedAt         (unix seconds)
  *
- * The underwriting report is what the deployed `UnderwritingReceiver`
- * (packages/contracts/contracts/cre/UnderwritingReceiver.sol) decodes:
+ * The underwriting report is what `UnderwritingReceiver.submitReport(bytes)`
+ * decodes (packages/contracts; only the keeper EOA may call it):
  *
  *   abi.encode(uint8 kind, Underwriting[] items)      kind == 2
  *   Underwriting = (address user, address linkedWallet, Facts facts)
@@ -27,11 +27,9 @@
  * this against viem's `encodeAbiParameters` with the receiver's types, and the
  * Hardhat suite decodes it with ethers and feeds each item to ScoreManager.
  *
- * The package once exported `encodeUnderwriteReport(user, facts)`, the
- * single-item `(uint8, address, Facts)` of the research sketch
- * (docs/research/cre.md §7.7). No deployed receiver decodes that layout and
- * it carried no linked wallet, so it is gone rather than deprecated: a report
- * in that shape would revert on chain.
+ * There is no single-item `(uint8, address, Facts)` form: no receiver decodes
+ * that layout and it carried no linked wallet, so a report in that shape
+ * would revert on chain.
  */
 
 import { REPORT_KIND_UNDERWRITE, U16_MAX, U32_MAX, U64_MAX } from "./constants.ts";
@@ -117,7 +115,7 @@ function addressWord(a: string, name: string): string {
 
 /**
  * `abi.encode(uint8(2), items)`: the report UnderwritingReceiver decodes.
- * Throws on an empty batch (the DON would sign a report that does nothing),
+ * Throws on an empty batch (a report that does nothing),
  * a zero or malformed user, and any Facts value that does not fit its field.
  */
 export function encodeUnderwritingReport(items: readonly UnderwritingItem[]): Hex {

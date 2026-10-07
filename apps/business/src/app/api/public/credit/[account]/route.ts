@@ -10,7 +10,7 @@ type Ctx = { params: Promise<{ account: string }> };
 
 /**
  * Where an account's credit stands: its line and score read from
- * ScoreManager now, its latest underwriting request, and what the CRE
+ * ScoreManager now, its latest underwriting request, and what the keeper
  * workflow decided (with its reasons). Public chain state and the account's
  * own request, nothing else.
  */

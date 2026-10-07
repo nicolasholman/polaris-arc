@@ -3,8 +3,8 @@
  * that answer from them are test doubles. No product source may reach them,
  * so a provider without its key is "not configured", never answered from a
  * file. This holds the package and every product path that runs
- * underwriting (the gateway, the API, the app, the CRE workflow and its local
- * runner) to that.
+ * underwriting (the gateway, the business app, the buyer app and the Polaris
+ * keeper) to that.
  */
 
 import assert from "node:assert/strict";
@@ -24,9 +24,7 @@ const PRODUCT_DIRS = [
   join(REPO, "apps", "gateway", "src"),
   join(REPO, "apps", "business", "src"),
   join(REPO, "apps", "app", "src"),
-  join(REPO, "workflows", "src"),
-  join(REPO, "workflows", "local"),
-  join(REPO, "workflows", "scripts"),
+  join(REPO, "services", "keeper", "src"),
 ];
 
 const REACHES_FIXTURES: Array<[RegExp, string]> = [
@@ -34,7 +32,6 @@ const REACHES_FIXTURES: Array<[RegExp, string]> = [
   [/underwriting\/(src\/)?testing\//, "imports the test doubles by path"],
   [/\bfixture(Transport|Response)\b|\bDEFAULT_FIXTURES_DIR\b|\blocateFixture\b/, "uses the fixture transport"],
   [/packages\/underwriting\/fixtures|underwriting["', ]+fixtures/, "reads the fixture files"],
-  [/test\/helpers\/fixtures-http/, "uses the workflows' fixture HTTP test helper"],
   [/\bUNDERWRITING_MODE\b\s*[:=]+\s*["']?fixture/, "asks for fixture mode"],
 ];
 

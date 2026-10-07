@@ -5,8 +5,8 @@ import { createPublicClient, defineChain, http, type Chain, type PublicClient } 
 import { getConfig, type ChainConfig } from "../env";
 
 /**
- * One read client per process for the configured chain. Monad makes a block
- * every 400 ms, so receipts are polled every 250 ms.
+ * One read client per process for the configured chain. Arc finalises in
+ * under a second (a block every ~500 ms), so receipts are polled every 250 ms.
  */
 
 let cached: { key: string; client: PublicClient; chain: Chain } | null = null;
@@ -15,10 +15,11 @@ export function viemChain(config: ChainConfig): Chain {
   return defineChain({
     id: config.id,
     name: config.name,
-    nativeCurrency: { name: "MON", symbol: "MON", decimals: 18 },
+    // Arc's gas token is USDC: 18 decimals natively (the ERC-20 at 0x3600… is 6).
+    nativeCurrency: { name: "USDC", symbol: "USDC", decimals: 18 },
     rpcUrls: { default: { http: [config.rpcUrl] } },
     blockExplorers: config.explorerUrl ? { default: { name: "Explorer", url: config.explorerUrl } } : undefined,
-    testnet: config.id !== 143,
+    testnet: !config.mainnet,
   });
 }
 
@@ -61,9 +62,8 @@ export function publicClient(): PublicClient {
 let logsCached: { key: string; client: PublicClient } | null = null;
 
 /**
- * The client the chain sync reads logs with: Envio's HyperRPC when
- * POLARIS_LOGS_RPC_URL is set (the same JSON-RPC, answered from Envio's
- * index, with no 100-block cap), else the chain's own RPC.
+ * The client the chain sync reads logs with: POLARIS_LOGS_RPC_URL when set
+ * (an indexer's JSON-RPC that serves wide block ranges), else the chain's own RPC.
  */
 export function logsClient(): PublicClient {
   const config = requireChain();

@@ -3,8 +3,8 @@
  *
  * Shapes follow Nansen's OpenAPI 1.0.0 as recorded in docs/research/data.md
  * §2.5. Every endpoint is a POST with a JSON body and the key in an `apikey`
- * header. Nansen covers Monad mainnet only, so it scores a linked history
- * wallet, never the buyer's new testnet account (data.md §0).
+ * header. Nansen covers mainnet chains, so it scores a linked history wallet,
+ * never the buyer's Polaris account on Arc (data.md §0).
  *
  * The request bodies are held to Nansen's published request schemas
  * (`NANSEN_REQUEST_SCHEMA`), which disagree with each other on purpose: see
@@ -474,7 +474,7 @@ const REQUEST_CODES: ReadonlySet<string> = new Set(["unknown_field", "invalid_fi
 
 /**
  * One classification of a non-200 Nansen answer, for the Node client and the
- * CRE recipe alike. `request_rejected` means our body is wrong (a field name,
+ * recipe alike. `request_rejected` means our body is wrong (a field name,
  * a value, a range), not that Nansen is down: the detail names Nansen's code
  * and `param`, which is what to fix, and it is never worth retrying.
  */

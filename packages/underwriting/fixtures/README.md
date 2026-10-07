@@ -5,7 +5,7 @@ provider without its key is "not configured" and nothing answers in its place
 (see the package README, "Missing keys"). The transport that serves them is
 `@polarispay/underwriting/testing`, and
 [`test/no-fixtures-in-product.test.ts`](../test/no-fixtures-in-product.test.ts)
-fails if the gateway, the API, the app or the CRE workflow ever reaches them.
+fails if the gateway, the business app, the buyer app or the keeper ever reaches them.
 
 **Everything in this directory is synthesized, not recorded.** No Nansen,
 Zerion or Etherscan key existed when the underwriting package was built, so
@@ -13,7 +13,8 @@ these files were written by
 [`scripts/synthesize-fixtures.ts`](../scripts/synthesize-fixtures.ts) from the
 personas in [`personas.json`](personas.json). Each body follows its provider's
 documented response schema (see [`docs/research/data.md`](../../../docs/research/data.md)
-§2.5, §3.3 and §4.3), and each file says so in its `fixture` block:
+§2.5, §3.3 and §4.3; Arc's Blockscout API as checked against
+`explorer.testnet.arc.io/api`), and each file says so in its `fixture` block:
 
 ```json
 {
@@ -41,12 +42,12 @@ is described. Answers from here carry `x-polaris-fixture: true`.
 | `nansen/<endpoint>/<address>.json` | `POST /api/v1/profiler/address/<endpoint>` (`related-wallets` adds `.<chain>`) |
 | `zerion/<transactions\|positions>/<address>[.testnet].json` | `GET /v1/wallets/<address>/<kind>/` (`.testnet` when `X-Env: testnet`) |
 | `etherscan/logs/<borrower>.<chainId>.json` | V2 `getLogs` for `LiquidationCall` with `topic3` = borrower |
-| `etherscan/tokentx/<address>.<chainId>.json` | V2 `tokentx` |
+| `blockscout/<txlist\|tokentx>/<address>.json` | Arc explorer `?module=account&action=<txlist\|tokentx>` |
 | `rpc/<address>.json` | JSON-RPC results by `<host>:<method>[:<token>]` |
 
 The fixture transport applies the same filters the APIs do (Zerion's
 `max_mined_at` probes, chain and operation filters, `page[size]` and cursors;
-Nansen's date ranges, `source_type` and `per_page`; Etherscan's `sort` and
+Nansen's date ranges, `source_type` and `per_page`; Blockscout's `sort` and
 `offset`), so a file answers a probe for any "now". A request with no file is
 a failure (`not_found`, "no fixture recorded"), never an empty answer.
 
@@ -54,9 +55,9 @@ a failure (`not_found`, "no fixture recorded"), never an empty answer.
 
 | Persona | Address | What it exercises |
 |---|---|---|
-| fresh-account | `0xacc0…0001` | Thin file: a three-day-old Polaris account, $37.60; the DON never attests it |
-| regular-account | `0xacc0…0002` | 120 transfers, more than a page, so it is dated with probes |
-| zerion-blind-account | `0xacc0…0003` | No Zerion record; Etherscan token transfers date it |
+| fresh-account | `0xacc0…0001` | Thin file: a three-day-old Polaris account on Arc, $37.60, no transaction of its own; the keeper never reports it |
+| regular-account | `0xacc0…0002` | 120 transfers (more than the 100-row page), 4 transactions of its own, USDC and EURC: dated by its oldest transfer, counted by what it sent |
+| self-paying-account | `0xacc0…0003` | Pays its own gas in USDC: dated by its first transaction, counted by its nonce |
 | strong | `0xb0b0…0001` | Coinbase-funded 3+ years ago, 900 transactions, $4,200, trading 2 years: score 692, $1,000 |
 | modest | `0xb0b0…0002` | Peer-funded, one of seven accounts from that funder: −6 |
 | liquidated | `0xb0b0…0003` | Two Aave liquidations plus one spoofed event that must not count: declined |

@@ -19,7 +19,7 @@ import { chunkSize, configuredFromBlock } from "./ingest/sync";
  * the transfers inside a payment or an instalment (kept for the balance,
  * shown through the payment's own row).
  *
- * Read per address, on demand, from the AUSD `Transfer` logs to or from it
+ * Read per address, on demand, from the USDC `Transfer` logs to or from it
  * and PolarisSend's `Sent`/`Claimed`/`Cancelled`/`Refunded` logs that name
  * it, block range by block range from the deployment (or where it left off:
  * a cursor per address), and kept in `wallet_moves`. The same logs client as

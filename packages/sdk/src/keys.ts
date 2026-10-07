@@ -7,8 +7,8 @@ import { configurationError } from "./errors.js";
  *   sk_test_… / sk_live_…  secret: server only, creates checkout sessions
  *   whsec_…                a webhook endpoint's signing secret
  *
- * `test` keys run against Monad testnet and never move real money; `live`
- * keys run against Monad mainnet.
+ * `test` keys run against Arc testnet and never move real money; `live`
+ * keys run against Arc mainnet.
  */
 
 export type KeyKind = "publishable" | "secret";

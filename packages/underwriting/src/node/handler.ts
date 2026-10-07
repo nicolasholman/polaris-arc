@@ -245,8 +245,8 @@ export function createRouter(underwriter: Underwriter, opts: HandlerOptions = {}
         const activeDebt = bigintField(body.activeDebt, "activeDebt");
         const purchase = dollarsField(body.purchase, "purchase") ?? bigintField(body.purchaseBaseUnits, "purchaseBaseUnits") ?? null;
         if (body.report !== undefined) {
-          // The report body UnderwritingReceiver.onReport received (after the
-          // forwarder's metadata): abi.encode(uint8 2, (user, linkedWallet, Facts)[]).
+          // The report the keeper passed to UnderwritingReceiver.submitReport:
+          // abi.encode(uint8 2, (user, linkedWallet, Facts)[]).
           if (typeof body.report !== "string") throw new HttpProblem(400, "invalid_field", "report must be a 0x hex string");
           let decoded: ReturnType<typeof decodeUnderwritingReport>;
           try {
@@ -260,7 +260,7 @@ export function createRouter(underwriter: Underwriter, opts: HandlerOptions = {}
             facts: item.facts,
             ...explainOnChainFacts(item.facts, { activeDebt, purchase, hasLinked: item.linkedWallet !== null || body.hasLinked === true }),
           }));
-          // The workflow sends one underwriting per report; spread it for the common case.
+          // The keeper sends one underwriting per report; spread it for the common case.
           return json(200, { kind: decoded.kind, items, ...(items.length === 1 ? items[0] : {}) }, c);
         }
         const facts: Facts = factsFrom(body.facts);

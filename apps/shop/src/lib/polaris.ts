@@ -124,7 +124,7 @@ const ADDRESS_FIELDS = [
  * `pnpm demo:local`'s chain, from POLARIS_LOCAL_CHAIN (a JSON object: chainId,
  * name, rpcUrl, explorer and each Polaris contract). Development only: the
  * NODE_ENV test folds to false in a production build, so a deployed store
- * always pays on Monad. Null when unset or malformed.
+ * always pays on Arc. Null when unset or malformed.
  */
 export function localChain(env: Env = process.env): LocalChain | null {
   if (process.env.NODE_ENV !== "development") return null;

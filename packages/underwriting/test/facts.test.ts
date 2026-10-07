@@ -530,8 +530,8 @@ describe("the thin-file gate: a report for an empty account is a free $200 line,
     assert.equal(decision.limit, 200_000_000n);
   });
 
-  it("is the CRE workflow's gate and ScoreManager.isThinFile, point for point, over a seeded sweep", () => {
-    // workflows/src/underwriting/thin.ts and ScoreManager.isThinFile, restated: attest when declined,
+  it("is ScoreManager.isThinFile's gate, point for point, over a seeded sweep", () => {
+    // ScoreManager.isThinFile, restated: attest when declined,
     // or when the facts show at least 90 days AND 10 transactions of history.
     const chainAttests = (f: Parameters<typeof isAttestable>[0]) =>
       scoreBreakdown(f).declined || (f.walletAgeDays >= 90 && f.txCount >= 10);

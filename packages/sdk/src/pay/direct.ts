@@ -17,16 +17,18 @@ import { buyerMessage, ensureChain, ethCall, requestAccount, waitForReceipt } fr
 
 /**
  * Direct pay: one signature from the buyer, and PolarisPayments settles the
- * order in AUSD.
+ * order in USDC.
  *
  *   1. The wallet signs an ERC-3009 ReceiveWithAuthorization naming
  *      PolarisPayments as the payee and keccak256(merchant, orderId) as the nonce.
  *   2. With a `relayUrl`, the Polaris relayer (a policy-locked Privy server
- *      wallet) submits payWithAuthorization and pays the gas: the buyer needs
- *      AUSD and nothing else. Without one, the wallet sends it and pays the gas.
+ *      wallet) submits payWithAuthorization and pays the gas (gas on Arc is
+ *      paid in USDC, and Polaris pays it): the buyer needs the dollars they
+ *      spend and nothing else. Without one, the wallet sends it and pays the
+ *      gas, also in USDC.
  *
  * Either way the money can only go to the merchant in the signature: a
- * relayer that changes the merchant or order changes the nonce, and AUSD
+ * relayer that changes the merchant or order changes the nonce, and USDC
  * rejects the signature.
  */
 
@@ -189,7 +191,7 @@ export async function payWithAuthorization(ctx: PayContext, params: PayParams): 
     } else {
       const data = encodePayWithAuthorization({ payer, merchant, amount, orderId: params.orderId, validAfter, validBefore, signature });
       const tx = { from: payer, to: chain.payments, data, value: "0x0" };
-      // Monad charges gas on the limit, not on use: estimate and add 15%, never a blanket limit.
+      // Estimate and add 15%, never a blanket limit: gas is paid in USDC, so a padded limit costs the buyer dollars.
       const estimate = BigInt((await provider.request({ method: "eth_estimateGas", params: [tx] })) as string);
       const gas = `0x${((estimate * 115n) / 100n).toString(16)}`;
       txHash = (await provider.request({ method: "eth_sendTransaction", params: [{ ...tx, gas }] })) as Hex;
@@ -235,7 +237,7 @@ export type RelayPayRequest = {
   contract: Address;
   payer: Address;
   merchant: Address;
-  /** AUSD base units (6 decimals), decimal string: "25000000" is $25. */
+  /** USDC base units (6 decimals), decimal string: "25000000" is $25. */
   amount: string;
   orderId: string;
   validAfter: string;
@@ -248,7 +250,7 @@ export type RelayPayRequest = {
 
 export type RelayPayResponse = {
   txHash: Hex;
-  /** "submitted": in the mempool; "confirmed": in a finalised block. */
+  /** "submitted": in the mempool; "confirmed": in a block, which on Arc is final (under a second). */
   status: "submitted" | "confirmed";
   paymentId?: Hex;
 };

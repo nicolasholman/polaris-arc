@@ -139,7 +139,7 @@ export const DOMAIN_NAMES = {
   send: "PolarisSend",
   split: "PolarisSplit",
   registry: "MerchantRegistry",
-  /** Only a vault with `withdrawWithSig` (relay.ts `vaultWithdrawDomain`); Monad testnet's of 28 Sep 2026 has none. */
+  /** Only a vault with `withdrawWithSig` (relay.ts `vaultWithdrawDomain`); Arc testnet's of 28 Sep 2026 has none. */
   vault: "CollateralVault",
 } as const;
 

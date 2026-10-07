@@ -5,7 +5,7 @@ import { applyEvent, orderIdForEvent } from "@/lib/orders/transitions";
 import { ADDR, TX, baseOrder, event } from "./helpers";
 
 const ORDER = "hc_testorder000000000001";
-const chain = { txHash: TX, chainId: 10143 };
+const chain = { txHash: TX, chainId: 5042002 };
 
 function paid(amount = "349.00", sessionId: string | null = "cs_test_1") {
   return event("payment.succeeded", {
@@ -79,7 +79,7 @@ describe("order status transitions", () => {
     expect(applyEvent(baseOrder(), e).order.status).toBe("needs_review");
   });
 
-  it("reads AUSD's six decimals: 349.000000 is $349.00, 349.000001 is not", () => {
+  it("reads USDC's six decimals: 349.000000 is $349.00, 349.000001 is not", () => {
     expect(applyEvent(baseOrder(), paid("349.000000")).order.status).toBe("paid");
     expect(applyEvent(baseOrder(), paid("349.000001")).order.status).toBe("needs_review");
   });
@@ -110,7 +110,7 @@ describe("order status transitions", () => {
     expect(r.order.plan?.status).toBe("active");
   });
 
-  it("reads the real API's plan.opened, whose amounts carry six decimals (metropolis/api ingest.ts)", () => {
+  it("reads the real API's plan.opened, whose amounts carry six decimals (the business app's chain ingest)", () => {
     // $200 at the loan engine's 10% APR over four weekly instalments.
     const order = baseOrder({ total: 20000, subtotal: 20000 });
     const e = planOpened("200.00");
@@ -184,7 +184,7 @@ describe("order status transitions", () => {
     let order = applyEvent(baseOrder(), planOpened()).order;
     order = applyEvent(
       order,
-      event("installment.failed", { planId: "42", orderId: ORDER, installment: 2, amount: "87.25", reason: "insufficient_funds", attempt: 1, nextAttemptAt: null, chainId: 10143 }),
+      event("installment.failed", { planId: "42", orderId: ORDER, installment: 2, amount: "87.25", reason: "insufficient_funds", attempt: 1, nextAttemptAt: null, chainId: 5042002 }),
     ).order;
     expect(order.plan?.status).toBe("past_due");
     expect(order.plan?.installments[1]?.status).toBe("failed");

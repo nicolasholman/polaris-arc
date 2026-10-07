@@ -2,7 +2,8 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { exchangeIn, riskIn } from "../src/core/labels.ts";
 import { base64Ascii, largestHit, ParseError, parseTimestamp, queryString } from "../src/core/providers/common.ts";
-import { etherscanRequests, parseLiquidationCount, parseTokenTransfers } from "../src/core/providers/etherscan.ts";
+import { blockscoutRequests, parseFirstTransaction, parseTransfers } from "../src/core/providers/blockscout.ts";
+import { etherscanRequests, parseLiquidationCount } from "../src/core/providers/etherscan.ts";
 import {
   classifyNansenFailure,
   NANSEN_REQUEST_SCHEMA,
@@ -189,9 +190,9 @@ describe("Zerion parsers", () => {
   });
 
   it("requests keep the trailing slash, 13-digit milliseconds and Zerion's bracket encoding", () => {
-    const r = zerionRequests.transactions("0xABC0000000000000000000000000000000000001", { testnet: true, chainIds: ["monad-test-v2"], maxMinedAt: 1704164645, pageSize: 1 });
+    const r = zerionRequests.transactions("0xABC0000000000000000000000000000000000001", { testnet: true, chainIds: ["base-sepolia"], maxMinedAt: 1704164645, pageSize: 1 });
     assert.match(r.url, /\/v1\/wallets\/0xabc0000000000000000000000000000000000001\/transactions\/\?/);
-    assert.match(r.url, /filter%5Bchain_ids%5D=monad-test-v2/);
+    assert.match(r.url, /filter%5Bchain_ids%5D=base-sepolia/);
     assert.match(r.url, /filter%5Bmax_mined_at%5D=1704164645000/);
     assert.equal(r.headers["X-Env"], "testnet");
     assert.equal(zerionAuthorization("zk_dev_123"), "Basic emtfZGV2XzEyMzo=");
@@ -211,14 +212,39 @@ describe("Etherscan parsers", () => {
     assert.throws(() => parseLiquidationCount({ status: "0", message: "NOTOK", result: "Invalid API Key" }, []), /Invalid API Key/);
   });
 
-  it("token transfers: the first one and the count", () => {
-    assert.deepEqual(parseTokenTransfers({ status: "1", message: "OK", result: [{ timeStamp: "200" }, { timeStamp: "100" }] }), { firstAt: 100, count: 2 });
-  });
-
   it("builds the topic query for the borrower, with no key in the URL", () => {
     const r = etherscanRequests.liquidationLogs(1, "0xB0B0000000000000000000000000000000000003");
     assert.match(r.url, /topic3=0x000000000000000000000000b0b0000000000000000000000000000000000003/);
     assert.doesNotMatch(r.url, /apikey/);
+  });
+});
+
+describe("Blockscout (Arc's explorer) parsers", () => {
+  const me = "0xACC0000000000000000000000000000000000001";
+
+  it("txlist: the oldest transaction, and 'No transactions found' as a known empty", () => {
+    assert.equal(parseFirstTransaction({ message: "OK", status: "1", result: [{ timeStamp: "1761760791" }, { timeStamp: "1761760000" }] }), 1761760000);
+    assert.equal(parseFirstTransaction({ message: "No transactions found", status: "0", result: [] }), null);
+    assert.throws(() => parseFirstTransaction({ message: "Invalid address format", status: "0", result: null }), /Invalid address format/);
+    assert.throws(() => parseFirstTransaction({ message: "OK", status: "1", result: [{ timeStamp: "?" }] }), ParseError);
+  });
+
+  it("tokentx: the oldest transfer, the count, what this address sent, and whether the page is full", () => {
+    const rows = [
+      { timeStamp: "300", from: me.toLowerCase(), to: "0x5e00000000000000000000000000000000000001" },
+      { timeStamp: "200", from: "0x5e00000000000000000000000000000000000002", to: me.toLowerCase() },
+      { timeStamp: "100", from: me, to: "0x5e00000000000000000000000000000000000003" },
+    ];
+    assert.deepEqual(parseTransfers({ message: "OK", status: "1", result: rows }, me, 100), { firstAt: 100, count: 3, sent: 2, full: false });
+    assert.deepEqual(parseTransfers({ message: "OK", status: "1", result: rows }, me, 3), { firstAt: 100, count: 3, sent: 2, full: true });
+    assert.deepEqual(parseTransfers({ message: "No token transfers found", status: "0", result: [] }, me, 1), { firstAt: null, count: 0, sent: 0, full: false });
+  });
+
+  it("builds keyless Etherscan-style requests on the explorer's API", () => {
+    const r = blockscoutRequests.txlist("https://explorer.testnet.arc.io/api/", me, "asc", 1);
+    assert.equal(r.provider, "blockscout");
+    assert.equal(r.url, "https://explorer.testnet.arc.io/api?module=account&action=txlist&address=0xacc0000000000000000000000000000000000001&sort=asc&page=1&offset=1");
+    assert.match(blockscoutRequests.tokentx("https://explorer.testnet.arc.io/api", me, "desc", 100).url, /action=tokentx&.*sort=desc&page=1&offset=100$/);
   });
 });
 

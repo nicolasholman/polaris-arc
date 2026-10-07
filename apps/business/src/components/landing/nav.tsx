@@ -22,7 +22,7 @@ let networkRead: Promise<string | null> | null = null;
 
 /**
  * Where this server's contracts actually are, from its deployment record
- * (`/api/public/network`): "Local Hardhat" under pnpm demo:local, "Monad
+ * (`/api/public/network`): "Local Hardhat" under pnpm demo:local, "Arc
  * Testnet" once deployed there, null while nothing is deployed. undefined
  * while it loads. Read once per page.
  */
@@ -44,11 +44,11 @@ export function useNetworkName(): string | null | undefined {
   return name;
 }
 
-/** "Local Hardhat", "Monad testnet", or where it is headed when nothing is deployed yet. */
+/** "Local Hardhat", "Arc testnet", or where it is headed when nothing is deployed yet. */
 export function networkLabel(name: string | null | undefined): string {
-  if (name === undefined) return "AUSD on Monad";
-  if (name === null) return "Monad testnet launch in October";
-  return name === "Monad Testnet" ? "Monad testnet" : name;
+  if (name === undefined) return "USDC on Arc";
+  if (name === null) return "Arc testnet launch in October";
+  return name === "Arc Testnet" ? "Arc testnet" : name;
 }
 
 /** A dark pill in the wallet pill's shape: where Polaris runs, as this server's deployment says. */
@@ -60,7 +60,7 @@ export function NetworkPill({ className }: { className?: string }) {
         {name ? <span className="absolute size-2.5 animate-ping rounded-full bg-ui-lime-button/60 motion-reduce:animate-none" /> : null}
         <span className={cn("size-2 rounded-full", name ? "bg-ui-lime-button" : "bg-ui-muted")} />
       </span>
-      {name ? `${networkLabel(name)} · AUSD` : networkLabel(name)}
+      {name ? `${networkLabel(name)} · USDC` : networkLabel(name)}
     </span>
   );
 }

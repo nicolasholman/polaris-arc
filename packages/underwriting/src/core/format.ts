@@ -1,7 +1,6 @@
 /**
  * Formatting for the buyer's screen, without `Intl` or `toLocaleString`:
- * the CRE runtime (QuickJS under Javy) may not ship locale data, and output
- * must be identical everywhere.
+ * some runtimes ship no locale data, and output must be identical everywhere.
  */
 
 function groupThousands(digits: string): string {

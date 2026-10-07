@@ -19,7 +19,7 @@ import type { Assets } from "@/lib/assets";
 const AVATARS = ["avatar-1.jpg", "avatar-2.jpg", "avatar-3.jpg"] as const;
 
 /**
- * 3. "Stripe for every app on Monad": the heading, two buttons and two
+ * 3. "Stripe for every app on Arc": the heading, two buttons and two
  * two-tone paragraphs on the left; the mint card and the dark olive card on
  * the right, bottom-aligned. The cards grow up from a shorter height; the
  * frosted panels slide in from beyond the dark card's right edge.

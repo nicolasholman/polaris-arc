@@ -1,10 +1,9 @@
 /**
  * Score explanations: why a line is what it is, in the buyer's words.
  *
- * This file used to mirror the Solana program's weights over a Solana
- * `Evidence` type. On Monad the score is `ScoreManager.scoreFromFacts`, and
+ * The score is `ScoreManager.scoreFromFacts` on Arc, and
  * `@polarispay/underwriting` mirrors it line for line (held to the contract by
- * the Hardhat suite), so this module no longer keeps weights of its own: two
+ * the Hardhat suite), so this module keeps no weights of its own: two
  * mirrors of one formula is how an app ends up showing a limit the chain will
  * not give. What stays here is the gateway's small, string-shaped API over it.
  *

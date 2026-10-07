@@ -5,10 +5,10 @@ import { encodeFunctionData, encodePacked, getAddress, keccak256, parseEventLogs
 
 import { GUARD_PAUSED_MESSAGE } from "@/lib/data/guard";
 
-import { iausdAbi, merchantRegistryAbi, polarisCheckoutAbi, polarisPaymentsAbi } from "../chain/abis";
+import { iusdcAbi, merchantRegistryAbi, polarisCheckoutAbi, polarisPaymentsAbi } from "../chain/abis";
 import { publicClient, requireChain } from "../chain/client";
 import { centsToUnits, formatCents, formatUnits, installmentAmounts, quotePlanLocally } from "../chain/money";
-import { creditGuard } from "../cre/guardian";
+import { creditGuard } from "../keeper/guard";
 import { getDb } from "../db";
 import { getConfig, type ServerConfig } from "../env";
 import { HttpError } from "../http";
@@ -309,7 +309,7 @@ export async function publicSession(id: string, options: { buyer?: Address | nul
   const amountUnits = centsToUnits(session.amountCents);
   let payIn4 = null;
   if (session.modes.includes("later")) {
-    // The CRE guardian's verdict, as PolarisCheckout.openPlan applies it (fails open when it can't be read).
+    // The credit guard's verdict, as PolarisCheckout.openPlan applies it (fails open when it can't be read).
     const guard = await creditGuard();
     const { interest, total } = quotePlanLocally(amountUnits, config.payIn4.installments, config.payIn4.intervalSeconds);
     let reason: string | null = null;
@@ -321,8 +321,8 @@ export async function publicSession(id: string, options: { buyer?: Address | nul
     payIn4 = {
       available: reason === null,
       reason,
-      /** The credit guard behind a pause, and when it last checked (a stale guard leaves Pay in 4 on). */
-      guard: { state: guard.state, paused: guard.paused, checkedAt: guard.checkedAt, ageSeconds: guard.ageSeconds, readAt: guard.readAt },
+      /** The credit guard behind a pause (it reads the pool live, so there is no check age). */
+      guard: { state: guard.state, paused: guard.paused, ageSeconds: guard.ageSeconds, readAt: guard.readAt },
       installments: config.payIn4.installments,
       intervalSeconds: config.payIn4.intervalSeconds,
       aprBps: 1000,
@@ -432,7 +432,7 @@ async function buyerState(
   const client = publicClient();
   const [checkoutNonce, tokenNonce, quote, allowance] = await Promise.all([
     client.readContract({ address: chain.contracts.checkout, abi: polarisCheckoutAbi, functionName: "nonces", args: [buyer] }) as Promise<bigint>,
-    client.readContract({ address: chain.contracts.stablecoin, abi: iausdAbi, functionName: "nonces", args: [buyer] }) as Promise<bigint>,
+    client.readContract({ address: chain.contracts.stablecoin, abi: iusdcAbi, functionName: "nonces", args: [buyer] }) as Promise<bigint>,
     later
       ? (client.readContract({
           address: chain.contracts.checkout,
@@ -442,7 +442,7 @@ async function buyerState(
         }) as Promise<{ totalOwed: bigint; interest: bigint; installmentAmount: bigint; permitValue: bigint; creditLimit: bigint; activeDebt: bigint; available: bigint; withinLimit: boolean }>).catch(() => null)
       : Promise.resolve(null),
     subscribing
-      ? (client.readContract({ address: chain.contracts.stablecoin, abi: iausdAbi, functionName: "allowance", args: [buyer, chain.contracts.payments] }) as Promise<bigint>)
+      ? (client.readContract({ address: chain.contracts.stablecoin, abi: iusdcAbi, functionName: "allowance", args: [buyer, chain.contracts.payments] }) as Promise<bigint>)
       : Promise.resolve(null),
   ]);
   const newPeriods = subscribing ? subscribing.pricePerPeriod * BigInt(subscribing.periods) : 0n;

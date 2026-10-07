@@ -11,8 +11,8 @@ type Ctx = { params: Promise<{ account: string }> };
 /**
  * The exact texts to sign before `POST /api/credit/underwrite`, with a fresh
  * nonce and issue time (good for 15 minutes): the account's consent, and with
- * `?wallet=0x…` the history wallet's link proof. They are the texts the CRE
- * workflow verifies inside the DON.
+ * `?wallet=0x…` the history wallet's link proof. They are the texts the keeper
+ * workflow verifies inside the keeper.
  */
 export const GET = withPublic<Ctx>(async (req, _auth, { params }) => {
   const { account } = await params;

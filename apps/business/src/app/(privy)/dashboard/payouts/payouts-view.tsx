@@ -100,13 +100,13 @@ export function PayoutsView() {
             <FigureRow
               caption="Available to withdraw"
               value={(payouts.error && !state) || state?.balanceCents === null ? "—" : state ? <Money value={state.balanceCents / 100} /> : undefined}
-              deltaLabel={state && state.balanceCents !== null ? "AUSD on Monad" : undefined}
+              deltaLabel={state && state.balanceCents !== null ? "USDC on Arc" : undefined}
               right={wallet ? <WalletPill address={wallet} label="payout account address" maxWidth={300} /> : null}
             />
             {payouts.error && !state ? <LoadError query={payouts as QueryState<unknown>} title="We couldn't load your balance" /> : null}
             {state?.balanceCents === null ? <BalanceUnknown className="mt-4" onRetry={payouts.reload} retrying={payouts.refreshing} /> : null}
             <p className="mt-3 max-w-[600px] text-[15px] leading-relaxed text-ui-muted">
-              Your balance is dollars (AUSD) in a payout account only you control. Move it in one tap, or every day on its own. Polaris&rsquo;s relayer
+              Your balance is dollars (USDC) in a payout account only you control. Move it in one tap, or every day on its own. Polaris&rsquo;s relayer
               pays the network fee.
             </p>
             <dl className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3">
@@ -333,7 +333,7 @@ function AutoPayoutsPanel({
               </SecondaryButton>
             ) : null}
             <p className="text-[13px] leading-relaxed text-ui-muted">
-              A Privy session signer does the daily sweep. Its policy lets it send AUSD to your chosen address and nowhere else, and you can remove it at any
+              A Privy session signer does the daily sweep. Its policy lets it send USDC to your chosen address and nowhere else, and you can remove it at any
               time by turning this off.
             </p>
           </div>

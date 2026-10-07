@@ -1,0 +1,66 @@
+{
+  "fixture": {
+    "label": "FIXTURE: synthesized in the provider's documented response shape. Not live data, not a recording.",
+    "provider": "blockscout",
+    "request": "GET https://explorer.testnet.arc.io/api?module=account&action=tokentx&address=0xacc0000000000000000000000000000000000001",
+    "shape": "Blockscout Etherscan-style tokentx response (checked against explorer.testnet.arc.io/api)",
+    "persona": "fresh-account",
+    "recorded": false,
+    "synthesizedFor": "2026-09-26T00:00:00Z",
+    "notes": "The fixture transport applies sort and offset."
+  },
+  "status": 200,
+  "headers": {},
+  "body": {
+    "message": "OK",
+    "result": [
+      {
+        "value": "50000000",
+        "blockHash": "0x89542e63b477706e7d9bb4fb30ed2b0d09314245cb32cd10bea2fa68dd848c16",
+        "blockNumber": "8000000",
+        "confirmations": "1200",
+        "contractAddress": "0x3600000000000000000000000000000000000000",
+        "cumulativeGasUsed": "61234",
+        "from": "0x5e00000000000000000000000000000000000001",
+        "functionName": "",
+        "gas": "120000",
+        "gasPrice": "20000000000",
+        "gasUsed": "61234",
+        "hash": "0x2acb75bc5ffba7fa953c09db7ed2ebf5055c336f1c542e847fb4bd73fb2980f4",
+        "input": "0x",
+        "methodId": "",
+        "nonce": "0",
+        "timeStamp": "1790121600",
+        "to": "0xacc0000000000000000000000000000000000001",
+        "tokenDecimal": "6",
+        "tokenName": "USDC",
+        "tokenSymbol": "USDC",
+        "transactionIndex": "0"
+      },
+      {
+        "value": "12400000",
+        "blockHash": "0x6a2ec0696c5216e24f3365d49ff25da060173e468d632f4a5b6921a2bf02c907",
+        "blockNumber": "8001000",
+        "confirmations": "1200",
+        "contractAddress": "0x3600000000000000000000000000000000000000",
+        "cumulativeGasUsed": "61234",
+        "from": "0xacc0000000000000000000000000000000000001",
+        "functionName": "",
+        "gas": "120000",
+        "gasPrice": "20000000000",
+        "gasUsed": "61234",
+        "hash": "0x4b0936b6e2a9872489c53a78b4c2114eedde0a65e75b3936240adb4f20aa1921",
+        "input": "0x",
+        "methodId": "",
+        "nonce": "0",
+        "timeStamp": "1790294417",
+        "to": "0x5e00000000000000000000000000000000000002",
+        "tokenDecimal": "6",
+        "tokenName": "USDC",
+        "tokenSymbol": "USDC",
+        "transactionIndex": "0"
+      }
+    ],
+    "status": "1"
+  }
+}

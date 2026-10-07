@@ -11,7 +11,7 @@ import { setupServer } from "./helpers/env";
 /**
  * The Overview's Envio and credit panels for a live merchant: the Envio
  * indexer's events through @polarispay/indexer-client when it is configured,
- * this server's chain sync (labelled) when it isn't, and the reasons the CRE
+ * this server's chain sync (labelled) when it isn't, and the reasons the keeper
  * underwriting decisions carried for the merchant's Pay in 4 buyers.
  */
 
@@ -135,7 +135,7 @@ describe("the Envio panel", () => {
 });
 
 describe("why buyers got credit", () => {
-  it("shows the reasons the CRE decisions carried, with their providers", async () => {
+  it("shows the reasons the keeper decisions carried, with their providers", async () => {
     await getDb().creditDecisions.upsert({
       id: BUYER.toLowerCase(),
       status: "applied",
@@ -181,7 +181,7 @@ describe("why buyers got credit", () => {
 describe("the collections panel", () => {
   it("says no run has reported until the workflow's heartbeat arrives", () => {
     const run = getCollectionsRun({ plans: [plan], collector: { state: "stopped", lastPassAt: null, runner: "cre" } });
-    expect(run).toMatchObject({ source: "not_connected", reason: expect.stringContaining("Chainlink CRE") });
+    expect(run).toMatchObject({ source: "not_connected", reason: expect.stringContaining("the Polaris keeper") });
     expect(getCollectionsRun({ plans: [plan] }).source).toBe("not_connected");
   });
 

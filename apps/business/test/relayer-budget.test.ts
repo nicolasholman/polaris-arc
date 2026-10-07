@@ -2,7 +2,7 @@ import { encodeFunctionData, getAddress, zeroHash, type Address, type Hex, type 
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { iausdAbi, polarisSendAbi } from "@polarispay/contracts/abi";
+import { iusdcAbi, polarisSendAbi } from "@polarispay/contracts/abi";
 import { POST as relayRoute } from "@/app/api/relay/route";
 import { buildRelayerPolicy, checkRelayerCall, PolicyViolation, type RelayerAddresses } from "@/server/policy/relayer";
 import { TYPES } from "@/server/relayer/typed-data";
@@ -13,7 +13,7 @@ import { inSeconds, stablecoinDomain } from "./helpers/flows";
 /**
  * The relayer pays gas for every call it carries. Transfers and sends by link
  * need no merchant's checkout behind them, so a stranger with a fresh key
- * could otherwise make it move 0 AUSD between throwaway accounts forever.
+ * could otherwise make it move 0 USDC between throwaway accounts forever.
  */
 
 let env: TestEnv;
@@ -103,7 +103,7 @@ describe("POST /api/relay type=transfer is not free gas for strangers", () => {
 });
 
 describe("caps the Privy policy can't express", () => {
-  it("refuses a call whose gas estimate is above RELAYER_MAX_GAS (Monad bills the whole limit)", async () => {
+  it("refuses a call whose gas estimate is above RELAYER_MAX_GAS (Arc bills the whole limit)", async () => {
     env = setupServer({ RELAYER_MAX_GAS: "100000" }); // the fake chain estimates 200k
     const res = await json(await relay(await signedTransfer(fresh(), fresh().address, 1_000_000n)));
     expect(res.status).toBe(403);
@@ -132,7 +132,7 @@ describe("the minimum is in the policy too, not only in the route", () => {
   };
   const someone = "0x1111111111111111111111111111111111111111" as Address;
   const twa = (value: bigint) =>
-    encodeFunctionData({ abi: iausdAbi, functionName: "transferWithAuthorization", args: [someone, someone, value, 0n, 1n, zeroHash, 27, zeroHash, zeroHash] });
+    encodeFunctionData({ abi: iusdcAbi, functionName: "transferWithAuthorization", args: [someone, someone, value, 0n, 1n, zeroHash, 27, zeroHash, zeroHash] });
 
   it("checkRelayerCall refuses a transfer or a send below the minimum, whoever builds it", () => {
     const expected = { chainId: 10143, addresses, minAmountUnits: 100_000n };
@@ -149,7 +149,7 @@ describe("the minimum is in the policy too, not only in the route", () => {
   it("the Privy policy's transfer and send rules carry the same floor", () => {
     const policy = buildRelayerPolicy({ chainId: 10143, addresses, minAmountUnits: 100_000n });
     const floor = (rule: string) => policy.rules.find((r) => r.name === rule)?.conditions.find((c) => c.operator === "gte");
-    expect(floor("Payouts: AUSD transferWithAuthorization")).toMatchObject({ field_source: "ethereum_calldata", field: "transferWithAuthorization.value", value: "100000" });
+    expect(floor("Payouts: USDC transferWithAuthorization")).toMatchObject({ field_source: "ethereum_calldata", field: "transferWithAuthorization.value", value: "100000" });
     expect(floor("Send by link: PolarisSend.send")).toMatchObject({ field: "send.amount", value: "100000" });
     expect(floor("Pay now: PolarisCheckout.pay")).toBeUndefined();
   });
