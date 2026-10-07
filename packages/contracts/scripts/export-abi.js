@@ -43,7 +43,7 @@ const CONTRACTS = [
 ];
 
 /** The CCIP layer, built with Foundry (ccip/out): exported beside the rest when built. */
-const FOUNDRY_CONTRACTS = ["PolarisCCIPReceiver", "PolarisCCIPSender"];
+const FOUNDRY_CONTRACTS = ["PolarisCCIPReceiver", "PolarisCCIPSender", "PolarisCctpHookReceiver"];
 
 const ABI_DIR = join(__dirname, "..", "abi");
 

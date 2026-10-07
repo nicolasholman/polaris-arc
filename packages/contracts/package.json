@@ -22,7 +22,10 @@
     "test:ccip:fork": "ARC_FORK_TESTS=1 forge test",
     "ccip:deploy-sender:base-sepolia": "NETWORK=testnet hardhat run scripts/ccip-deploy-sender.js --network baseSepolia",
     "ccip:deploy-sender:sepolia": "NETWORK=testnet hardhat run scripts/ccip-deploy-sender.js --network ethereumSepolia",
-    "ccip:allow-senders:testnet": "NETWORK=testnet hardhat run scripts/ccip-allow-sender.js --network arcTestnet"
+    "ccip:allow-senders:testnet": "NETWORK=testnet hardhat run scripts/ccip-allow-sender.js --network arcTestnet",
+    "usyc:status:testnet": "POLARIS_USYC=status NETWORK=testnet hardhat run scripts/usyc-treasury.js --network arcTestnet",
+    "usyc:park:testnet": "POLARIS_USYC=park NETWORK=testnet hardhat run scripts/usyc-treasury.js --network arcTestnet",
+    "usyc:unpark:testnet": "POLARIS_USYC=unpark NETWORK=testnet hardhat run scripts/usyc-treasury.js --network arcTestnet"
   },
   "devDependencies": {
     "@chainlink/contracts": "^1.5.0",

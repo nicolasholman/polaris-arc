@@ -13318,3 +13318,292 @@ export declare const polarisCCIPSenderAbi: readonly [
   }
 ];
 
+/** ABI of PolarisCctpHookReceiver. */
+export declare const polarisCctpHookReceiverAbi: readonly [
+  {
+    readonly "type": "constructor";
+    readonly "inputs": readonly [
+      {
+        readonly "name": "_usdc";
+        readonly "type": "address";
+        readonly "internalType": "contract IERC20";
+      },
+      {
+        readonly "name": "_messageTransmitter";
+        readonly "type": "address";
+        readonly "internalType": "contract IMessageTransmitterV2";
+      },
+      {
+        readonly "name": "_payments";
+        readonly "type": "address";
+        readonly "internalType": "contract IPolarisPaymentsLike";
+      },
+      {
+        readonly "name": "_arcDomain";
+        readonly "type": "uint32";
+        readonly "internalType": "uint32";
+      }
+    ];
+    readonly "stateMutability": "nonpayable";
+  },
+  {
+    readonly "type": "function";
+    readonly "name": "arcDomain";
+    readonly "inputs": readonly [];
+    readonly "outputs": readonly [
+      {
+        readonly "name": "";
+        readonly "type": "uint32";
+        readonly "internalType": "uint32";
+      }
+    ];
+    readonly "stateMutability": "view";
+  },
+  {
+    readonly "type": "function";
+    readonly "name": "decode";
+    readonly "inputs": readonly [
+      {
+        readonly "name": "message";
+        readonly "type": "bytes";
+        readonly "internalType": "bytes";
+      }
+    ];
+    readonly "outputs": readonly [
+      {
+        readonly "name": "nonce";
+        readonly "type": "bytes32";
+        readonly "internalType": "bytes32";
+      },
+      {
+        readonly "name": "sourceDomain";
+        readonly "type": "uint32";
+        readonly "internalType": "uint32";
+      },
+      {
+        readonly "name": "merchant";
+        readonly "type": "address";
+        readonly "internalType": "address";
+      },
+      {
+        readonly "name": "orderId";
+        readonly "type": "string";
+        readonly "internalType": "string";
+      },
+      {
+        readonly "name": "orderAmount";
+        readonly "type": "uint256";
+        readonly "internalType": "uint256";
+      },
+      {
+        readonly "name": "refundTo";
+        readonly "type": "address";
+        readonly "internalType": "address";
+      }
+    ];
+    readonly "stateMutability": "view";
+  },
+  {
+    readonly "type": "function";
+    readonly "name": "messageTransmitter";
+    readonly "inputs": readonly [];
+    readonly "outputs": readonly [
+      {
+        readonly "name": "";
+        readonly "type": "address";
+        readonly "internalType": "contract IMessageTransmitterV2";
+      }
+    ];
+    readonly "stateMutability": "view";
+  },
+  {
+    readonly "type": "function";
+    readonly "name": "payments";
+    readonly "inputs": readonly [];
+    readonly "outputs": readonly [
+      {
+        readonly "name": "";
+        readonly "type": "address";
+        readonly "internalType": "contract IPolarisPaymentsLike";
+      }
+    ];
+    readonly "stateMutability": "view";
+  },
+  {
+    readonly "type": "function";
+    readonly "name": "relay";
+    readonly "inputs": readonly [
+      {
+        readonly "name": "message";
+        readonly "type": "bytes";
+        readonly "internalType": "bytes";
+      },
+      {
+        readonly "name": "attestation";
+        readonly "type": "bytes";
+        readonly "internalType": "bytes";
+      }
+    ];
+    readonly "outputs": readonly [
+      {
+        readonly "name": "paymentId";
+        readonly "type": "bytes32";
+        readonly "internalType": "bytes32";
+      }
+    ];
+    readonly "stateMutability": "nonpayable";
+  },
+  {
+    readonly "type": "function";
+    readonly "name": "usdc";
+    readonly "inputs": readonly [];
+    readonly "outputs": readonly [
+      {
+        readonly "name": "";
+        readonly "type": "address";
+        readonly "internalType": "contract IERC20";
+      }
+    ];
+    readonly "stateMutability": "view";
+  },
+  {
+    readonly "type": "event";
+    readonly "name": "HookPayment";
+    readonly "inputs": readonly [
+      {
+        readonly "name": "nonce";
+        readonly "type": "bytes32";
+        readonly "indexed": true;
+        readonly "internalType": "bytes32";
+      },
+      {
+        readonly "name": "merchant";
+        readonly "type": "address";
+        readonly "indexed": true;
+        readonly "internalType": "address";
+      },
+      {
+        readonly "name": "refundTo";
+        readonly "type": "address";
+        readonly "indexed": true;
+        readonly "internalType": "address";
+      },
+      {
+        readonly "name": "sourceDomain";
+        readonly "type": "uint32";
+        readonly "indexed": false;
+        readonly "internalType": "uint32";
+      },
+      {
+        readonly "name": "orderId";
+        readonly "type": "string";
+        readonly "indexed": false;
+        readonly "internalType": "string";
+      },
+      {
+        readonly "name": "amount";
+        readonly "type": "uint256";
+        readonly "indexed": false;
+        readonly "internalType": "uint256";
+      },
+      {
+        readonly "name": "excess";
+        readonly "type": "uint256";
+        readonly "indexed": false;
+        readonly "internalType": "uint256";
+      },
+      {
+        readonly "name": "paymentId";
+        readonly "type": "bytes32";
+        readonly "indexed": false;
+        readonly "internalType": "bytes32";
+      }
+    ];
+    readonly "anonymous": false;
+  },
+  {
+    readonly "type": "event";
+    readonly "name": "HookRefund";
+    readonly "inputs": readonly [
+      {
+        readonly "name": "nonce";
+        readonly "type": "bytes32";
+        readonly "indexed": true;
+        readonly "internalType": "bytes32";
+      },
+      {
+        readonly "name": "refundTo";
+        readonly "type": "address";
+        readonly "indexed": true;
+        readonly "internalType": "address";
+      },
+      {
+        readonly "name": "sourceDomain";
+        readonly "type": "uint32";
+        readonly "indexed": false;
+        readonly "internalType": "uint32";
+      },
+      {
+        readonly "name": "amount";
+        readonly "type": "uint256";
+        readonly "indexed": false;
+        readonly "internalType": "uint256";
+      },
+      {
+        readonly "name": "reason";
+        readonly "type": "bytes";
+        readonly "indexed": false;
+        readonly "internalType": "bytes";
+      }
+    ];
+    readonly "anonymous": false;
+  },
+  {
+    readonly "type": "error";
+    readonly "name": "InsufficientGas";
+    readonly "inputs": readonly [];
+  },
+  {
+    readonly "type": "error";
+    readonly "name": "NotForArc";
+    readonly "inputs": readonly [
+      {
+        readonly "name": "destinationDomain";
+        readonly "type": "uint32";
+        readonly "internalType": "uint32";
+      }
+    ];
+  },
+  {
+    readonly "type": "error";
+    readonly "name": "NotForThis";
+    readonly "inputs": readonly [];
+  },
+  {
+    readonly "type": "error";
+    readonly "name": "ReceiveFailed";
+    readonly "inputs": readonly [];
+  },
+  {
+    readonly "type": "error";
+    readonly "name": "ReentrancyGuardReentrantCall";
+    readonly "inputs": readonly [];
+  },
+  {
+    readonly "type": "error";
+    readonly "name": "SafeERC20FailedOperation";
+    readonly "inputs": readonly [
+      {
+        readonly "name": "token";
+        readonly "type": "address";
+        readonly "internalType": "address";
+      }
+    ];
+  },
+  {
+    readonly "type": "error";
+    readonly "name": "ZeroAddress";
+    readonly "inputs": readonly [];
+  }
+];
+

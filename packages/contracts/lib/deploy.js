@@ -173,6 +173,31 @@ async function deployPolaris(hre, cfg, log = () => {}) {
     log(`  PolarisCCIPReceiver    ${d.address}  (router ${cfg.network.ccip.router}; senders are allowlisted after they deploy: scripts/ccip-allow-sender.js)`);
   }
 
+  // ------------------------------------------------------- CCTP V2 hooks
+  // Pay a Polaris link from any CCTP chain in one transaction there, without
+  // CCIP: depositForBurnWithHook names this contract as mint recipient and
+  // destination caller, and its hookData names the order.
+  if (cfg.network.circle) {
+    log("Circle CCTP V2 hooks");
+    const art = foundryArtifact("PolarisCctpHookReceiver");
+    const factory = new ethers.ContractFactory(art.abi, art.bytecode, deployer);
+    const args = [addresses.USDC, cfg.network.circle.messageTransmitterV2, addresses.PolarisPayments, cfg.network.circle.cctpDomain];
+    const d = await tx.deploy(factory, args);
+    tally(d.receipt);
+    addresses.PolarisCctpHookReceiver = d.address;
+    record.contracts.PolarisCctpHookReceiver = {
+      address: d.address,
+      blockNumber: d.receipt.blockNumber,
+      txHash: d.receipt.hash,
+      gasUsed: d.receipt.gasUsed.toString(),
+      contract: "PolarisCctpHookReceiver",
+      abi: "abi/PolarisCctpHookReceiver.json",
+      args: jsonSafe(args),
+      build: "foundry (ccip/)",
+    };
+    log(`  PolarisCctpHookReceiver ${d.address}  (MessageTransmitterV2 ${cfg.network.circle.messageTransmitterV2})`);
+  }
+
   // ------------------------------------------------------------ wiring
   log("Roles");
   await send(scores, "setWriter", [addresses.PolarisLoanEngine, true]);
