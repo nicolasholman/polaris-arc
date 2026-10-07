@@ -49,7 +49,7 @@ export const NAV = [
 /** Behind "More", like the reference's "Market" dropdown. */
 export const MORE = [
   { key: "developers", label: "Developers", href: "/dashboard/developers", icon: <CodeXml />, description: "API keys, webhooks, the SDK" },
-  { key: "chainlink", label: "Chainlink", href: "/dashboard/automation", icon: <Workflow />, description: "keeper, the risk guard" },
+  { key: "automation", label: "Automation", href: "/dashboard/automation", icon: <Workflow />, description: "The keeper, the risk guard" },
   { key: "settings", label: "Settings", href: "/dashboard/settings", icon: <Settings2 />, description: "Business, payout wallet, test mode" },
 ];
 

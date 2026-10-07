@@ -11,7 +11,7 @@ import {
   type PrivyClientConfig,
 } from "@privy-io/react-auth";
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
-import { monad, monadTestnet } from "viem/chains";
+import { arc, arcTestnet } from "viem/chains";
 
 import { AuthContext, type AuthState, type WalletActions } from "@/lib/auth-context";
 
@@ -20,14 +20,14 @@ const APP_ID = process.env.NEXT_PUBLIC_PRIVY_APP_ID ?? "";
 // build's client id (NEXT_PUBLIC_PRIVY_ANDROID_CLIENT_ID): that one is for the
 // native app only.
 const CLIENT_ID = process.env.NEXT_PUBLIC_PRIVY_CLIENT_ID || undefined;
-const TESTNET_RPC = process.env.NEXT_PUBLIC_MONAD_TESTNET_RPC || "";
+const TESTNET_RPC = process.env.NEXT_PUBLIC_ARC_TESTNET_RPC || "https://rpc.testnet.arc.io";
 
 /** How long Privy may take to become ready before we say it can't be reached. */
 const READY_TIMEOUT_MS = 8000;
 
-// Point the embedded wallet at our own RPC when we have one; Privy has no
-// hosted RPC for Arc testnet, and the public one is rate-limited.
-const testnet = TESTNET_RPC ? addRpcUrlOverrideToChain(monadTestnet, TESTNET_RPC) : monadTestnet;
+// Point the embedded wallet at Arc's public RPC (or our own): gas there is USDC.
+const testnet = addRpcUrlOverrideToChain(arcTestnet, TESTNET_RPC);
+const MAINNET = process.env.NEXT_PUBLIC_CHAIN_ID === String(arc.id);
 
 type StaticImage = { src: string };
 const WORDMARK_SRC = typeof wordmark === "string" ? wordmark : (wordmark as StaticImage).src;
@@ -41,8 +41,8 @@ const PRIVY_CONFIG: PrivyClientConfig = {
     // who signs in with an external wallet (the dashboard default is off).
     ethereum: { createOnLogin: "all-users" },
   },
-  defaultChain: testnet,
-  supportedChains: [testnet, monad],
+  defaultChain: MAINNET ? arc : testnet,
+  supportedChains: [testnet, arc],
   appearance: {
     // Our surface-1 as the modal's ground (Privy derives its greys from it),
     // and lime for its primary button: the modal reads as part of the page.

@@ -52,7 +52,7 @@ export function Footer() {
         <div className="grid content-start gap-4">
           <BusinessLogo height={30} />
           <p className="max-w-[40ch] text-[14px] leading-relaxed text-ui-muted">
-            Payment links with credit built in: Stripe for every app on Arc. Built for Arc Metropolis 2026.
+            Payment links with credit built in: Stripe for every app on Arc, settled in USDC.
           </p>
         </div>
         <nav aria-label="Product" className="grid content-start gap-2 text-[15px]">
@@ -72,7 +72,7 @@ export function Footer() {
       </Shell>
       <Shell className="mt-10 flex flex-wrap items-center justify-between gap-3 text-[13px] text-ui-muted">
         <p>© 2026 Polaris. Test mode: no real money moves.</p>
-        <p>Arc · Privy · the Polaris keeper · Nansen · Envio · Agora USDC · passkey</p>
+        <p>Arc · Circle USDC · CCTP · EURC · Privy · Envio</p>
       </Shell>
     </footer>
   );

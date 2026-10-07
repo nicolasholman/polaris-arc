@@ -28,9 +28,9 @@ kill_timeout = 30
     NEXT_PUBLIC_DEMO_SHOP_URL = ""
 
 [env]
-  # The Monad testnet deployment record the image carries
-  # (packages/contracts/deployments/monad-testnet.json).
-  POLARIS_DEPLOYMENT = "monad-testnet"
+  # The Arc deployment record the image carries
+  # (packages/contracts/deployments/arc-testnet.json; arc-mainnet for mainnet).
+  POLARIS_DEPLOYMENT = "arc-testnet"
   # Fly's proxy appends the client's address to X-Forwarded-For: one proxy.
   POLARIS_TRUSTED_PROXIES = "1"
   # The store on the volume, and the background loops (chain sync, webhook

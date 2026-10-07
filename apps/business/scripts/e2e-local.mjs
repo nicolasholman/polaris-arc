@@ -4,25 +4,25 @@
 //   pnpm --filter @polaris/business e2e:local
 //
 //  1. starts a Hardhat node on 127.0.0.1:8610 and deploys every contract with
-//     the testnet deploy script (MockUSDC and a local keeper forwarder standing in);
+//     the Arc deploy script (NETWORK=local: MockUSDC and MockEURC stand in for
+//     Circle's tokens; everything else is the contracts Arc runs);
 //  2. starts Polaris for Business on :3530 with the dev relayer adapter (a
 //     local key held to the production relayer policy) and a fresh SQLite db;
-//     Privy is forced off (POLARIS_DISABLE_PRIVY=1), so nothing touches the
-//     live app whose keys sit in .env.local;
+//     Privy is forced off (POLARIS_DISABLE_PRIVY=1);
 //  3. seeds the demo merchant with an API key and a webhook endpoint pointing
 //     at a receiver on :3531 that verifies every delivery with polarispay-sdk;
 //  4. with polarispay-sdk/server: creates a checkout session (and replays it
 //     with the same Idempotency-Key), reads it as the hosted checkout does,
-//     signs as a fresh buyer who holds no USDC (gas), and relays Pay now through
-//     /api/relay; then a Pay in 4 session: a report through the mock forwarder
-//     with hand-built facts (no keeper, keeper or Nansen runs here) opens the
-//     buyer's credit line, the buyer signs PlanIntent + Permit, /api/relay opens
-//     the plan; then the SDK's direct pay through /api/v1/relay/payments;
-//  5. moves the clock a week, delivers a hand-built collections report through
-//     the mock forwarder, and waits for the chain sync to turn it into
-//     `installment.collected`.
-//     The keeper evidence is elsewhere: workflows' e2e:local runs the real
-//     workflow handlers, and `cre workflow simulate` runs them in the CLI;
+//     signs as a fresh buyer who holds no gas, and relays Pay now through
+//     /api/relay; then a Pay in 4 session: the keeper's key submits an
+//     underwriting report (hand-built facts: no data providers run here) that
+//     opens the buyer's credit line, the buyer signs PlanIntent + Permit,
+//     /api/relay opens the plan; then the SDK's direct pay through
+//     /api/v1/relay/payments; then a euro send link on EURC, claimed by a
+//     fresh recipient;
+//  5. moves the clock a week and runs the real keeper (services/keeper,
+//     --once): it finds the due instalment, submits the collections report,
+//     and the chain sync turns it into `installment.collected`;
 //  6. checks every webhook arrived, verified, with the documented fields, that
 //     the sessions read back as complete, and that the buyer sent nothing.
 //
@@ -51,9 +51,10 @@ import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 import {
   collectionsReceiverAbi,
   mockUSDCAbi,
-  mockKeystoneForwarderAbi,
   polarisCheckoutAbi,
   polarisLoanEngineAbi,
+  polarisSendAbi,
+  underwritingReceiverAbi,
 } from "@polarispay/contracts/abi";
 import { APP_DIR, REPO_DIR, flag } from "./privy/lib.mjs";
 import { seedMerchant } from "./lib/seed.mjs";
@@ -66,14 +67,17 @@ let RPC = "";
 let BASE = "";
 const CONTRACTS_DIR = join(REPO_DIR, "packages", "contracts");
 const SDK_DIR = join(REPO_DIR, "packages", "sdk");
-const DEPLOYMENT = join(CONTRACTS_DIR, "deployments", "monad-local.json");
+const DEPLOYMENT = join(CONTRACTS_DIR, "deployments", "arc-local.json");
 // Hardhat's well-known local test accounts (public; only ever valid on a local node).
 const HARDHAT_KEYS = [
   "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80",
   "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d",
+  "0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a",
 ];
-const OWNER = privateKeyToAccount(HARDHAT_KEYS[0]); // deployer, registry owner, keeper simulation transmitter, MockUSDC minter
+const OWNER = privateKeyToAccount(HARDHAT_KEYS[0]); // deployer, registry owner, MockUSDC minter
 const RELAYER = privateKeyToAccount(HARDHAT_KEYS[1]); // the dev relayer adapter's key
+const KEEPER = privateKeyToAccount(HARDHAT_KEYS[2]); // the keeper: the receivers accept reports from it alone
+const CALLBACK_SECRET = "e2e-keeper-secret";
 
 const children = [];
 const work = mkdtempSync(join(tmpdir(), "polaris-e2e-"));
@@ -169,19 +173,20 @@ async function main() {
   background("hardhat node", process.execPath, [hardhat, "node", "--hostname", "127.0.0.1", "--port", String(NODE_PORT)], { cwd: CONTRACTS_DIR, shell: false });
   await until("the Hardhat node", rpcReady, { timeoutMs: 120_000 });
   await run(process.execPath, [hardhat, "compile", "--quiet"], { cwd: CONTRACTS_DIR, quiet: true, shell: false });
-  await run(process.execPath, [hardhat, "run", "scripts/deploy-monad.js", "--network", "monadLocal"], {
+  await run(process.execPath, [hardhat, "run", "scripts/deploy.js", "--network", "arcLocal"], {
     cwd: CONTRACTS_DIR,
     quiet: true,
     shell: false,
-    env: { ...process.env, POLARIS_LOCAL_NODE_PORT: String(NODE_PORT), RELAYER_ADDRESS: RELAYER.address },
+    env: { ...process.env, NETWORK: "local", POLARIS_LOCAL_NODE_PORT: String(NODE_PORT), POLARIS_RELAYER_ADDRESS: RELAYER.address, POLARIS_KEEPER_ADDRESS: KEEPER.address },
   });
   const deployment = JSON.parse(readFileSync(DEPLOYMENT, "utf8"));
   const C = Object.fromEntries(Object.entries(deployment.contracts).map(([k, v]) => [k, getAddress(v.address)]));
-  pass("contracts deployed on the local node", `(chain ${deployment.chainId}, relayer ${RELAYER.address} granted its roles)`);
+  pass("contracts deployed on the local node", `(chain ${deployment.chainId}, relayer ${RELAYER.address} and keeper ${KEEPER.address} granted their roles)`);
 
-  const chain = defineChain({ id: deployment.chainId, name: "local", nativeCurrency: { name: "USDC (gas)", symbol: "USDC (gas)", decimals: 18 }, rpcUrls: { default: { http: [RPC] } } });
+  const chain = defineChain({ id: deployment.chainId, name: "local", nativeCurrency: { name: "USDC", symbol: "USDC", decimals: 18 }, rpcUrls: { default: { http: [RPC] } } });
   const client = createPublicClient({ chain, transport: http(RPC), pollingInterval: 200 });
   const owner = createWalletClient({ account: OWNER, chain, transport: http(RPC) });
+  const keeper = createWalletClient({ account: KEEPER, chain, transport: http(RPC) });
 
   // ── 2. the SDK, built ────────────────────────────────────────────────────
   if (!existsSync(join(SDK_DIR, "dist", "esm", "server.js"))) {
@@ -229,6 +234,7 @@ async function main() {
     POLARIS_WORKERS: "1",
     PAY_IN_4_INTERVAL_SECONDS: "604800",
     CRON_SECRET: "e2e-cron-secret",
+    POLARIS_KEEPER_CALLBACK_SECRET: CALLBACK_SECRET,
     NEXT_TELEMETRY_DISABLED: "1",
   };
   // The server imports @polarispay/underwriting's compiled core: build it if it is missing or stale.
@@ -252,7 +258,7 @@ async function main() {
   // A buyer who has dollars and nothing else.
   const buyer = privateKeyToAccount(generatePrivateKey());
   await client.waitForTransactionReceipt({
-    hash: await owner.writeContract({ address: C.Stablecoin, abi: mockUSDCAbi, functionName: "mint", args: [buyer.address, 1_000_000_000n] }),
+    hash: await owner.writeContract({ address: C.USDC, abi: mockUSDCAbi, functionName: "mint", args: [buyer.address, 1_000_000_000n] }),
   });
   const orderKey = (merchant, orderId) => keccak256(encodePacked(["address", "string"], [merchant, orderId]));
   const waitFor = (type, match = () => true) =>
@@ -306,10 +312,9 @@ async function main() {
   pass("checkout.sessions.retrieve shows the session complete, with the transaction");
 
   // ── 7. Pay in 4 ──────────────────────────────────────────────────────────
-  // These reports are built by hand and pushed through the local MockKeystoneForwarder,
-  // which checks no signatures: no keeper or keeper runs here. The workflows' own
-  // round trip is workflows/ e2e:local; their real runs on Arc are workflows/evidence/.
-  const { encodeRawReport, encodeUnderwritingReport, encodeCollectionsReport, WORKFLOW_NAMES, ACTION } = createRequire(join(CONTRACTS_DIR, "package.json"))("./lib/cre.js");
+  // The underwriting report's facts are built by hand (no data providers run
+  // here) and submitted with the keeper's key, the only one the receiver accepts.
+  const { encodeUnderwritingReport, ACTION } = createRequire(join(CONTRACTS_DIR, "package.json"))("./lib/keeper.js");
   const block = await client.getBlock();
   const underwriting = encodeUnderwritingReport([
     {
@@ -318,16 +323,11 @@ async function main() {
       facts: { walletAgeDays: 730, txCount: 1200, stableBalance: 2_500_000_000n, defiTenureDays: 400, priorLiquidations: 0, relatedWallets: 1, exchangeFunded: true, observedAt: block.timestamp },
     },
   ]);
-  const report = async (receiver, body, workflowName) => {
-    const raw = encodeRawReport({ body, workflowName, workflowOwner: OWNER.address, executionId: keccak256(stringToHex(`${Date.now()}-${Math.random()}`)), timestamp: Number((await client.getBlock()).timestamp) });
-    const hash = await owner.writeContract({ address: C.MockKeystoneForwarder, abi: mockKeystoneForwarderAbi, functionName: "report", args: [receiver, raw, "0x", []] });
-    const r = await client.waitForTransactionReceipt({ hash });
-    const [processed] = parseEventLogs({ abi: mockKeystoneForwarderAbi, logs: r.logs, eventName: "ReportProcessed" });
-    assert(processed?.args.result, "the receiver accepted the hand-built mock forwarder report");
-    return r;
-  };
-  await report(C.UnderwritingReceiver, underwriting, WORKFLOW_NAMES.UNDERWRITING);
-  pass("mock forwarder report (hand-built facts, no keeper) opened the buyer's credit line");
+  const uwHash = await keeper.writeContract({ address: C.UnderwritingReceiver, abi: underwritingReceiverAbi, functionName: "submitReport", args: [underwriting] });
+  const uwReceipt = await client.waitForTransactionReceipt({ hash: uwHash });
+  const [applied] = parseEventLogs({ abi: underwritingReceiverAbi, logs: uwReceipt.logs, eventName: "UnderwritingApplied" });
+  assert(applied, "UnderwritingReceiver applied the keeper's report");
+  pass("the keeper's underwriting report (hand-built facts) opened the buyer's credit line", `(score ${applied.args.score})`);
 
   const orderPlan = `e2e-plan-${Date.now()}`;
   const s2 = await polaris.checkout.sessions.create(
@@ -340,7 +340,7 @@ async function main() {
   const interval = BigInt(pub2.payIn4.intervalSeconds);
   const quote = await client.readContract({ address: C.PolarisCheckout, abi: polarisCheckoutAbi, functionName: "quotePlan", args: [buyer.address, 200_000_000n, 4, interval] });
   const checkoutNonce = await client.readContract({ address: C.PolarisCheckout, abi: polarisCheckoutAbi, functionName: "nonces", args: [buyer.address] });
-  const tokenNonce = await client.readContract({ address: C.Stablecoin, abi: mockUSDCAbi, functionName: "nonces", args: [buyer.address] });
+  const tokenNonce = await client.readContract({ address: C.USDC, abi: mockUSDCAbi, functionName: "nonces", args: [buyer.address] });
   const now = BigInt(Math.floor(Date.now() / 1000));
   const intent = { buyer: buyer.address, merchant: pub2.chain.merchant, principal: 200_000_000n, installments: 4, interval, orderId: pub2.chain.orderId, nonce: checkoutNonce, deadline: now + 600n };
   const intentSig = await buyer.signTypedData({
@@ -435,26 +435,98 @@ async function main() {
   await waitFor("payment.succeeded", (e) => e.data.orderId === orderDirect);
   pass("SDK direct pay through /api/v1/relay/payments (pk_test_ key), payment.succeeded delivered");
 
-  // ── 9. a hand-built collections report collects instalment 1; the chain sync sends the webhook ──
+  // ── 8b. euros by link: EURC on Arc, through PolarisSend(EURC) ───────────
+  await client.waitForTransactionReceipt({
+    hash: await owner.writeContract({ address: C.EURC, abi: mockUSDCAbi, functionName: "mint", args: [buyer.address, 50_000_000n] }),
+  });
+  const net = (await api("/api/public/network")).body.data;
+  assert(net.contracts.sendEurc === C.PolarisSendEURC && net.domains.eurc?.name === "EURC", "the network route reports EURC and its send link");
+  const linkKey = privateKeyToAccount(generatePrivateKey());
+  const eurAmount = 12_500_000n;
+  const expiresAt = BigInt(Math.floor(Date.now() / 1000) + 86_400);
+  const sendValidBefore = BigInt(Math.floor(Date.now() / 1000) + 1800);
+  const { encodeAbiParameters } = await import("viem");
+  const sendNonce = keccak256(encodeAbiParameters([{ type: "address" }, { type: "uint64" }], [linkKey.address, expiresAt]));
+  const authTypes = {
+    ReceiveWithAuthorization: [
+      { name: "from", type: "address" },
+      { name: "to", type: "address" },
+      { name: "value", type: "uint256" },
+      { name: "validAfter", type: "uint256" },
+      { name: "validBefore", type: "uint256" },
+      { name: "nonce", type: "bytes32" },
+    ],
+  };
+  const eurSig = await buyer.signTypedData({
+    domain: net.domains.eurc,
+    types: authTypes,
+    primaryType: "ReceiveWithAuthorization",
+    message: { from: buyer.address, to: C.PolarisSendEURC, value: eurAmount, validAfter: 0n, validBefore: sendValidBefore, nonce: sendNonce },
+  });
+  const openSig = await linkKey.signTypedData({
+    domain: net.domains.sendEurc,
+    types: { Open: [{ name: "sender", type: "address" }, { name: "amount", type: "uint256" }, { name: "expiresAt", type: "uint64" }] },
+    primaryType: "Open",
+    message: { sender: buyer.address, amount: eurAmount, expiresAt },
+  });
+  const sent = await api("/api/relay", {
+    method: "POST",
+    body: JSON.stringify({ type: "send", currency: "EUR", sender: buyer.address, linkKey: linkKey.address, amount: String(eurAmount), expiresAt: String(expiresAt), validAfter: "0", validBefore: String(sendValidBefore), signature: eurSig, linkSignature: openSig }),
+  });
+  assert(sent.status === 200 && sent.body.data.status === "confirmed", `relay send EUR: ${JSON.stringify(sent.body)}`);
+  const link = await client.readContract({ address: C.PolarisSendEURC, abi: polarisSendAbi, functionName: "linkOf", args: [linkKey.address] });
+  assert(link.amount === eurAmount, "the EURC escrow holds the link");
+  const friend = privateKeyToAccount(generatePrivateKey());
+  const claimDeadline = BigInt(Math.floor(Date.now() / 1000) + 900);
+  const claimSig = await linkKey.signTypedData({
+    domain: net.domains.sendEurc,
+    types: { Claim: [{ name: "to", type: "address" }, { name: "deadline", type: "uint256" }] },
+    primaryType: "Claim",
+    message: { to: friend.address, deadline: claimDeadline },
+  });
+  const claimed = await api("/api/relay", {
+    method: "POST",
+    body: JSON.stringify({ type: "claim", currency: "EUR", linkKey: linkKey.address, to: friend.address, deadline: String(claimDeadline), signature: claimSig }),
+  });
+  assert(claimed.status === 200 && claimed.body.data.status === "confirmed", `relay claim EUR: ${JSON.stringify(claimed.body)}`);
+  const friendEur = await client.readContract({ address: C.EURC, abi: mockUSDCAbi, functionName: "balanceOf", args: [friend.address] });
+  assert(friendEur === eurAmount, "the friend received €12.50 in EURC");
+  pass("euros by link: €12.50 sent on EURC through /api/relay (currency EUR) and claimed by a fresh recipient");
+
+  // ── 9. the keeper collects instalment 1; the chain sync sends the webhook ──
   await client.request({ method: "evm_increaseTime", params: [Number(interval) + 1] });
   await client.request({ method: "evm_mine", params: [] });
   const tasks = [{ action: ACTION.COLLECT_INSTALLMENT, id: loanId }];
   const ready = await client.readContract({ address: C.CollectionsReceiver, abi: collectionsReceiverAbi, functionName: "checkTasks", args: [tasks] });
   assert(ready[0], "instalment 1 is due");
-  await report(C.CollectionsReceiver, encodeCollectionsReport(tasks), WORKFLOW_NAMES.COLLECTIONS);
+  // The real keeper, one run: it finds the due instalment itself.
+  await run(process.execPath, ["--conditions=source", "--disable-warning=ExperimentalWarning", join(REPO_DIR, "services", "keeper", "src", "main.ts"), "--once"], {
+    cwd: join(REPO_DIR, "services", "keeper"),
+    shell: false,
+    quiet: !flag("verbose"),
+    env: {
+      ...process.env,
+      POLARIS_DEPLOYMENT_FILE: DEPLOYMENT,
+      KEEPER_RPC_URL: RPC,
+      POLARIS_KEEPER_PRIVATE_KEY: HARDHAT_KEYS[2],
+      POLARIS_API_URL: BASE,
+      POLARIS_KEEPER_CALLBACK_SECRET: CALLBACK_SECRET,
+      KEEPER_BACKOFF: "off",
+    },
+  });
   const collected = await waitFor("installment.collected", (e) => e.data.planId === String(loanId));
   assert(collected.event.data.installment === 1 && collected.event.data.amount === "50.383562", "instalment 1 of 4, $50.38");
   const loan = await client.readContract({ address: C.PolarisLoanEngine, abi: polarisLoanEngineAbi, functionName: "getLoan", args: [loanId] });
   assert(loan.installmentsPaid === 1, "the loan engine agrees");
-  pass("mock forwarder collections report (hand-built task) collected instalment 1; installment.collected arrived from the chain sync", `(remaining $${collected.event.data.remaining})`);
+  pass("the keeper (services/keeper --once) collected instalment 1; installment.collected arrived from the chain sync", `(remaining $${collected.event.data.remaining})`);
 
   // ── 10. checks ───────────────────────────────────────────────────────────
   const bad = received.filter((r) => r.error);
   assert(bad.length === 0, `every delivery verified (${bad.map((b) => b.error).join("; ")})`);
-  const buyerMon = await client.getBalance({ address: buyer.address });
+  const buyerGas = await client.getBalance({ address: buyer.address });
   const buyerTxs = await client.getTransactionCount({ address: buyer.address });
-  assert(buyerMon === 0n && buyerTxs === 0, "the buyer held no USDC (gas) and sent no transaction");
-  pass("the buyer never held USDC (gas) or sent a transaction; every webhook verified", `(${received.length} deliveries: ${[...new Set(received.map((r) => r.event.type))].join(", ")})`);
+  assert(buyerGas === 0n && buyerTxs === 0, "the buyer held no gas and sent no transaction");
+  pass("the buyer never held gas or sent a transaction; every webhook verified", `(${received.length} deliveries: ${[...new Set(received.map((r) => r.event.type))].join(", ")})`);
 
   hooks.close();
   log(`\nAll ${results.length} checks passed.`);

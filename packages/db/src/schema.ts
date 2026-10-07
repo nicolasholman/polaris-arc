@@ -536,6 +536,8 @@ export type WalletMoveRecord = {
   /** A share of a split (split-paid, split-received): the split's id and the share's index, from PolarisSplit.SharePaid. Absent on older records. */
   splitId?: Hex | null;
   shareIndex?: number | null;
+  /** Which dollar moved: USDC ("USD", also on older records without the field) or EURC ("EUR", euro send links). */
+  currency?: "USD" | "EUR";
   at: IsoDate;
 };
 

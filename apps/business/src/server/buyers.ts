@@ -92,7 +92,7 @@ export async function buyerBook(address: Address) {
         txHash: p.txHash,
         createdAt: p.createdAt,
       })),
-    /** Every USDC transfer to or from the address, classified; `payment` rows are the transfers inside a payment above. */
+    /** Every USDC and EURC transfer to or from the address, classified; `payment` rows are the transfers inside a payment above. */
     moves: moves.map((m) => ({
       id: m.id,
       kind: m.kind,
@@ -106,6 +106,8 @@ export async function buyerBook(address: Address) {
       /** split-paid and split-received: the split and the share. */
       splitId: m.splitId ?? null,
       shareIndex: m.shareIndex ?? null,
+      /** "USD" (USDC) or "EUR" (EURC: euro send links). */
+      currency: m.currency ?? "USD",
       at: m.at,
     })),
     /**

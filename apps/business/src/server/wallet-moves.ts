@@ -19,11 +19,12 @@ import { chunkSize, configuredFromBlock } from "./ingest/sync";
  * the transfers inside a payment or an instalment (kept for the balance,
  * shown through the payment's own row).
  *
- * Read per address, on demand, from the USDC `Transfer` logs to or from it
- * and PolarisSend's `Sent`/`Claimed`/`Cancelled`/`Refunded` logs that name
- * it, block range by block range from the deployment (or where it left off:
- * a cursor per address), and kept in `wallet_moves`. The same logs client as
- * the chain sync: Envio's HyperRPC when POLARIS_LOGS_RPC_URL is set.
+ * Read per address, on demand, from the USDC (and EURC) `Transfer` logs to or
+ * from it and PolarisSend's `Sent`/`Claimed`/`Cancelled`/`Refunded` logs that
+ * name it (the dollar escrow, and the euro one on EURC), block range by block
+ * range from the deployment (or where it left off: a cursor per address), and
+ * kept in `wallet_moves`, each with its currency. A CCTP arrival is a mint
+ * (from the zero address): "added". The same logs client as the chain sync.
  */
 
 const erc20 = parseAbi(["event Transfer(address indexed from, address indexed to, uint256 value)"]);
@@ -98,6 +99,7 @@ const parsed = (log: Log): Parsed | null =>
 
 function classify(
   chain: ChainConfig,
+  send: Address,
   direction: "in" | "out",
   counterparty: Address,
   inTx: Set<string>,
@@ -106,7 +108,7 @@ function classify(
   const c = chain.contracts;
   const other = counterparty.toLowerCase();
   if (direction === "in" && other === zeroAddress) return { kind: "added", linkKey: null };
-  if (other === c.send.toLowerCase()) {
+  if (other === send.toLowerCase()) {
     const find = (...events: string[]) => sendLogs.find((s) => events.includes(s.event))?.linkKey ?? null;
     if (direction === "out") return { kind: "sent-link", linkKey: find("Sent") };
     const claimed = find("Claimed");
@@ -121,17 +123,36 @@ function classify(
   return { kind: direction === "out" ? "sent" : "received", linkKey: null };
 }
 
+/** The dollars a book follows: USDC with PolarisSend, and EURC with PolarisSend on EURC where the deployment has them. */
+function currencies(chain: ChainConfig): Array<{ currency: "USD" | "EUR"; token: Address; send: Address }> {
+  const c = chain.contracts;
+  const out: Array<{ currency: "USD" | "EUR"; token: Address; send: Address }> = [{ currency: "USD", token: c.stablecoin, send: c.send }];
+  if (c.eurc && c.sendEurc) out.push({ currency: "EUR", token: c.eurc, send: c.sendEurc });
+  return out;
+}
+
 async function readRange(chain: ChainConfig, who: Address, from: number, to: number, openLinks: Address[]): Promise<void> {
+  for (const cur of currencies(chain)) await readRangeOf(chain, cur, who, from, to, openLinks);
+}
+
+async function readRangeOf(
+  chain: ChainConfig,
+  cur: { currency: "USD" | "EUR"; token: Address; send: Address },
+  who: Address,
+  from: number,
+  to: number,
+  openLinks: Address[],
+): Promise<void> {
   const db = getDb();
   const logs = logsClient();
   const me = topic(who);
   const get = (address: Address, topics: Array<Hex | Hex[] | null>) =>
     logs.request({ method: "eth_getLogs", params: [{ address, topics, fromBlock: `0x${from.toString(16)}`, toBlock: `0x${to.toString(16)}` }] }) as Promise<Log[]>;
   const [outs, ins, mySends, myClaims] = await Promise.all([
-    get(chain.contracts.stablecoin, [TRANSFER, me]),
-    get(chain.contracts.stablecoin, [TRANSFER, null, me]),
-    get(chain.contracts.send, [[SENT, CANCELLED, REFUNDED], null, me]),
-    get(chain.contracts.send, [CLAIMED, null, me]),
+    get(cur.token, [TRANSFER, me]),
+    get(cur.token, [TRANSFER, null, me]),
+    get(cur.send, [[SENT, CANCELLED, REFUNDED], null, me]),
+    get(cur.send, [CLAIMED, null, me]),
   ]);
 
   // Send-contract events in each transaction that name this address, for the transfers beside them.
@@ -159,7 +180,7 @@ async function readRange(chain: ChainConfig, who: Address, from: number, to: num
     const direction = from === who ? "out" : "in";
     const counterparty = direction === "out" ? toAddr : from;
     const inTx = counterparty === zeroAddress ? new Set<string>() : await contractsIn(p.txHash).catch(() => new Set<string>());
-    const { kind, linkKey } = classify(chain, direction, counterparty, inTx, sendsByTx.get(p.txHash.toLowerCase()) ?? []);
+    const { kind, linkKey } = classify(chain, cur.send, direction, counterparty, inTx, sendsByTx.get(p.txHash.toLowerCase()) ?? []);
     const id = `${p.txHash}:${p.logIndex}:${who.toLowerCase()}`;
     // Kept once: a range read again never forgets that a link was claimed since.
     if (await db.walletMoves.get(id)) continue;
@@ -179,6 +200,7 @@ async function readRange(chain: ChainConfig, who: Address, from: number, to: num
       settledAs: null,
       splitId: share?.splitId ?? null,
       shareIndex: share?.shareIndex ?? null,
+      currency: cur.currency,
       at: await blockTime(p.blockNumber),
     });
   }
@@ -186,7 +208,7 @@ async function readRange(chain: ChainConfig, who: Address, from: number, to: num
   // This address's links that were claimed or taken back in the range: the sender sees "Claimed".
   const watch = [...new Set([...openLinks, ...newLinks].map((k) => k.toLowerCase()))].slice(0, 100);
   if (watch.length === 0) return;
-  const settled = await get(chain.contracts.send, [[CLAIMED, CANCELLED, REFUNDED], watch.map((k) => topic(k as Address))]);
+  const settled = await get(cur.send, [[CLAIMED, CANCELLED, REFUNDED], watch.map((k) => topic(k as Address))]);
   for (const log of settled) {
     const p = parsed(log);
     if (!p) continue;

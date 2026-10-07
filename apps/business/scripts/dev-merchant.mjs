@@ -3,7 +3,7 @@
 //
 //   pnpm --filter @polaris/business dev:merchant -- [--wallet 0x…] [--name "Studio"] [--webhook http://127.0.0.1:4000/hook]
 //
-// Defaults: the demo merchant from packages/contracts/deployments/monad-local.json
+// Defaults: the demo merchant from packages/contracts/deployments/arc-local.json
 // (registered and activated by `deploy:local`), and the database the dev
 // server uses (POLARIS_DB_URL, default sqlite:.data/polaris.db). Prints the
 // sk_test_/pk_test_ keys and the webhook secret once. Refuses in production.
@@ -15,7 +15,7 @@ import { APP_DIR, REPO_DIR, loadEnv, option } from "./privy/lib.mjs";
 import { seedMerchant } from "./lib/seed.mjs";
 
 const env = loadEnv();
-const localDeployment = join(REPO_DIR, "packages", "contracts", "deployments", "monad-local.json");
+const localDeployment = join(REPO_DIR, "packages", "contracts", "deployments", "arc-local.json");
 let wallet = option("wallet");
 let name = option("name", "Polaris Demo Studio");
 let registration = "none";

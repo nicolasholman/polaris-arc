@@ -44,10 +44,10 @@ export function option(name, fallback) {
 export function loadDeployment(env) {
   const file = env.POLARIS_DEPLOYMENT_FILE
     ? resolve(APP_DIR, env.POLARIS_DEPLOYMENT_FILE)
-    : join(REPO_DIR, "packages", "contracts", "deployments", `${option("deployment", env.POLARIS_DEPLOYMENT ?? "monad-testnet")}.json`);
+    : join(REPO_DIR, "packages", "contracts", "deployments", `${option("deployment", env.POLARIS_DEPLOYMENT ?? "arc-testnet")}.json`);
   if (!existsSync(file)) {
     throw new Error(
-      `No deployment record at ${file}.\nDeploy first (pnpm --filter @polarispay/contracts deploy:monad), or pass --deployment <name> / POLARIS_DEPLOYMENT_FILE.`,
+      `No deployment record at ${file}.\nDeploy first (pnpm --filter @polarispay/contracts deploy:testnet), or pass --deployment <name> / POLARIS_DEPLOYMENT_FILE.`,
     );
   }
   const d = JSON.parse(readFileSync(file, "utf8"));
@@ -59,7 +59,7 @@ export function loadDeployment(env) {
   return {
     file,
     chainId: d.chainId,
-    // Whether the record's vault takes withdrawWithSig: written by deploy:monad and redeploy-vault:monad
+    // Whether the record's vault takes withdrawWithSig: written by deploy:testnet and redeploy-vault:monad
     // from the vault itself. Arc testnet's vault of 28 Sep 2026 predates it.
     vaultWithdraw: Boolean(d.eip712?.CollateralVault),
     addresses: {

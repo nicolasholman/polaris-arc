@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
  * MerchantRegistry onboarding. GET returns the registration state and, when
  * one is needed, the EIP-712 `Registration` for the payout wallet to sign;
  * POST takes the signature and relays `registerFor` (the merchant holds no
- * USDC (gas)), then activates the merchant for Pay in 4 when a registry admin is
+ * gas), then activates the merchant for Pay in 4 when a registry admin is
  * configured.
  */
 export const GET = withMerchant(async (_req, auth) => ok(await getRegistration(auth)));

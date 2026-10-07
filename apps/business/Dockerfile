@@ -46,15 +46,17 @@ COPY . .
 ARG NEXT_PUBLIC_PRIVY_APP_ID=""
 ARG NEXT_PUBLIC_PRIVY_CLIENT_ID=""
 ARG NEXT_PUBLIC_PRIVY_PAYOUT_SIGNER_ID=""
-ARG NEXT_PUBLIC_MONAD_TESTNET_RPC=""
+ARG NEXT_PUBLIC_ARC_TESTNET_RPC=""
+ARG NEXT_PUBLIC_CHAIN_ID="5042002"
 ARG NEXT_PUBLIC_DEMO_SHOP_URL=""
 ARG NEXT_PUBLIC_USDC_ADDRESS=""
-ARG NEXT_PUBLIC_USDC_EIP712_NAME="Agora Dollar"
-ARG NEXT_PUBLIC_USDC_EIP712_VERSION="1"
+ARG NEXT_PUBLIC_USDC_EIP712_NAME="USDC"
+ARG NEXT_PUBLIC_USDC_EIP712_VERSION="2"
 ENV NEXT_PUBLIC_PRIVY_APP_ID=$NEXT_PUBLIC_PRIVY_APP_ID \
     NEXT_PUBLIC_PRIVY_CLIENT_ID=$NEXT_PUBLIC_PRIVY_CLIENT_ID \
     NEXT_PUBLIC_PRIVY_PAYOUT_SIGNER_ID=$NEXT_PUBLIC_PRIVY_PAYOUT_SIGNER_ID \
-    NEXT_PUBLIC_MONAD_TESTNET_RPC=$NEXT_PUBLIC_MONAD_TESTNET_RPC \
+    NEXT_PUBLIC_ARC_TESTNET_RPC=$NEXT_PUBLIC_ARC_TESTNET_RPC \
+    NEXT_PUBLIC_CHAIN_ID=$NEXT_PUBLIC_CHAIN_ID \
     NEXT_PUBLIC_DEMO_SHOP_URL=$NEXT_PUBLIC_DEMO_SHOP_URL \
     NEXT_PUBLIC_USDC_ADDRESS=$NEXT_PUBLIC_USDC_ADDRESS \
     NEXT_PUBLIC_USDC_EIP712_NAME=$NEXT_PUBLIC_USDC_EIP712_NAME \
@@ -62,16 +64,12 @@ ENV NEXT_PUBLIC_PRIVY_APP_ID=$NEXT_PUBLIC_PRIVY_APP_ID \
     POLARIS_NEXT_OUTPUT=standalone
 # next build (it builds @polarispay/underwriting first), then gather what the
 # server reads from disk at runtime rather than from its bundle: the
-# deployment records (src/server/env.ts) and the CRE workflows' schedules
-# (src/server/keeper/overview.ts), kept at the same paths relative to
+# deployment records (src/server/env.ts), kept at the same paths relative to
 # apps/business.
 RUN pnpm --filter @polaris/business build \
  && mkdir -p /extras/packages/contracts/deployments \
- && for f in monad-testnet.json monad.json; do \
+ && for f in arc-testnet.json arc-mainnet.json; do \
       if [ -f "packages/contracts/deployments/$f" ]; then cp "packages/contracts/deployments/$f" /extras/packages/contracts/deployments/; fi; \
-    done \
- && for w in collections underwriting guardian; do \
-      mkdir -p "/extras/workflows/$w" && cp "workflows/$w/config.staging.json" "workflows/$w/config.production.json" "/extras/workflows/$w/"; \
     done
 
 # ── runtime: the standalone server, no toolchain, no dev dependencies ────────
@@ -83,7 +81,7 @@ ENV NODE_ENV=production \
     POLARIS_DATA_DIR=/data \
     POLARIS_DB_URL=sqlite:/data/polaris.db \
     POLARIS_WORKERS=1 \
-    POLARIS_DEPLOYMENT=monad-testnet
+    POLARIS_DEPLOYMENT=arc-testnet
 WORKDIR /app
 COPY --from=build --chown=node:node /repo/apps/business/.next/standalone ./
 COPY --from=build --chown=node:node /repo/apps/business/.next/static ./apps/business/.next/static

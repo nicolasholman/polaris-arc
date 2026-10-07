@@ -1,22 +1,27 @@
 import { getAddress, isAddress } from "viem";
-import { monad, monadTestnet } from "viem/chains";
+import { arc, arcTestnet } from "viem/chains";
 
 import type { Address } from "./data/types";
 
 /**
- * Arc, as the dashboard uses it. viem 2.56 ships both chains: `monadTestnet`
- * (10143) is the default; mainnet (143) is configured so a merchant's wallet
- * already knows it.
+ * Arc, as the dashboard uses it. viem ships both chains: Arc testnet
+ * (5042002) is the default unless NEXT_PUBLIC_CHAIN_ID=5042 picks mainnet;
+ * both are configured so a merchant's wallet already knows them. Gas on
+ * either is USDC.
  */
-export const DEFAULT_CHAIN = monadTestnet;
-export const SUPPORTED_CHAINS = [monadTestnet, monad] as const;
+const MAINNET = process.env.NEXT_PUBLIC_CHAIN_ID === String(arc.id);
+export const DEFAULT_CHAIN = MAINNET ? arc : arcTestnet;
+export const SUPPORTED_CHAINS = MAINNET ? ([arc, arcTestnet] as const) : ([arcTestnet, arc] as const);
+
+/** Arc's explorers (Blockscout): viem's entry predates the arc.io explorer domains. */
+const EXPLORER = (process.env.NEXT_PUBLIC_EXPLORER_URL || (MAINNET ? "https://explorer.arc.io" : "https://explorer.testnet.arc.io")).replace(/\/+$/, "");
 
 export function explorerTx(hash: string): string {
-  return `${DEFAULT_CHAIN.blockExplorers.default.url}/tx/${hash}`;
+  return `${EXPLORER}/tx/${hash}`;
 }
 
 export function explorerAddress(address: string): string {
-  return `${DEFAULT_CHAIN.blockExplorers.default.url}/address/${address}`;
+  return `${EXPLORER}/address/${address}`;
 }
 
 /* ── USDC and its ERC-3009 authorisations ───────────────────────────────── */
@@ -33,21 +38,21 @@ function usdcAddress(): Address | null {
 /**
  * The EIP-712 domain for USDC transfers from this build's environment, or
  * null when it isn't set (`networkUsdcDomain` then reads it from the server).
- * The name and version must match USDC's `eip712Domain()`.
+ * USDC on Arc has no `eip712Domain()`: its domain is name "USDC", version "2"
+ * (checked against DOMAIN_SEPARATOR() by the deploy script).
  */
 export function usdcDomain() {
   const verifyingContract = usdcAddress();
   if (!verifyingContract) return null;
   return {
-    // USDC's EIP-712 name is "Agora Dollar", not its ERC-20 name (docs/research/ausd.md §4.2).
-    name: process.env.NEXT_PUBLIC_USDC_EIP712_NAME || "Agora Dollar",
-    version: process.env.NEXT_PUBLIC_USDC_EIP712_VERSION || "1",
+    name: process.env.NEXT_PUBLIC_USDC_EIP712_NAME || "USDC",
+    version: process.env.NEXT_PUBLIC_USDC_EIP712_VERSION || "2",
     chainId: DEFAULT_CHAIN.id,
     verifyingContract,
   } as const;
 }
 
-/** From USDC's Eip3009.sol. Field order matters: it is part of the type hash. */
+/** Circle's ERC-3009 TransferWithAuthorization. Field order matters: it is part of the type hash. */
 export const TRANSFER_WITH_AUTHORIZATION_TYPES = {
   TransferWithAuthorization: [
     { name: "from", type: "address" },

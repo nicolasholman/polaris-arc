@@ -503,7 +503,7 @@ function CollectionsPanel({ plans, collector }: { plans?: Plan[]; collector?: Ov
   const lastAt = run?.source === "live" ? Date.parse(run.data.lastRun.at) : null;
   const ago = (ms: number) => (ms < 90_000 ? `${Math.max(0, Math.round(ms / 1000))} s ago` : formatAgo(new Date(now - ms).toISOString(), now));
   return (
-    <Panel title="Collections" subtitle="Polaris keeper" action={<SeeAll href="/dashboard/automation">Chainlink</SeeAll>}>
+    <Panel title="Collections" subtitle="Polaris keeper" action={<SeeAll href="/dashboard/automation">Automation</SeeAll>}>
       {!run ? (
         <Skeleton shape="tile" height={260} className="mt-5" />
       ) : run.source === "not_connected" ? (

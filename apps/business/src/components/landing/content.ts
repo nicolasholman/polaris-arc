@@ -20,22 +20,21 @@ export const hero = {
   /** Followed by where it runs, from the server's deployment (nav.tsx networkLabel). */
   eyebrow: "Polaris for Business",
   headline: ["Get paid in full.", "Let them pay in 4."],
-  sub: "One payment link. Your buyer pays now, in four payments on Polaris credit, or by subscription. You're paid in full, in dollars, in 0.8 seconds.",
+  sub: "One payment link. Your buyer pays now, in four payments on Polaris credit, or by subscription. You're paid in full, in USDC on Arc, final in under a second.",
   primary: "Start accepting payments",
   secondary: "See the demo shop",
   trust: ["0.5% per payment", "No setup or monthly fees", "The credit risk is ours"],
 };
 
 export const sponsors = {
-  pill: "Built on Arc with Privy, the Polaris keeper, Nansen, Envio, Agora USDC and passkey",
+  pill: "Built on Arc with Circle USDC, CCTP, EURC, Privy and Envio",
   items: [
     { name: "Arc" },
+    { name: "Circle USDC" },
+    { name: "CCTP" },
+    { name: "EURC" },
     { name: "Privy" },
-    { name: "the Polaris keeper" },
-    { name: "Nansen" },
     { name: "Envio" },
-    { name: "Agora USDC" },
-    { name: "passkey" },
   ],
 } as const;
 
@@ -179,7 +178,7 @@ export const payouts = {
   sub: "Your balance is dollars in an account only you control, created when you sign up. Move it whenever you like.",
   features: [
     { title: "One tap, to any address", body: "An exchange, a treasury, a bank on-ramp. Confirm once and it's there in under a second." },
-    { title: "No network fee", body: "You never hold USDC (gas). Our relayer pays the gas, and it can only send what you signed." },
+    { title: "No network fee", body: "Arc's gas is USDC, and our relayer pays it. You never top up anything, and it can only send what you signed." },
     { title: "Automatic daily payouts", body: "A Privy session signer sweeps your balance every day at 17:00 UTC, to one address you choose and nowhere else." },
   ],
 };

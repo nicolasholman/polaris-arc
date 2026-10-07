@@ -20,7 +20,7 @@ import { polarisDomain, TYPES } from "./relayer/typed-data";
  * The merchant's Privy embedded wallet signs a MerchantRegistry
  * `Registration` (its own address, the business name, where payouts go), and
  * the relayer, a registry operator, sends `registerFor`. The merchant never
- * holds USDC (gas). The operator can deliver a registration but not write one: every
+ * holds gas. The operator can deliver a registration but not write one: every
  * field that decides where money goes is in the merchant's signature.
  *
  * Then, when a registry admin is configured (REGISTRY_ACTIVATOR), the

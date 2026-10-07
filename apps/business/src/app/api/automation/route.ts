@@ -6,10 +6,10 @@ import { ensureMerchant } from "@/server/merchants";
 export const dynamic = "force-dynamic";
 
 /**
- * The Chainlink page: the three keeper (their triggers, their latest
- * reports on Arc with each transaction, what each did), the credit guard's
- * verdict and thresholds, and the guardian read as a feed. From the chain
- * sync's records of the receivers' events and the guardian's views now.
+ * The Automation page: the keeper's jobs (their triggers, their latest
+ * reports on Arc with each transaction, what each did), the keeper's gas
+ * balance, and the credit guard's verdict and thresholds. From the chain
+ * sync's records of the receivers' events and the guard's views now.
  */
 export const GET = withMerchant(async (_req, auth) => ok(await keeperOverview(await ensureMerchant(auth))));
 

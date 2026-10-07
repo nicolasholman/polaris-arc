@@ -273,8 +273,8 @@ function Registering({ business, step }: { business: string; step: "wallet" | "s
       <div className="grid gap-4">
         <h1 className="text-[clamp(34px,4.4vw,48px)] leading-[1.04] font-medium tracking-[-0.04em]">Registering your business</h1>
         <p className="text-[17px] leading-[1.5] text-ui-muted">
-          One confirmation puts {business} and its payout address on Arc, so buyers can pay you. You never need USDC (gas): our
-          relayer sends it.
+          One confirmation puts {business} and its payout address on Arc, so buyers can pay you. You never need gas: Arc's gas is USDC, and our
+          relayer pays it.
         </p>
       </div>
       <ol className="grid gap-2">
