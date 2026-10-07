@@ -42,16 +42,45 @@ pnpm --filter polarispay-sdk gen:deployments      # SDK constants (ARC)
 node packages/indexer/scripts/generate.mjs --network mainnet   # if running the indexer
 ```
 
-Mainnet defaults the script applies: no pool seed unless asked, a $1,000
+Mainnet defaults the script applies: CreditGuard reads Chainlink's USDC / USD
+feed (`0x84EA…7905`; pause new plans below $0.98 or on an answer older than
+26 h), PolarisCCIPReceiver on Chainlink's Arc router and PolarisCctpHookReceiver
+on Circle's MessageTransmitterV2 are deployed, no pool seed unless asked, a $1,000
 free-cash floor on the credit guard, 3-day grace, hourly minimum intervals,
 the demo merchant capped at $1,000 per order. Caps built into the contracts:
 $10,000 per send link, $10,000 locked per account (owner can raise to at most
 $1M), $1,000 opening credit lines.
 
+### Cross-chain senders (user-run, after the Arc deploy)
+
+`PolarisCCIPSender` lives on each source chain and is ownerless; deploy it
+with your own key, then allowlist it on the Arc receiver:
+
+```bash
+NETWORK=mainnet POLARIS_CONFIRM_MAINNET=yes npx hardhat run scripts/ccip-deploy-sender.js --network base
+NETWORK=mainnet POLARIS_CONFIRM_MAINNET=yes npx hardhat run scripts/ccip-deploy-sender.js --network ethereum
+NETWORK=mainnet POLARIS_CONFIRM_MAINNET=yes npx hardhat run scripts/ccip-allow-sender.js --network arcMainnet
+```
+
+Lanes (Chainlink CCIP directory): Base `15971525489660198786` → Arc
+`6370580034781731079`, Ethereum `5009297550715157269` → Arc. Fees are paid in
+the source chain's native coin. `scripts/ccip-send.mjs` refuses mainnet
+sources by design; a mainnet payment goes through the app's CCIP sheet from
+the buyer's own wallet.
+
+### USYC (optional)
+
+Ask Circle to allowlist the deployer (the pool owner) for USYC on Arc
+mainnet (Teller `0x51A8…0f9b`, Entitlements `0xb69e…ca72`), then
+`NETWORK=mainnet POLARIS_CONFIRM_MAINNET=yes POLARIS_USYC=status|park|unpark
+npx hardhat run scripts/usyc-treasury.js --network arcMainnet`. `park` keeps
+twice CreditGuard's free-cash floor in the pool.
+
 ## 3. Cost
 
-Measured on the local deploy with the same script: **26.6M gas** for the full
-deploy and wiring (15 contracts, ~20 configuration transactions). At Arc's
+Measured on the Arc-fork deploy with the same script: **26.6M gas** for the full
+deploy and wiring (16 contracts with the CCIP receiver, ~20 configuration
+transactions; the CCTP hook receiver adds about 0.7M). At Arc's
 current fee (~25-30 gwei of USDC; the floor is 20 gwei) that is **about 0.7-0.8
 USDC**. The testnet deploy's measured cost is in
 `deployments/arc-testnet.json` (`gas.totalCostUsdc`). Budget:
@@ -112,6 +141,11 @@ NEXT_PUBLIC_CHAIN_ID=5042
 NEXT_PUBLIC_RP_ID=<the app's domain>  (a passkey is tied to it forever)
 NEXT_PUBLIC_PRIVY_APP_ID (optional, email login)
 ```
+
+Circle Gateway switches to `gateway-api.circle.com` and the mainnet
+GatewayWallet / GatewayMinter from the record; `ARC_MAINNET_RPC_URL` (default
+`https://rpc.mainnet.arc.io`) is where the Chainlink EURC / USD and USDC / USD
+rates are read for display on any network.
 
 The app's CCTP sources switch to mainnet automatically (`/api/public/network`
 serves Ethereum, Avalanche, OP, Arbitrum, Base and Polygon with Circle's

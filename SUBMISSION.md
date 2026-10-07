@@ -9,12 +9,12 @@ link, creates an account with Face ID, and pays in USDC on Arc: in full, in
 four instalments against an on-chain credit line, or by subscription. The
 merchant is paid in full, final in under a second. Buyers never buy gas:
 Arc's gas is USDC, and Polaris's relayer pays it, so every action is just a
-signature. Money can come from anywhere: buyers add USDC from Ethereum,
-Base, Arbitrum, Avalanche, OP or Polygon through CCTP V2, and send dollars
-or euros (EURC) to anyone by link. Every checkout carries the merchant's
-order reference on chain in an Arc memo. A keeper collects instalments and
-writes credit reviews; a credit guard pauses new loans the moment the USDC
-pool runs short. Merchants get a dashboard, an SDK, webhooks and payouts.
+signature. Buyers pay from any chain: a Circle Gateway balance in one
+signature, CCTP V2 (with hooks), or one transaction on Base or Ethereum
+over Chainlink CCIP. Every checkout carries its order reference in an Arc
+memo. A keeper collects instalments; a credit guard pauses new loans when
+the pool runs short or Chainlink's USDC feed depegs. Idle pool cash earns
+in USYC. Merchants get a dashboard, an SDK and webhooks.
 
 ## What it uses Arc for
 
@@ -23,8 +23,20 @@ pool runs short. Merchants get a dashboard, an SDK, webhooks and payouts.
   hold no gas at all (ERC-2612 / ERC-3009 signatures on Arc's USDC).
 - **Sub-second finality**: "Paid" and the merchant's webhook land before the
   checkout popup closes; no confirmation counts.
+- **Circle Gateway**: a unified USDC balance on any Gateway chain, spent on
+  Arc with one EIP-712 signature (checked live against Circle's testnet API).
 - **CCTP V2, pay from any chain**: burn on six source chains, Polaris mints
-  on Arc from Circle's attestation and pays Arc's gas.
+  on Arc from Circle's attestation and pays Arc's gas; with
+  `depositForBurnWithHook` the same mint pays the order
+  (`PolarisCctpHookReceiver`).
+- **Chainlink CCIP**: pay a link, or a Pay in 4 instalment, from Base or
+  Ethereum in one transaction: CCTP moves the dollars, CCIP carries the
+  order to a defensive receiver on Arc (allowlist, stored failures, either
+  arrival order). Chainlink Local tests, the real Arc router on a fork.
+- **Chainlink Data Feeds**: USDC / USD guards new credit on Arc mainnet
+  (depeg or stale price pauses Pay in 4); EURC / USD prices euro links.
+- **USYC**: idle credit-pool cash parked through Circle's Teller and
+  brought back (round trip rehearsed on an Arc fork; needs allowlisting).
 - **EURC**: euro send-by-link for cross-border payments, on a second
   PolarisSend escrow.
 - **Arc transaction memos**: every checkout goes through Arc's Memo contract

@@ -91,7 +91,13 @@ used and its cost in USDC.
 ## Layout
 
 - `contracts/` the contracts; `contracts/keeper/` the receivers; `contracts/test/` test doubles.
-- `lib/` `deploy.js`, `networks.js` (Arc testnet/mainnet addresses: USDC, EURC, USYC, CCTP, Gateway, StableFX, Memo), `keeper.js` (report encodings, guard reasons), `eip712.js`, `tx.js`.
-- `scripts/` `deploy.js`, `verify.js`, `check.js`, `fund-pool.js`, `export-abi.js`.
+- `ccip/` the cross-chain layer, built and tested with Foundry (`pnpm test:ccip`; `ARC_FORK_TESTS=1` for the fork suites):
+  `PolarisCCIPSender` (source chain: CCTP burn + CCIP intent, native fee), `PolarisCCIPReceiver` (Arc: allowlisted
+  sources, stored failures, settles in either arrival order), `PolarisCctpHookReceiver` (Arc: pays the order a
+  `depositForBurnWithHook` names). Tests: Chainlink Local (`PolarisCCIP.t.sol`), CCTP V2 byte layout
+  (`PolarisCctpHook.t.sol`), the real Arc testnet router (`PolarisCCIPArcFork.t.sol`) and the real Arc mainnet
+  Data Feeds through CreditGuard (`ArcMainnetFeeds.t.sol`).
+- `lib/` `deploy.js`, `networks.js` (Arc testnet/mainnet addresses: USDC, EURC, USYC + Teller, CCTP, Gateway, StableFX, Memo; Chainlink CCIP routers, selectors and source lanes; Data Feeds), `keeper.js` (report encodings, guard reasons), `eip712.js`, `tx.js`.
+- `scripts/` `deploy.js`, `verify.js`, `check.js`, `fund-pool.js`, `export-abi.js`, `usyc-treasury.js` (idle pool cash in USYC), `ccip-deploy-sender.js` and `ccip-allow-sender.js` (user-run).
 - `abi/` the ABIs every app imports (`@polarispay/contracts/abi`).
 - `deployments/` `arc-testnet.json`, `arc-mainnet.json` (after a deploy).

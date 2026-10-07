@@ -2,8 +2,9 @@
 
 **Stripe for every app on Arc.** One payment link to get paid now, in four
 instalments on an on-chain credit line, or every month, in USDC. Buyers sign
-up with Face ID, pay from any chain with CCTP, send dollars or euros by link,
-and never buy gas: Arc's gas is USDC, and Polaris pays it.
+up with Face ID, pay from any chain (Circle Gateway, CCTP V2, Chainlink CCIP),
+send dollars or euros by link, and never buy gas: Arc's gas is USDC, and
+Polaris pays it.
 
 - **The Polaris app** (buyers and senders): open a link, create an account
   with a passkey, and pay in USDC. Pay in full, Pay in 4 against a credit line
@@ -19,30 +20,36 @@ and never buy gas: Arc's gas is USDC, and Polaris pays it.
   plans the moment the pool runs short, read live from the pool.
 
 Ported from the Monad version of Polaris (AUSD, Mera passkeys, Chainlink CRE,
-Envio) to Arc. What changed and why is in [What it uses Arc for](#what-it-uses-arc-for).
+Envio) to Arc. What changed and why is in the [Arc stack](#arc-stack).
 
 ---
 
-## What it uses Arc for
+## Arc stack
 
-| Arc / Circle primitive | Where | How |
-|---|---|---|
-| **USDC as the settlement asset and the gas token** | every contract; the relayer and the keeper | The pool, payments, plans and payouts are USDC at `0x3600…0000` (6 decimals). The relayer and keeper hold only USDC: there is no second token to buy, price or top up. Buyers and merchants never hold gas at all: every action is an ERC-2612 or ERC-3009 signature on USDC. |
-| **Sub-second deterministic finality** | checkout, send links, the keeper | "Paid" shows before the popup closes: the relayer waits for the receipt (final in under a second) and the merchant's webhook goes out in the same second. No confirmation counts anywhere. |
-| **CCTP V2: pay from any chain** | app *Add money from another chain*; `POST /api/public/cctp/mint` ([`apps/business/src/server/cctp.ts`](apps/business/src/server/cctp.ts)) | The buyer burns USDC on the source chain with `TokenMessengerV2.depositForBurn(…, 26, theirPolarisAccount, …)`; Polaris reads Circle's attestation from Iris and calls `MessageTransmitterV2.receiveMessage` on Arc, paying the gas. The buyer needs nothing on Arc. |
-| **EURC** | `PolarisSend` deployed on EURC; app *Send in euros* | Cross-border send links in euros: EURC's ERC-3009 authorization is escrowed by a second `PolarisSend` and claimed by the link key, exactly like dollars. |
-| **Transaction memos** | relayer ([`chain/circle.ts`](apps/business/src/server/chain/circle.ts), [`relayer/submit.ts`](apps/business/src/server/relayer/submit.ts)) | Every `PolarisCheckout.pay` / `openPlan` / `subscribe` goes through Arc's `Memo` contract with `memoId` = the order key and `memo` = `polaris:pay:<orderId>`: merchants reconcile on chain from the `Memo` event; the relayer stays `msg.sender` (Arc's CallFrom). |
-| **Gas paid in USDC with a 20 gwei floor** | `lib/tx.js`, the relayer, the keeper | Every transaction prices `maxFeePerGas` at or above Arc's floor. |
-| **Blockscout explorer and API** | contract verification; underwriting | Contracts are verified on `explorer.testnet.arc.io`; a buyer's Arc account age and history come from its keyless API. |
-| **Envio HyperSync on Arc** | `packages/indexer` (optional) | The indexer targets `arc-testnet` / `arc`; the business server's own chain sync is the default. |
+Every piece below runs in Polaris, not just in a contract. "Verified" says
+how far it was exercised; nothing is claimed beyond that. The public testnet
+deploy is waiting on deployer funds, so live-network items are marked as
+fork or user-run where that's the honest limit.
 
-Not used, deliberately: **USYC** (yield on idle pool cash) needs an
-allowlisted institutional account and a $100,000 minimum, so the pool keeps
-USDC; **StableFX** needs a Circle FX account; **Circle Modular Wallets** are
-ERC-4337 smart accounts, and Arc's Memo contract and Polaris's
-signature-based flows need the buyer to be an EOA (see below). The Circle
-contracts' addresses are all in [`lib/networks.js`](packages/contracts/lib/networks.js)
-and in every deployment record.
+| Piece | What it does in Polaris | Contract / file | How verified |
+|---|---|---|---|
+| **USDC gas + sub-second finality** | One token for everything: the pool, payments, plans, payouts and every fee. The relayer and keeper hold only USDC, buyers hold no gas at all (every action is an ERC-2612/3009 signature), and "Paid" shows before the sheet closes. The app tells buyers "You only ever hold USDC". | all contracts; [`lib/tx.js`](packages/contracts/lib/tx.js) (20 gwei floor); [`relayer/submit.ts`](apps/business/src/server/relayer/submit.ts) | 544 Hardhat tests; Arc-fork deploy (26.6M gas, 0.56 USDC) and testnet end to end 10/10 on the fork |
+| **Circle Gateway (unified USDC balance)** | Deposit USDC once on Base, Ethereum, Arbitrum, Avalanche, OP, Polygon or Arc; pay any Polaris link on Arc with one signature (EIP-712 burn intent). Circle attests in about a second, the relayer calls `GatewayMinter.gatewayMint`, the checkout carries on. | [`server/gateway.ts`](apps/business/src/server/gateway.ts), `/api/public/gateway{,/intent,/mint}`; app [`gateway-sheet.tsx`](apps/app/src/components/gateway-sheet.tsx) | Unit tests (intent built and checked field by field, signature recovery); **live against Circle's testnet Gateway API** (`GATEWAY_LIVE=1`): a correct signature is refused only for the empty balance, a tampered one for the signature. Spending a real balance needs testnet USDC deposited (user-run) |
+| **CCTP V2: pay from any chain** | *Add money from another chain*: burn on the source chain with `depositForBurn(…, 26, theirPolarisAccount)`, Polaris reads Iris and calls `receiveMessage` on Arc. | [`server/cctp.ts`](apps/business/src/server/cctp.ts), `/api/public/cctp/mint`; app [`cross-chain-deposit.tsx`](apps/app/src/components/cross-chain-deposit.tsx) | Business tests; the burn call is pure and tested. A real burn → attestation → mint needs source-chain testnet USDC (user-run) |
+| **CCTP V2 hooks** | Pay an order in **one source-chain transaction**: `depositForBurnWithHook` with mint recipient and destination caller = `PolarisCctpHookReceiver` and hookData = (merchant, orderId, amount, refundTo). On Arc the relayer's `relay(message, attestation)` receives the mint and pays the order in the same call; anything unpayable goes back to the buyer on Arc. | [`PolarisCctpHookReceiver.sol`](packages/contracts/ccip/src/PolarisCctpHookReceiver.sol); `server/cctp.ts` | 5 Foundry tests on CCTP V2's exact byte layout (pay + excess refund, already-paid refund, fast-transfer fee shortfall, wrong domain/caller/recipient, starved relay) |
+| **Chainlink CCIP** | *Pay from Base / Ethereum in one transaction*: `PolarisCCIPSender` burns with CCTP (the dollars) and sends the order or a Pay in 4 instalment over CCIP (the instruction) to `PolarisCCIPReceiver` on Arc. Fees in the source chain's native coin (`feeToken = address(0)`). The receiver allowlists (source selector, sender), never reverts on business logic (failed messages are stored for `retryFailed`), and settles once both halves have arrived, in either order; the keeper settles intents whose mint landed late. | [`ccip/src`](packages/contracts/ccip/src); keeper [`ccip.ts`](services/keeper/src/ccip.ts); app [`ccip-sheet.tsx`](apps/app/src/components/ccip-sheet.tsx); [`scripts/ccip-send.mjs`](scripts/ccip-send.mjs) (user-run, testnet only) | 10 **Chainlink Local** tests (CCIPLocalSimulator); 3 fork tests against Chainlink's real Arc testnet router (lanes to Base/Ethereum Sepolia, native-USDC fees, onlyRouter); **Arc-fork rehearsal**: message delivered before the dollars, keeper settles → `CrossChainPayment` ([`ccip-fork-demo.mjs`](scripts/ccip-fork-demo.mjs), hashes in `arc-fork-rehearsal.json`). Live sends: user-run |
+| **Chainlink Data Feeds** | `CreditGuard` reads USDC / USD on every Pay in 4 decision on Arc mainnet: below $0.98 (`REASON_DEPEG`) or older than 26 h (`REASON_STALE_PRICE`) pauses new plans. EURC / USD and EUR / USD price euro links in the app and `/api/public/network` (display only). | [`CreditGuard.sol`](packages/contracts/contracts/CreditGuard.sol); [`server/rates.ts`](apps/business/src/server/rates.ts); app [`eurc-rate.tsx`](apps/app/src/components/eurc-rate.tsx) | 4 Hardhat peg tests (mock feed); 2 fork tests reading the **real Arc mainnet feeds through CreditGuard**; live reads from Arc mainnet. Arc testnet has no feeds, so the check is off there |
+| **EURC / StableFX** | Send euros by link (a second `PolarisSend` on EURC, ERC-3009 escrow); EURC balances shown with the Chainlink EURC / USD rate. StableFX's FxEscrow is in the config, unused: its RFQ trading needs a Circle FX account. | `PolarisSendEURC`; app *Send in euros* | Hardhat tests; EURC link on the Arc fork e2e |
+| **USYC** | Idle credit-pool cash above the floor (twice CreditGuard's minimum) is parked in USYC through Circle's Teller and brought back when Pay in 4 needs it. USYC is permissioned: the pool owner's address must be allowlisted by Circle (testnet: a support ticket). | [`scripts/usyc-treasury.js`](packages/contracts/scripts/usyc-treasury.js) (`status` / `park` / `unpark`) | **Arc-fork round trip against the real Teller**: 490 USDC → 430.000612 USYC → 489.995799 USDC back in the pool (allowlist granted on the fork only). Not run on testnet until the owner is allowlisted |
+| **Arc Memo** | Every checkout (`pay` / `openPlan` / `subscribe`) is wrapped in Arc's Memo contract: `memoId` = order key, `memo` = `polaris:pay:<orderId>`, so merchants reconcile on chain. | [`chain/circle.ts`](apps/business/src/server/chain/circle.ts), `relayer/submit.ts` | Memo event verified on the Arc-fork e2e |
+| **ERC-8004** | Not used: Polaris's keeper is a single operator key the contracts trust by address; there is no third-party agent or service provider to give an identity or reputation. | n/a | n/a |
+| **Blockscout, Envio** | Contract verification; a buyer's Arc history for underwriting; an optional HyperIndex indexer on `arc-testnet` / `arc`. | `scripts/verify.js`, `packages/underwriting`, `packages/indexer` | Underwriting tests; indexer codegen (Envio itself not run) |
+
+**Circle Modular Wallets** were evaluated and not used: they are ERC-4337
+smart accounts, while Arc's Memo contract and every Polaris flow need the
+buyer to be an EOA (see below). Every Circle and Chainlink address is in
+[`lib/networks.js`](packages/contracts/lib/networks.js) and copied into each
+deployment record.
 
 ### Passkeys on Arc
 
@@ -67,25 +74,27 @@ Privy email login remains as the embedded-wallet fallback.
   │ Polaris app           │   │ Polaris for Business      │◀──│ polarispay-sdk       │
   │ Face ID → PRF → EOA   │──▶│ API · dashboard · webhooks│   │ (Halcyon demo shop)  │
   │ signatures only       │   │ relayer (USDC gas)        │   └──────────────────────┘
-  │ CCTP burn on Base/…   │   │ CCTP mint · Arc Memo      │
+  │ Gateway · CCTP · CCIP │   │ Gateway/CCTP mint · Memo  │
   └──────────────────────┘   └─────────────┬──────────────┘
                                             │ transactions, final < 1 s
   ┌──────────────────────────────── Arc (testnet 5042002 / mainnet 5042) ─────────────┐
   │ PolarisCheckout · PolarisPayments · PolarisLoanEngine (USDC pool) · ScoreManager  │
   │ CollateralVault · MerchantRegistry · PolarisSend (USDC, EURC) · PolarisSplit      │
   │ CreditGuard · CollectionsReceiver · UnderwritingReceiver · BatchSettlement        │
-  │ Circle: USDC · EURC · MessageTransmitterV2 · Memo                                  │
+  │ PolarisCCIPReceiver · PolarisCctpHookReceiver                                      │
+  │ Circle: USDC · EURC · MessageTransmitterV2 · GatewayMinter · Memo · USYC Teller    │
+  │ Chainlink: CCIP router · USDC/USD, EURC/USD, EUR/USD Data Feeds (mainnet)          │
   └───────────────▲──────────────────────────────────────────────────────────────────┘
                   │ submitReport (keeper EOA, USDC gas)
   ┌───────────────┴────────────────────┐
   │ Polaris keeper (services/keeper)    │  collections every minute + on Reauthorized;
-  │                                     │  credit reviews from Arc + linked-wallet history
+  │                                     │  credit reviews; settles late CCIP intents
   └─────────────────────────────────────┘
 ```
 
 | Path | What |
 |---|---|
-| [`packages/contracts`](packages/contracts) | Solidity (Hardhat), 540 tests, the Arc deploy/verify/check scripts, `deployments/arc-*.json` |
+| [`packages/contracts`](packages/contracts) | Solidity (Hardhat, 544 tests) and the CCIP / CCTP-hook layer (`ccip/`, Foundry with Chainlink Local), the Arc deploy/verify/check/USYC scripts, `deployments/arc-*.json` |
 | [`services/keeper`](services/keeper) | the keeper: collections and credit reviews |
 | [`apps/business`](apps/business) | Polaris for Business: dashboard, API, relayer, webhooks, CCTP mint, Memo |
 | [`apps/app`](apps/app) | the buyer app (Next.js PWA): passkeys, checkout, CCTP add money, send USD/EUR, split |
@@ -110,7 +119,15 @@ Circle on Arc (testnet / mainnet): USDC `0x3600000000000000000000000000000000000
 EURC `0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a` / `0xbEf5f6d51CB62b58e6A8f77868681825C6fe21c1`;
 TokenMessengerV2 `0x8FE6B999Dc680CcFDD5Bf7EB0974218be2542DAA` / `0x28b5a0e9C621a5BadaA536219b3a228C8168cf5d`;
 MessageTransmitterV2 `0xE737e5cEBEEBa77EFE34D4aa090756590b1CE275` / `0x81D40F21F12A8F0E3252Bccb954D722d4c464B64`;
-Memo `0x5294E9927c3306DcBaDb03fe70b92e01cCede505` (both).
+Memo `0x5294E9927c3306DcBaDb03fe70b92e01cCede505` (both);
+GatewayWallet `0x0077777d7EBA4688BDeF3E311b846F25870A19B9` / `0x77777777Dcc4d5A8B6E418Fd04D8997ef11000eE`;
+GatewayMinter `0x0022222ABE238Cc2C7Bb1f21003F0a260052475B` / `0x2222222d7164433c4C09B0b0D809a9b52C04C205`;
+USYC Teller `0x9fdF14c5B14173D74C08Af27AebFf39240dC105A` / `0x51A8CE47dC08ba5CD19c7aa84EA6fD6664f60f9b`.
+
+Chainlink on Arc: CCIP router `0xdE4E7FED43FAC37EB21aA0643d9852f75332eab8` (testnet, selector
+`3034092155422581607`) / `0xB79791184973589c38e114D43Eb8E4588C283A18` (mainnet, `6370580034781731079`);
+Data Feeds on mainnet: USDC / USD `0x84EA90AC252Dc437031461836DB5164219147905`,
+EURC / USD `0x361b95c10b76Ca3f35C686d423e43A951755Bf23`, EUR / USD `0xDd5B15443cd733D3966a50a3E48cB7DF9Fb5DE0D`.
 
 ---
 
@@ -120,7 +137,8 @@ Node 22.6+ and pnpm 10.
 
 ```bash
 pnpm install
-pnpm contracts:test          # 540 contract tests
+pnpm contracts:test          # 544 contract tests (Hardhat)
+pnpm --filter @polarispay/contracts test:ccip   # CCIP + CCTP hook layer (Foundry, Chainlink Local)
 pnpm e2e:local               # the backend end to end on a local node (14 checks)
 DEMO_FAST_PLANS=1 pnpm demo:local   # everything, locally, in your browser
 ```
@@ -152,6 +170,22 @@ fresh buyer with a few USDC, and checks on chain: Pay now through Arc's Memo,
 Boost, Pay in 4, the keeper collecting instalment 1, and a euro link. It
 writes every hash into the deployment record.
 
+### Cross-chain, rehearsed on an Arc testnet fork
+
+```bash
+ARC_ANVIL=/path/to/arc-anvil sh scripts/arc-fork.sh          # fork Arc testnet, deploy, fund keeper/relayer
+node scripts/ccip-fork-demo.mjs                               # CCIP message lands before the dollars
+KEEPER_RPC_URL=http://127.0.0.1:18745 POLARIS_DEPLOYMENT_FILE=.fork/arc-fork.json pnpm --filter @polaris/keeper once
+cd packages/contracts && POLARIS_USYC=park POLARIS_USYC_FORK_ALLOWLIST=1 \
+  ARC_TESTNET_RPC_URL=http://127.0.0.1:18745 POLARIS_DEPLOYMENT_FILE=../../.fork/arc-fork.json \
+  npx hardhat run scripts/usyc-treasury.js --network arcTestnet   # idle pool cash into USYC and back (unpark)
+```
+
+Live cross-chain sends are user-run and testnet only:
+`PAYER_PRIVATE_KEY=0x… node scripts/ccip-send.mjs pay --from base-sepolia …`
+after deploying a sender (`pnpm --filter @polarispay/contracts ccip:deploy-sender:base-sepolia`)
+and allowlisting it on Arc (`ccip:allow-senders:testnet`).
+
 To run the apps against testnet: `apps/business/.env.example`,
 `apps/app/.env.example`, `services/keeper/.env.example` and
 `apps/shop/.env.example` document every variable; the root
@@ -160,10 +194,12 @@ To run the apps against testnet: `apps/business/.env.example`,
 ### Tests
 
 ```bash
-pnpm --filter @polarispay/contracts test     # 540
-pnpm --filter @polaris/business test         # 300
-pnpm --filter @polaris/app test              # 84
-pnpm --filter @polaris/keeper test
+pnpm --filter @polarispay/contracts test     # 544 (Hardhat)
+pnpm --filter @polarispay/contracts test:ccip      # Foundry: Chainlink Local CCIP + CCTP hooks
+ARC_FORK_TESTS=1 pnpm --filter @polarispay/contracts test:ccip:fork   # real Arc testnet router + Arc mainnet feeds
+pnpm --filter @polaris/business test         # 306 (+ GATEWAY_LIVE=1 for Circle's testnet Gateway API)
+pnpm --filter @polaris/app test              # 106
+pnpm --filter @polaris/keeper test           # 10
 pnpm --filter polarispay-sdk test
 pnpm --filter @polarispay/underwriting test
 ```
