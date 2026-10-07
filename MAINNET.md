@@ -78,9 +78,9 @@ twice CreditGuard's free-cash floor in the pool.
 
 ## 3. Cost
 
-Measured on the Arc-fork deploy with the same script: **26.6M gas** for the full
-deploy and wiring (16 contracts with the CCIP receiver, ~20 configuration
-transactions; the CCTP hook receiver adds about 0.7M). At Arc's
+Measured on the Arc-fork deploy with the same script: **27.5M gas** for the full
+deploy and wiring (17 contracts including the CCIP and CCTP-hook receivers,
+~20 configuration transactions), 0.58 USDC at the fork's fee. At Arc's
 current fee (~25-30 gwei of USDC; the floor is 20 gwei) that is **about 0.7-0.8
 USDC**. The testnet deploy's measured cost is in
 `deployments/arc-testnet.json` (`gas.totalCostUsdc`). Budget:

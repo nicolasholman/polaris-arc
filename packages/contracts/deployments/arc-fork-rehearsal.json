@@ -5,8 +5,8 @@
   "rpcUrl": "https://rpc.testnet.arc.io",
   "explorerUrl": "https://explorer.testnet.arc.io",
   "deployer": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
-  "deployedAt": "2026-10-07T17:12:09.882Z",
-  "sourceCommit": "e844b5e68c9ba828bc429837e4d02ebdb45454d6",
+  "deployedAt": "2026-10-07T17:23:48.122Z",
+  "sourceCommit": "964d2e3fb2bec2726eef20383539b897f2da7b83",
   "circle": {
     "usdc": "0x3600000000000000000000000000000000000000",
     "eurc": "0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a",
@@ -36,7 +36,7 @@
     },
     "ScoreManager": {
       "address": "0x1B4379729ef3Ee706AaD789e8b35073EdcDB832B",
-      "blockNumber": 65999084,
+      "blockNumber": 66000456,
       "txHash": "0xbe758ee0718f8f6b76dd36797226b6b7f44fc39d59ddf6af5a2c01f0dc8ddd53",
       "gasUsed": "1522810",
       "contract": "ScoreManager",
@@ -47,7 +47,7 @@
     },
     "PolarisLoanEngine": {
       "address": "0xbD31F44e13513761fC784D17D6ddDa63f9D5259F",
-      "blockNumber": 65999086,
+      "blockNumber": 66000458,
       "txHash": "0x9dc0acc9ce827e7a90e0a8fb9512126f9b54a66bae7646f74a82cb72690b98bb",
       "gasUsed": "3175922",
       "contract": "PolarisLoanEngine",
@@ -63,7 +63,7 @@
     },
     "PolarisPayments": {
       "address": "0x1C75B3F897AD80a1A6fb32f864Cc845aabcC657E",
-      "blockNumber": 65999088,
+      "blockNumber": 66000459,
       "txHash": "0x04075e80423e55cf997fa9c04ea02855c08a95d8114d92e80c2c7fc46a6bf2e1",
       "gasUsed": "3080242",
       "contract": "PolarisPayments",
@@ -77,7 +77,7 @@
     },
     "MerchantRegistry": {
       "address": "0xF3f7c32ebbc3e3118b0E47a12a229799AC8Be66c",
-      "blockNumber": 65999089,
+      "blockNumber": 66000460,
       "txHash": "0x628b20f921b71cc7bb4242acf92c7176f07d1b04b5485bb08127a749ceb78bfb",
       "gasUsed": "1567286",
       "contract": "MerchantRegistry",
@@ -88,7 +88,7 @@
     },
     "CollateralVault": {
       "address": "0x5ea567E283a0EAbd8377153c6245223BdA5bAE46",
-      "blockNumber": 65999090,
+      "blockNumber": 66000462,
       "txHash": "0xe54978acd532420895dcfd9cb8ca12e6b8adcb94de7bb419186a5c8782d4c204",
       "gasUsed": "1508886",
       "contract": "CollateralVault",
@@ -100,7 +100,7 @@
     },
     "BatchSettlement": {
       "address": "0xC62b2f04F83977BD5c634d9E0139F590EE461747",
-      "blockNumber": 65999091,
+      "blockNumber": 66000464,
       "txHash": "0x464fbd4c4cf5554260229bbca7da025c94dbe9b076bcd29e3c74d5fb785be093",
       "gasUsed": "852890",
       "contract": "BatchSettlement",
@@ -112,7 +112,7 @@
     },
     "PolarisSend": {
       "address": "0x2166C7F03C058956aD252c6ac44938B4da5f33c6",
-      "blockNumber": 65999092,
+      "blockNumber": 66000467,
       "txHash": "0x127ac0aa74fbe63f02737656cf08ea393a31144934d51694aad65c364094e4dd",
       "gasUsed": "1531807",
       "contract": "PolarisSend",
@@ -123,7 +123,7 @@
     },
     "PolarisSendEURC": {
       "address": "0xdEA71c3908c32624e8BAf99641A32E96D194d537",
-      "blockNumber": 65999093,
+      "blockNumber": 66000468,
       "txHash": "0xa7c80032d2ba86ba5cfc10fb0ff250ff39005a66e96347c411ac6b8527fc3169",
       "gasUsed": "1532035",
       "contract": "PolarisSend",
@@ -134,7 +134,7 @@
     },
     "PolarisSplit": {
       "address": "0xB2E9b7F16948d298394286577Af392408a92e540",
-      "blockNumber": 65999094,
+      "blockNumber": 66000469,
       "txHash": "0x777c276aaba3485497a030d83c9b7ef2fab9076a638924f2c7bf9fd968ad44cb",
       "gasUsed": "1887378",
       "contract": "PolarisSplit",
@@ -145,7 +145,7 @@
     },
     "PolarisCheckout": {
       "address": "0x2a8EcEd4639f2d71a438220F72d2c9972b8B50eD",
-      "blockNumber": 65999095,
+      "blockNumber": 66000470,
       "txHash": "0x603922d894a76502bfbc0b239d27ac108b97f1fcf31908f43a04ec3589c34330",
       "gasUsed": "3204729",
       "contract": "PolarisCheckout",
@@ -159,7 +159,7 @@
     },
     "CollectionsReceiver": {
       "address": "0xe8feef01289eE63B9578322458ff41ad09b1eDaC",
-      "blockNumber": 65999096,
+      "blockNumber": 66000471,
       "txHash": "0xff959cef223e8a67855390c60f63dc9b0a9f94d2ed983de8cce6d9f246e2aaf1",
       "gasUsed": "1123115",
       "contract": "CollectionsReceiver",
@@ -172,7 +172,7 @@
     },
     "UnderwritingReceiver": {
       "address": "0xeB4c8658b1CC508403Af8c33B1940E743Fda31BC",
-      "blockNumber": 65999097,
+      "blockNumber": 66000472,
       "txHash": "0xf1f1fc4e3611912fd63eb4c86f79c986aab4cde8b3b921286469efaf1836ae2d",
       "gasUsed": "904135",
       "contract": "UnderwritingReceiver",
@@ -184,7 +184,7 @@
     },
     "CreditGuard": {
       "address": "0x29AFc20E545907638A1B1A649962Ba245E0b7608",
-      "blockNumber": 65999098,
+      "blockNumber": 66000473,
       "txHash": "0xed7124bf1c69a72a4bc09bcfe115ba0b93fbc7f81af613918ea731a104a2b18f",
       "gasUsed": "1231677",
       "contract": "CreditGuard",
@@ -201,7 +201,7 @@
     },
     "PolarisCCIPReceiver": {
       "address": "0x7CB88FF37B480EC3675059BCcd870F7f6dF37Ab9",
-      "blockNumber": 65999100,
+      "blockNumber": 66000475,
       "txHash": "0xb144a6cbe96e8392518d15e15c3a454cc8b3fd526758151b9e9e9710d2a394fa",
       "gasUsed": "2112477",
       "contract": "PolarisCCIPReceiver",
@@ -212,6 +212,21 @@
         "0x1C75B3F897AD80a1A6fb32f864Cc845aabcC657E",
         "0xbD31F44e13513761fC784D17D6ddDa63f9D5259F",
         "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"
+      ],
+      "build": "foundry (ccip/)"
+    },
+    "PolarisCctpHookReceiver": {
+      "address": "0xaa2bc2C27A979a4d24215028442772CAfA392283",
+      "blockNumber": 66000477,
+      "txHash": "0x4bcd499a4dd06a7b97fc58fface106ca0c21c0294f1cf9d9491d4eafb98d35b7",
+      "gasUsed": "896258",
+      "contract": "PolarisCctpHookReceiver",
+      "abi": "abi/PolarisCctpHookReceiver.json",
+      "args": [
+        "0x3600000000000000000000000000000000000000",
+        "0xE737e5cEBEEBa77EFE34D4aa090756590b1CE275",
+        "0x1C75B3F897AD80a1A6fb32f864Cc845aabcC657E",
+        26
       ],
       "build": "foundry (ccip/)"
     }
@@ -298,7 +313,7 @@
     }
   },
   "demo": {
-    "merchant": "0xAcd20FaaD4155026945a1090cd0AaD024f932202",
+    "merchant": "0x00e055F3bA9554b6C63AF40BEefD64457276dcDC",
     "merchantName": "Halcyon Studio",
     "subscriptionPlans": [
       {
@@ -318,8 +333,8 @@
     "poolTarget": "500000000"
   },
   "gas": {
-    "totalUsed": "26592127",
-    "totalCostUsdc": "0.558434667"
+    "totalUsed": "27488313",
+    "totalCostUsdc": "0.577254573"
   },
   "ccip": {
     "chainSelector": "3034092155422581607",
@@ -877,11 +892,11 @@
     }
   },
   "e2e": {
-    "ranAt": "2026-10-07T17:17:10.667Z",
-    "buyer": "0x678B9034FFb683325F1Fe53eF4D36dC869893a9a",
+    "ranAt": "2026-10-07T17:27:36.563Z",
+    "buyer": "0x16D174Ad163bD839A83fb1216f49DB486d6dEC24",
     "checks": [
       "Polaris for Business and the keeper are up on Arc testnet",
-      "buyer 0x678B9034FFb683325F1Fe53eF4D36dC869893a9a holds 5 USDC (ERC-20) and no other token",
+      "buyer 0x16D174Ad163bD839A83fb1216f49DB486d6dEC24 holds 5 USDC (ERC-20) and no other token",
       "Pay now relayed through Arc's Memo contract: the payment carries its order key on chain",
       "payment.succeeded webhook arrived, verified by polarispay-sdk",
       "Boost: $2.5 locked with one permit, credit line $2.5",
@@ -892,26 +907,26 @@
       "the buyer sent no transaction (every action was a signature the relayer carried); 3 webhooks verified"
     ],
     "txs": {
-      "fundBuyer": "0x142d8edcb0f8788bb51203542f9fb5248579532e6fecd3a2c5f097adc8f0828a",
-      "payNow": "0xb6c41c6918c978fad68493c1d66b7bfd526920d967a321f783bf3f143b2614da",
-      "boost": "0xc3d963db3b21e604df9fd182874d41a276b1516eaa3aede6beeaa8c54541ca65",
-      "openPlan": "0x7647aa0d199ec7b2f09e2c14200b20616ada401f958c80e8c62b7214e83e1608",
+      "fundBuyer": "0x8b3f5eb1ece882d657c1030525284644cee3f450e0d77f43b03d2d884fc05685",
+      "payNow": "0xcfad091c3da01d4bb28d740c81e8627cdc69b5c548081adb0d8ea0e834ce4551",
+      "boost": "0xde6332ec75f4998731a596847d0a2f8fce8302e1352132983769c6b29c5b045f",
+      "openPlan": "0x159e19f51ac2a4ca4d14f7d82daf627ecb0527a307adeb70f5974244ef092c3f",
       "collect": "0x44b0d38cad8b5c8e4f706cae02eb436c3d1d7068f2715d5b3cabddd0e87f3db1",
-      "fundBuyerEurc": "0x48fae1842b9e1a809ee110c20ce01cea7db5dc80ec55c23ab1a5aa3276216d96",
-      "sendEur": "0x33b5cb669862f8166a79261129002a128f46b0b180b45cb62a0b4e50dfe82aec",
-      "claimEur": "0xe5d3ece7d38b319505fc32d2a9d264e204fe88cf40deab31cdcf067678eb302f"
+      "fundBuyerEurc": "0xc0d81121b9e11f2d912f7a1d46ffbb20cb66713788cbc7ca18467609464487bb",
+      "sendEur": "0x5fea88b22ee5ff8596ccafbd99014c9c5d42905fd2f57a4ee8c24256b7a8f9f1",
+      "claimEur": "0x40e13dd13e8547bc35915426ce6970d3576c6119f9befff3ef064f29e98c59b5"
     }
   },
-  "note": "A rehearsal on a local fork of Arc testnet (Arc Foundry anvil --network arc, forked at the block below), with Circle's real USDC, EURC, Memo and USYC Teller contracts and Chainlink's real CCIP router. These transactions exist only on the fork; the public Arc testnet deploy is in arc-testnet.json once the deployer is funded.",
+  "note": "A rehearsal on a local fork of Arc testnet (Arc Foundry anvil --network arc, forked at the block below), with Circle's real USDC, EURC, Memo and USYC Teller contracts and Chainlink's real CCIP router (PolarisCCIPReceiver and PolarisCctpHookReceiver deployed beside it). These transactions exist only on the fork; the public Arc testnet deploy is in arc-testnet.json once the deployer is funded.",
   "forkedFrom": {
     "rpc": "https://rpc.testnet.arc.io",
-    "firstBlock": 65999084
+    "firstBlock": 66000456
   },
   "ccipForkDemo": {
     "what": "scripts/ccip-fork-demo.mjs then the keeper's --once run: Chainlink's real Arc testnet router address delivers a Base Sepolia pay intent to PolarisCCIPReceiver before the dollars (status pending); the CCTP mint is stood in for by crediting the receiver's native USDC; the keeper scans IntentReceived and calls settle",
-    "messageId": "0x1c28a40753554015120ea9838569e49da826d60ea82033e64ec10f103f9516a8",
-    "settleTx": "0xecf02baec372498247a650db97a136f66164219773dd131cf9f12c5d61593360",
-    "paymentId": "0x176cd4c7403d01c01a9a5413e8790a3188996aef0219f0549445fdc48492a027",
+    "messageId": "0xce639b01f68d57cf05d24adbaf8228dcd97332794e95416b0bd34ff669425340",
+    "settleTx": "0x7514a95088556d17fbda6b538ce95cbdf14a8bffc6d0062ca74b79e0cdde6bab",
+    "paymentId": "0x04d65af308367a55b157f6f74d6c8e1b4de87176f298cfd6e19cb48a905ab186",
     "amount": "2500000",
     "result": "settled: CrossChainPayment to the demo merchant"
   },
@@ -920,14 +935,14 @@
     "park": {
       "usdc": "490000000",
       "usyc": "430000612",
-      "withdraw": "0xa1ad9d0431d0713be50067602555802f6b47cce66110adc8ec32cd8e9949da69",
-      "deposit": "0x13c6a79e67815a33c183e932305768e1b212b115195dfab8724b89e8a8cb0f69"
+      "withdraw": "0x17c068060283b3f75fb3846c36449e851f952fab1aa7d4079a6984dbb308e013",
+      "deposit": "0xa963d9bc5b60613e0c600aa62f55f272e3e6da4c3b87524918ba5d0a5f77f3bc"
     },
     "unpark": {
       "usyc": "430000612",
       "usdc": "489995799",
-      "redeem": "0xc772f6497fa3de40a97786c6365992583747846f6304867432e668606ff2a186",
-      "fund": "0xc971d28c8abc4abd2319f167f370c68e2cb61dbcf70b11104a8c28d6fab11096"
+      "redeem": "0x07cc879954b3ff4c74ee3cc450dd68d2dbd46d14d7fe980db3710f95d3112e04",
+      "fund": "0x4f8ae0bd897aa14a5c0056207fdd8cfce6542ad90323a72da716978447ce31c2"
     },
     "price": "1 USYC = 1.139533 USDC"
   }
