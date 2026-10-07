@@ -1,6 +1,6 @@
 import "server-only";
 
-import { decodeEventLog, encodeFunctionData, getAddress, isHex, keccak256, slice, type Address, type Hex, type Log } from "viem";
+import { decodeEventLog, encodeFunctionData, getAddress, isHex, keccak256, pad, parseAbi, slice, type Address, type Hex, type Log } from "viem";
 
 import { messageTransmitterV2Abi } from "./chain/circle";
 import { publicClient, requireChain } from "./chain/client";
@@ -20,6 +20,12 @@ import { carry } from "./relayer/carry";
  * `receiveMessage` is permissionless and mints only to the recipient the
  * burn named, so the relayer can't redirect a cent; Circle's attestation is
  * the only authority. A message already received answers "minted".
+ *
+ * CCTP V2 hooks: a burn made with `depositForBurnWithHook` whose mint
+ * recipient and destination caller are PolarisCctpHookReceiver, and whose
+ * hookData is `abi.encode(merchant, orderId, orderAmount, refundTo)`, pays
+ * that order on Arc in the same call: the relayer calls
+ * `PolarisCctpHookReceiver.relay(message, attestation)` instead.
  */
 
 export type CctpSource = { chainId: number; name: string; domain: number; usdc: Address; tokenMessengerV2: Address; rpcUrl: string; explorerUrl: string };
@@ -80,6 +86,9 @@ type IrisMessage = {
   } | null;
 };
 
+/** PolarisCctpHookReceiver.relay: receive the mint and pay the order the hookData names. */
+export const cctpHookAbi = parseAbi(["function relay(bytes message, bytes attestation) returns (bytes32 paymentId)"]);
+
 /** Minted transfers this process has finished: burn tx → mint tx. The chain is the record; this only saves a lookup. */
 const minted = new Map<string, Hex>();
 
@@ -135,7 +144,10 @@ export async function mintFromBurn(body: Record<string, unknown>): Promise<MintS
   if (decoded?.destinationDomain !== undefined && Number(decoded.destinationDomain) !== circle.cctpDomain) {
     return { ...view, status: "failed", error: `That transfer goes to CCTP domain ${decoded.destinationDomain}, not Arc (${circle.cctpDomain}).` };
   }
-  if (decoded?.destinationCaller && decoded.destinationCaller.toLowerCase() !== ZERO32) {
+  // A hooked transfer (depositForBurnWithHook) names PolarisCctpHookReceiver as its destination caller:
+  // the relayer finishes it through that contract, which pays the order the hookData names.
+  const hooked = Boolean(chain.cctpHook && decoded?.destinationCaller && decoded.destinationCaller.toLowerCase() === pad(chain.cctpHook, { size: 32 }).toLowerCase());
+  if (decoded?.destinationCaller && decoded.destinationCaller.toLowerCase() !== ZERO32 && !hooked) {
     return { ...view, status: "failed", error: "That transfer names its own destination caller, so only that caller can finish it on Arc." };
   }
   if (msg.status !== "complete" || !msg.attestation || !msg.message || msg.attestation === "PENDING") {
@@ -154,8 +166,10 @@ export async function mintFromBurn(body: Record<string, unknown>): Promise<MintS
   const result = await carry({
     kind: "cctpMint",
     relayId: `cctp:${keccak256(message).slice(2, 42)}`,
-    to: circle.messageTransmitterV2,
-    data: encodeFunctionData({ abi: messageTransmitterV2Abi, functionName: "receiveMessage", args: [message, attestation] }),
+    to: hooked && chain.cctpHook ? chain.cctpHook : circle.messageTransmitterV2,
+    data: hooked
+      ? encodeFunctionData({ abi: cctpHookAbi, functionName: "relay", args: [message, attestation] })
+      : encodeFunctionData({ abi: messageTransmitterV2Abi, functionName: "receiveMessage", args: [message, attestation] }),
     signer: recipient,
     waitMs: getConfig().receiptTimeoutMs,
   });

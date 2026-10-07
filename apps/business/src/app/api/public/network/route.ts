@@ -65,7 +65,9 @@ export const GET = withPublic(async () => {
         }
       : null,
     // Pay from any chain (CCTP V2): where a buyer can burn USDC to arrive on Arc. Null on a local node.
-    cctp: sources ? { sources, fastTransfer: true, mintPath: "/api/public/cctp/mint" } : null,
+    // hookReceiver: burn with depositForBurnWithHook (mint recipient and destination caller = it,
+    // hookData = abi.encode(merchant, orderId, orderAmount, refundTo)) and the same mint call pays the order.
+    cctp: sources ? { sources, fastTransfer: true, mintPath: "/api/public/cctp/mint", hookReceiver: chain.cctpHook } : null,
     // Circle Gateway: a unified USDC balance on any of these chains, spent on Arc in under a second
     // (/api/public/gateway for balances, /intent to sign, /mint to spend).
     gateway: (() => {

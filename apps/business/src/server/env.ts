@@ -107,6 +107,8 @@ export type ChainConfig = {
   circle: CircleConfig | null;
   /** Chainlink CCIP (pay from another chain); null on a local node. */
   ccip: DeploymentCcip | null;
+  /** PolarisCctpHookReceiver: pays the order a CCTP V2 burn's hookData names (depositForBurnWithHook). */
+  cctpHook: Address | null;
   /** Chainlink Data Feeds on Arc (mainnet); null where none are listed. */
   feeds: { usdcUsd?: Address; eurcUsd?: Address; eurUsd?: Address } | null;
   /** The stablecoin's EIP-712 name and version (USDC on Arc: "USDC", "2"). */
@@ -372,6 +374,7 @@ function chainFrom(d: Deployment): ChainConfig {
     keeper: d.keeper ?? null,
     circle: d.circle ?? null,
     ccip: d.ccip ? { ...d.ccip, receiver: d.contracts.PolarisCCIPReceiver?.address ?? d.ccip.receiver } : null,
+    cctpHook: d.contracts.PolarisCctpHookReceiver?.address ? getAddress(d.contracts.PolarisCctpHookReceiver.address) : null,
     feeds: d.feeds ?? null,
     stablecoinDomain: { name: stable?.name ?? "USDC", version: stable?.version ?? "2" },
     eurcDomain: d.contracts.EURC ? { name: eurc?.name ?? "EURC", version: eurc?.version ?? "2" } : null,

@@ -65,6 +65,7 @@ export function relayerAddresses(chain: ChainConfig): RelayerAddresses {
     vault: c.vault,
     messageTransmitter: chain.circle?.messageTransmitterV2 ?? null,
     gatewayMinter: chain.circle?.gatewayMinter ?? null,
+    cctpHook: chain.cctpHook,
     memo: chain.circle?.memo ?? null,
   };
 }
