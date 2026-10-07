@@ -5,6 +5,7 @@
 
 import { formatUnits } from "viem";
 
+import { CcipSettler } from "./ccip.ts";
 import { clientsFor } from "./chain.ts";
 import { reauthorizedSince, retryBuyer, runCollections } from "./collections.ts";
 import { loadConfig } from "./config.ts";
@@ -30,6 +31,19 @@ if (c.account) {
 }
 console.log(`[keeper] callbacks: ${config.callback ? config.callback.url : "off (POLARIS_API_URL / POLARIS_KEEPER_CALLBACK_SECRET unset)"}`);
 
+const ccip = config.contracts.ccipReceiver ? new CcipSettler(c, config, config.contracts.ccipReceiver, config.ccipFromBlock) : null;
+console.log(`[keeper] cross-chain intents: ${ccip ? `settling on PolarisCCIPReceiver ${config.contracts.ccipReceiver}` : "off (no PolarisCCIPReceiver in the record)"}`);
+const settleCcip = async () => {
+  if (!ccip) return;
+  try {
+    const r = await ccip.run();
+    for (const s of r.settled) console.log(`[keeper] settled cross-chain intent ${s.messageId}: ${s.hash}`);
+    for (const w of r.waiting) console.log(`[keeper]   intent ${w.messageId} pending: ${w.reason}`);
+  } catch (e) {
+    console.error(`[keeper] ccip: ${e instanceof Error ? e.message : String(e)}`);
+  }
+};
+
 let tick = 0n;
 const log = (s: Awaited<ReturnType<typeof runCollections>>) => {
   state.lastRun = { at: new Date().toISOString(), ...s };
@@ -40,6 +54,7 @@ const log = (s: Awaited<ReturnType<typeof runCollections>>) => {
 
 if (once) {
   log(await runCollections(c, config, tick));
+  await settleCcip();
   process.exit(0);
 }
 
@@ -57,6 +72,7 @@ const loop = async () => {
     const { buyers, toBlock } = await reauthorizedSince(c, config, lastBlock + 1n);
     lastBlock = toBlock;
     for (const buyer of buyers) log(await retryBuyer(c, config, buyer));
+    await settleCcip();
   } catch (e) {
     console.error(`[keeper] loop: ${e instanceof Error ? e.message : String(e)}`);
   } finally {

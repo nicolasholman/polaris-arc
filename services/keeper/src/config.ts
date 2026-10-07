@@ -37,7 +37,11 @@ export type KeeperConfig = {
     scoreManager: Address;
     collections: Address;
     underwriting: Address;
+    /** PolarisCCIPReceiver (Chainlink CCIP), when deployed: the keeper settles intents whose CCTP mint landed after the message. */
+    ccipReceiver: Address | null;
   };
+  /** The block PolarisCCIPReceiver was deployed at (where its log scan starts). */
+  ccipFromBlock: bigint;
   /** The keeper's key; null runs read-only (no reports are sent). */
   privateKey: Hex | null;
   callback: { url: string; secret: string } | null;
@@ -122,7 +126,9 @@ export function loadConfig(): KeeperConfig {
       scoreManager: need("ScoreManager"),
       collections: need("CollectionsReceiver"),
       underwriting: need("UnderwritingReceiver"),
+      ccipReceiver: maybe("PolarisCCIPReceiver"),
     },
+    ccipFromBlock: BigInt(deployment.contracts.PolarisCCIPReceiver?.blockNumber ?? 0),
     privateKey,
     callback: api && secret ? { url: `${api}/api/keeper/callback`, secret } : null,
     requestSecret: secret,
