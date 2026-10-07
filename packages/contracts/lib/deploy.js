@@ -2,7 +2,7 @@
  * Deploy and wire the whole Polaris contract layer on Arc, in dependency order.
  *
  * Used by scripts/deploy.js (Arc testnet, Arc mainnet, or a local Hardhat
- * node) and by test/metropolis/Deploy.test.js, which runs it in-process and
+ * node) and by test/integration/Deploy.test.js, which runs it in-process and
  * checks every role it grants. It returns a plain record; the script decides
  * where to write it.
  *

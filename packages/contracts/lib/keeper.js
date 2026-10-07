@@ -17,7 +17,7 @@
  *
  * CreditGuard needs no report: it reads the pool live. GUARD_* below are its
  * reason bits and defaults, and `guardPoolReasons` is CreditGuard.poolReasons
- * in JavaScript, held to the contract by test/metropolis/CreditGuard.test.js.
+ * in JavaScript, held to the contract by test/integration/CreditGuard.test.js.
  */
 
 "use strict";

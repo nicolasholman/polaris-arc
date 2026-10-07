@@ -5,7 +5,7 @@
  * so the app can explain a line before it opens, and it encodes the report
  * the DON signs. These tests hold all of that to the deployed bytecode: the
  * package's score is ScoreManager's, its report bytes decode as the batch
- * UnderwritingReceiver takes (on metropolis/cre) with each item's Facts the
+ * UnderwritingReceiver takes with each item's Facts the
  * struct ScoreManager takes, and its "you can pay in 4 for up to $X" is
  * exactly what PolarisLoanEngine.createLoan accepts, to the base unit.
  *
@@ -39,7 +39,7 @@ function mulberry32(seed) {
 }
 
 describe("@polarispay/underwriting against ScoreManager and PolarisLoanEngine", function () {
-  let core, collect, fixtures, nansenMod, zerionMod, etherscanMod, rpcMod;
+  let core, collect, fixtures, nansenMod, zerionMod, etherscanMod, rpcMod, blockscoutMod;
   let usdc, scores, engine, owner, underwriter, merchant;
 
   before(async function () {
@@ -51,6 +51,7 @@ describe("@polarispay/underwriting against ScoreManager and PolarisLoanEngine", 
     zerionMod = await load("node/zerion.ts");
     etherscanMod = await load("node/etherscan.ts");
     rpcMod = await load("node/rpc.ts");
+    blockscoutMod = await load("node/blockscout.ts");
   });
 
   beforeEach(async () => {
@@ -74,7 +75,8 @@ describe("@polarispay/underwriting against ScoreManager and PolarisLoanEngine", 
       nansen: new nansenMod.NansenClient({ ...opts, apiKey: "test-nansen-key" }),
       zerion: new zerionMod.ZerionClient({ ...opts, apiKey: "test-zerion-key" }),
       etherscan: new etherscanMod.EtherscanClient({ ...opts, apiKey: "test-etherscan-key" }),
-      accountRpc: new rpcMod.RpcClient(core.MONAD_TESTNET.rpcUrl, core.MONAD_TESTNET.chainId, opts),
+      accountRpc: new rpcMod.RpcClient(core.ARC_TESTNET.rpcUrl, core.ARC_TESTNET.chainId, opts),
+      explorer: new blockscoutMod.BlockscoutClient(core.ARC_TESTNET.explorerApiUrl, opts),
       historyRpcs: core.HISTORY_CHAINS.map((c) => new rpcMod.RpcClient(c.rpcUrl, c.chainId, opts)),
     };
   }

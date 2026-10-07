@@ -1,4 +1,4 @@
-// EIP-712 signing helpers shared by the Metropolis test suites.
+// EIP-712 signing helpers shared by the contract test suites.
 //
 // Every user action in Polaris is a signature that a relayer submits, so the
 // tests sign exactly what a passkey or Privy account would sign in the app. The

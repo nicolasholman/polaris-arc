@@ -24,7 +24,7 @@
  * Needs: deployments/arc-testnet.json; POLARIS_RELAYER_PRIVATE_KEY and
  * POLARIS_KEEPER_PRIVATE_KEY in the repo's .env.local (funded with testnet
  * USDC for gas); the deployer key file (DEPLOYER_ENV_FILE, default
- * ../.deployer/deployer.env). E2E_BUYER_USDC (default 4) dollars go to the buyer.
+ * ../.deployer/deployer.env). E2E_BUYER_USDC (default 5) dollars go to the buyer.
  */
 
 import { spawn, spawnSync } from "node:child_process";
@@ -33,20 +33,22 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmdirSync, writeFileS
 import { createRequire } from "node:module";
 import { createServer } from "node:http";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const REPO = fileURLToPath(new URL("..", import.meta.url));
 const BUSINESS = join(REPO, "apps", "business");
 const CONTRACTS = join(REPO, "packages", "contracts");
-const RECORD = join(CONTRACTS, "deployments", "arc-testnet.json");
+// E2E_RECORD: a rehearsal on a local fork of Arc testnet (scripts/arc-fork.sh) uses its own record.
+const RECORD = process.env.E2E_RECORD ? resolve(process.env.E2E_RECORD) : join(CONTRACTS, "deployments", "arc-testnet.json");
+const FORK = process.env.E2E_FORK === "1";
 const DEPLOYER_ENV = process.env.DEPLOYER_ENV_FILE || join(REPO, "..", ".deployer", "deployer.env");
 const LOCK = join(REPO, "..", ".deployer", "lock");
 const APP_PORT = Number(process.env.E2E_APP_PORT || 3700);
 const HOOK_PORT = Number(process.env.E2E_HOOK_PORT || 3701);
 const KEEPER_PORT = Number(process.env.E2E_KEEPER_PORT || 2700);
 const BASE = `http://localhost:${APP_PORT}`;
-const BUYER_USDC = BigInt(Math.round(Number(process.env.E2E_BUYER_USDC || "4") * 1e6));
+const BUYER_USDC = BigInt(Math.round(Number(process.env.E2E_BUYER_USDC || "5") * 1e6));
 
 const requireBusiness = createRequire(join(BUSINESS, "package.json"));
 const fileUrl = (p) => new URL(`file:///${p.replace(/\\/g, "/").replace(/^\/+/, "")}`).href;
@@ -86,7 +88,7 @@ const pass = (what, detail = "") => {
 const assert = (cond, message) => {
   if (!cond) throw new Error(`Assertion failed: ${message}`);
 };
-const tx = (h) => `${EXPLORER}/tx/${h}`;
+const tx = (h) => (FORK ? `(local fork of Arc testnet) ${h}` : `${EXPLORER}/tx/${h}`);
 
 async function until(what, fn, { timeoutMs = 120_000, everyMs = 1000 } = {}) {
   const started = Date.now();
@@ -122,6 +124,7 @@ async function api(path, init = {}) {
 
 /** One broadcast from the shared deployer, inside the shared lock (PORTING-BRIEF.md). */
 async function withDeployerLock(fn) {
+  if (FORK) return fn(); // a local fork: the shared deployer isn't involved
   for (;;) {
     try {
       mkdirSync(LOCK);
@@ -405,7 +408,7 @@ async function main() {
   const latest = JSON.parse(readFileSync(RECORD, "utf8"));
   latest.e2e = { ranAt: new Date().toISOString(), buyer: buyer.address, checks: results, txs: proof };
   writeFileSync(RECORD, JSON.stringify(latest, null, 2) + "\n");
-  log(`\nAll ${results.length} checks passed. Hashes in deployments/arc-testnet.json (e2e).`);
+  log(`\nAll ${results.length} checks passed. Hashes in ${RECORD} (e2e).`);
 }
 
 function stopAll() {

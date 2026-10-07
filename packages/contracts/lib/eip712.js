@@ -4,7 +4,7 @@
  *
  * One source for the deploy script (which writes them into
  * deployments/<network>.json), the test suites, the local end-to-end run, and
- * any client that wants them without reading Solidity. `test/metropolis/
+ * any client that wants them without reading Solidity. `test/integration/
  * Eip712.test.js` rebuilds each preimage from these field lists and checks it
  * against the contract's typehash constant, so the two cannot drift.
  *

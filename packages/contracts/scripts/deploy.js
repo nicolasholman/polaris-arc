@@ -20,6 +20,7 @@
  *                             to deployments/.keys/, git-ignored)
  *   POLARIS_FAST_PLANS=1      minute-long instalment intervals and a 15-minute grace, for demos
  *   POLARIS_CONFIRM_MAINNET=yes  required for NETWORK=mainnet
+ *   POLARIS_DEPLOYMENT_OUT    where to write the record (default deployments/arc-<network>.json)
  */
 
 "use strict";
@@ -100,7 +101,10 @@ async function main() {
     await (await usdc.mint(deployer.address, USD(1_000_000))).wait();
   }
 
-  const out = path.join(__dirname, "..", "deployments", `arc-${network.key}.json`);
+  // POLARIS_DEPLOYMENT_OUT: a rehearsal on a local fork of Arc testnet writes its own record.
+  const out = process.env.POLARIS_DEPLOYMENT_OUT
+    ? path.resolve(process.env.POLARIS_DEPLOYMENT_OUT)
+    : path.join(__dirname, "..", "deployments", `arc-${network.key}.json`);
   fs.writeFileSync(out, JSON.stringify(record, null, 2) + "\n");
   console.log(`\nRecord: ${path.relative(process.cwd(), out)}`);
   console.log(`Gas: ${record.gas.totalUsed} units, ${record.gas.totalCostUsdc} USDC`);

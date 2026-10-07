@@ -12,7 +12,7 @@
  *   abi/index.d.ts    literal, readonly types, so viem infers function names,
  *                     arguments and events exactly as with an inline `as const`
  *
- * The files are committed. test/metropolis/Abi.test.js fails when an artifact
+ * The files are committed. test/integration/Abi.test.js fails when an artifact
  * and its exported ABI disagree, so a contract change cannot ship without a
  * re-export.
  */

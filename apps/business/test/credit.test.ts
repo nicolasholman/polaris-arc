@@ -71,18 +71,18 @@ describe("the texts the account and the history wallet sign", () => {
     const account = "0x1111111111111111111111111111111111111111";
     const wallet = "0x2222222222222222222222222222222222222222";
     // Copied from workflows/src/underwriting/consent.ts and packages/underwriting/src/core/link.ts: keep in step.
-    expect(underwriteConsentMessage({ account, wallet, chainId: 10143, issuedAt: 1_790_000_000, nonce: "k3J9abcdEF" })).toBe(
+    expect(underwriteConsentMessage({ account, wallet, chainId: 5042002, issuedAt: 1_790_000_000, nonce: "k3J9abcdEF" })).toBe(
       [
         "Polaris: underwrite this account for Pay in 4 credit, once, from the evidence below.",
         "",
         "Account: 0x1111111111111111111111111111111111111111",
         "History wallet: 0x2222222222222222222222222222222222222222",
-        "Chain: 10143",
+        "Chain: 5042002",
         "Issued: 2026-09-21T14:13:20Z",
         "Nonce: k3J9abcdEF",
       ].join("\n"),
     );
-    expect(underwriteConsentMessage({ account, wallet: null, chainId: 10143, issuedAt: 1_790_000_000, nonce: "k3J9abcdEF" })).toContain("History wallet: none");
+    expect(underwriteConsentMessage({ account, wallet: null, chainId: 5042002, issuedAt: 1_790_000_000, nonce: "k3J9abcdEF" })).toContain("History wallet: none");
     expect(linkMessage({ account, wallet, issuedAt: 1_790_000_000, nonce: "k3J9abcdEF" })).toBe(
       [
         "Polaris: count this wallet's history toward my credit line.",

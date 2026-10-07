@@ -144,7 +144,7 @@ describe("POST /api/relay type=pay (Pay now)", () => {
     expect((await json(await relay({ ...body, buyer: "0x123" }))).body.error.param).toBe("buyer");
     expect((await json(await relay({ ...body, signature: "0x1234" }))).body.error.param).toBe("signature");
     expect((await json(await relay({ ...body, validBefore: "1" }))).body.error.code).toBe("signature_expired");
-    expect((await json(await relay({ ...body, chainId: 10143 }))).body.error.code).toBe("wrong_chain");
+    expect((await json(await relay({ ...body, chainId: 1 }))).body.error.code).toBe("wrong_chain");
   });
 
   it("rate-limits one account's verified requests (junk signatures don't count against the account they name)", async () => {
@@ -321,7 +321,7 @@ describe("POST /api/v1/relay/payments (polarispay-sdk pay())", () => {
 
   it("refuses another contract, another chain, another merchant and a wrong nonce", async () => {
     expect((await (await post(await sdkBody({ contract: ADDR.checkout }), merchant.publishableKey)).json()).error.code).toBe("wrong_contract");
-    expect((await (await post(await sdkBody({ chainId: 10143 }), merchant.publishableKey)).json()).error.code).toBe("wrong_chain");
+    expect((await (await post(await sdkBody({ chainId: 1 }), merchant.publishableKey)).json()).error.code).toBe("wrong_chain");
     const other = await sdkBody({ merchant: "0x9999999999999999999999999999999999999999" });
     expect((await post(other, merchant.publishableKey)).status).toBe(403);
     expect((await (await post(await sdkBody({ nonce: `0x${"00".repeat(32)}` }), merchant.publishableKey)).json()).error.code).toBe("wrong_nonce");

@@ -166,8 +166,6 @@ async function rpc(method, params = []) {
   return body.result;
 }
 
-/** Chainlink's AUSD/USD on Monad mainnet: the price polaris-guardian reads in staging and production. */
-
 function stop() {
   if (stopping) return;
   stopping = true;

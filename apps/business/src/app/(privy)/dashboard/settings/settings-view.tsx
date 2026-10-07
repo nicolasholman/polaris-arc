@@ -70,7 +70,7 @@ export function SettingsView() {
               { label: "Settles in", value: "0.8 s" },
             ]}
           />
-          <MonadPanel />
+          <ArcPanel />
           <SignOutButton />
         </aside>
       </div>
@@ -173,7 +173,7 @@ function WalletPanel() {
   );
 }
 
-function MonadPanel() {
+function ArcPanel() {
   const { merchant } = useMerchant();
   const blocker = useReadiness().registration;
   const { run, busy, error } = useRegisterAction();

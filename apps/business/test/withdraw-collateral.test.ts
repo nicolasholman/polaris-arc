@@ -74,7 +74,7 @@ describe("POST /api/relay type=withdrawCollateral", () => {
     expect(res.body.error.message).toMatch(/isn't available on this network yet/);
 
     // A vault that answers with another contract's domain, chain or address is treated the same.
-    for (const wrong of [{ name: "PolarisCheckout" }, { chainId: 10143n }, { verifyingContract: ADDR.loanEngine }]) {
+    for (const wrong of [{ name: "PolarisCheckout" }, { chainId: 1n }, { verifyingContract: ADDR.loanEngine }]) {
       env.chain.reads.eip712Domain = takesSignedWithdraw(wrong);
       expect((await relay(await signWithdraw(USD(50)))).body.error.code).toBe("withdraw_unavailable");
     }

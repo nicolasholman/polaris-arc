@@ -555,7 +555,7 @@ export async function sendTestEvent(auth: AuthedMerchant, endpointId: string): P
   const db = getDb();
   const endpoint = await db.webhookEndpoints.get(endpointId);
   if (!endpoint || endpoint.merchantId !== merchant.id || endpoint.disabledAt) throw new HttpError(404, "not_found", "That endpoint doesn't exist.");
-  const chainId = getConfig().chain?.id ?? 10143;
+  const chainId = getConfig().chain?.id ?? 5042002;
   const orderId = `ord_test_${randomBase62(8)}`;
   const { deliveries } = await emitEvent({
     merchant,

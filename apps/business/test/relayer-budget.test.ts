@@ -135,19 +135,19 @@ describe("the minimum is in the policy too, not only in the route", () => {
     encodeFunctionData({ abi: iusdcAbi, functionName: "transferWithAuthorization", args: [someone, someone, value, 0n, 1n, zeroHash, 27, zeroHash, zeroHash] });
 
   it("checkRelayerCall refuses a transfer or a send below the minimum, whoever builds it", () => {
-    const expected = { chainId: 10143, addresses, minAmountUnits: 100_000n };
-    expect(() => checkRelayerCall({ to: addresses.stablecoin, data: twa(0n), chainId: 10143 }, expected)).toThrow(PolicyViolation);
-    expect(checkRelayerCall({ to: addresses.stablecoin, data: twa(100_000n), chainId: 10143 }, expected).functionName).toBe("transferWithAuthorization");
+    const expected = { chainId: 5042002, addresses, minAmountUnits: 100_000n };
+    expect(() => checkRelayerCall({ to: addresses.stablecoin, data: twa(0n), chainId: 5042002 }, expected)).toThrow(PolicyViolation);
+    expect(checkRelayerCall({ to: addresses.stablecoin, data: twa(100_000n), chainId: 5042002 }, expected).functionName).toBe("transferWithAuthorization");
     const send = encodeFunctionData({
       abi: polarisSendAbi,
       functionName: "send",
       args: [someone, someone, 1n, 1n, 0n, 1n, 27, zeroHash, zeroHash, 27, zeroHash, zeroHash],
     });
-    expect(() => checkRelayerCall({ to: addresses.send, data: send, chainId: 10143 }, expected)).toThrow(/send only for 100000/);
+    expect(() => checkRelayerCall({ to: addresses.send, data: send, chainId: 5042002 }, expected)).toThrow(/send only for 100000/);
   });
 
   it("the Privy policy's transfer and send rules carry the same floor", () => {
-    const policy = buildRelayerPolicy({ chainId: 10143, addresses, minAmountUnits: 100_000n });
+    const policy = buildRelayerPolicy({ chainId: 5042002, addresses, minAmountUnits: 100_000n });
     const floor = (rule: string) => policy.rules.find((r) => r.name === rule)?.conditions.find((c) => c.operator === "gte");
     expect(floor("Payouts: USDC transferWithAuthorization")).toMatchObject({ field_source: "ethereum_calldata", field: "transferWithAuthorization.value", value: "100000" });
     expect(floor("Send by link: PolarisSend.send")).toMatchObject({ field: "send.amount", value: "100000" });
