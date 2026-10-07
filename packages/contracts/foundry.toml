@@ -1,0 +1,29 @@
+# The CCIP layer (ccip/) builds and tests with Foundry and Chainlink Local:
+# @chainlink/contracts-ccip and @chainlink/local import OpenZeppelin by
+# versioned paths that only remappings resolve. The rest of the contracts stay
+# on Hardhat (hardhat.config.js); the CCIP tests import them from contracts/.
+[profile.default]
+src = "ccip/src"
+test = "ccip/test"
+script = "ccip/script"
+out = "ccip/out"
+cache_path = "ccip/cache"
+libs = ["node_modules"]
+solc_version = "0.8.24"
+evm_version = "cancun"
+optimizer = true
+optimizer_runs = 200
+remappings = [
+  "@chainlink/contracts-ccip/=node_modules/@chainlink/contracts-ccip/",
+  "@chainlink/contracts/=node_modules/@chainlink/contracts/",
+  "@chainlink/local/=node_modules/@chainlink/local/",
+  "@openzeppelin/contracts@4.8.3/=node_modules/@openzeppelin/contracts-4.8.3/",
+  "@openzeppelin/contracts@5.3.0/=node_modules/@openzeppelin/contracts-5.3.0/",
+  "@openzeppelin/contracts/=node_modules/@openzeppelin/contracts/",
+  "forge-std/=node_modules/forge-std/src/",
+]
+fs_permissions = [{ access = "read", path = "./" }]
+
+[rpc_endpoints]
+arc_testnet = "https://rpc.testnet.arc.io"
+arc_mainnet = "https://rpc.mainnet.arc.io"

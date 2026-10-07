@@ -32,6 +32,24 @@ const ARC_TESTNET = {
     multicall3From: "0x522fAf9A91c41c443c66765030741e4AaCe147D0",
     irisApiUrl: "https://iris-api-sandbox.circle.com",
   },
+  // Chainlink CCIP on Arc testnet (docs.chain.link/ccip/directory/testnet/chain/arc-testnet).
+  // USDC is not a CCIP token on Arc: CCTP moves the dollars, CCIP carries the instruction.
+  ccip: {
+    chainSelector: "3034092155422581607",
+    router: "0xdE4E7FED43FAC37EB21aA0643d9852f75332eab8",
+    rmn: "0xD610B8f58689de7755947C05342A2DFaC30ebD57",
+    tokenAdminRegistry: "0xd3e461C55676B10634a5F81b747c324B85686Dd1",
+    link: "0x745827566D1EFb6B91632df0bFD5a9b5392F54E0",
+    feeTokens: ["native USDC", "LINK", "WUSDC 0xbf4B839A7939a52acbF8fC52D5Bd5BFE69a064EA"],
+    explorer: "https://ccip.chain.link",
+    // Where a buyer can pay a Polaris link from (PolarisCCIPSender deploys there; lanes checked with isChainSupported).
+    sources: [
+      { name: "Base Sepolia", chainId: 84532, selector: "10344971235874465080", router: "0xD3b06cEbF099CE7DA4AcCf578aaebFDBd6e88a93", usdc: "0x036CbD53842c5426634e7929541eC2318f3dCF7e", tokenMessengerV2: "0x8FE6B999Dc680CcFDD5Bf7EB0974218be2542DAA", cctpDomain: 6, rpcUrl: "https://sepolia.base.org" },
+      { name: "Ethereum Sepolia", chainId: 11155111, selector: "16015286601757825753", router: "0x0BF3dE8c5D3e8A2B34D2BEeB17ABfCeBaf363A59", usdc: "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238", tokenMessengerV2: "0x8FE6B999Dc680CcFDD5Bf7EB0974218be2542DAA", cctpDomain: 0, rpcUrl: "https://ethereum-sepolia-rpc.publicnode.com" },
+    ],
+  },
+  // No Chainlink Data Feeds are listed for Arc testnet: CreditGuard runs without the peg check here.
+  feeds: null,
 };
 
 const ARC_MAINNET = {
@@ -56,6 +74,26 @@ const ARC_MAINNET = {
     multicall3From: "0x522fAf9A91c41c443c66765030741e4AaCe147D0",
     irisApiUrl: "https://iris-api.circle.com",
   },
+  // Chainlink CCIP on Arc mainnet (docs.chain.link/ccip/directory/mainnet/chain/arc-mainnet).
+  ccip: {
+    chainSelector: "6370580034781731079",
+    router: "0xB79791184973589c38e114D43Eb8E4588C283A18",
+    rmn: "0x9A82E768C885DEF7C4b47451Fd4Db53d8B21ed07",
+    tokenAdminRegistry: "0x51e2A24742Db77604B881d6781Ee16B5b8fcBE29",
+    link: "0x76a443768A5e3B8d1AED0105FC250877841Deb40",
+    feeTokens: ["native USDC", "LINK"],
+    explorer: "https://ccip.chain.link",
+    sources: [
+      { name: "Base", chainId: 8453, selector: "15971525489660198786", router: "0x881e3A65B4d4a04dD529061dd0071cf975F58bCD", usdc: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", tokenMessengerV2: "0x28b5a0e9C621a5BadaA536219b3a228C8168cf5d", cctpDomain: 6, rpcUrl: "https://mainnet.base.org" },
+      { name: "Ethereum", chainId: 1, selector: "5009297550715157269", router: "0x80226fc0Ee2b096224EeAc085Bb9a8cba1146f7D", usdc: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48", tokenMessengerV2: "0x28b5a0e9C621a5BadaA536219b3a228C8168cf5d", cctpDomain: 0, rpcUrl: "https://ethereum-rpc.publicnode.com" },
+    ],
+  },
+  // Chainlink Data Feeds on Arc mainnet (reference-data-directory feeds-arc-mainnet.json): 8 decimals, 24 h heartbeat.
+  feeds: {
+    usdcUsd: "0x84EA90AC252Dc437031461836DB5164219147905",
+    eurcUsd: "0x361b95c10b76Ca3f35C686d423e43A951755Bf23",
+    eurUsd: "0xDd5B15443cd733D3966a50a3E48cB7DF9Fb5DE0D",
+  },
 };
 
 /** A local Hardhat node: MockUSDC and MockEURC, no Circle services. */
@@ -68,6 +106,8 @@ const ARC_LOCAL = {
   explorerUrl: null,
   explorerApiUrl: null,
   circle: null,
+  ccip: null,
+  feeds: null,
 };
 
 const NETWORKS = { testnet: ARC_TESTNET, mainnet: ARC_MAINNET, local: ARC_LOCAL };

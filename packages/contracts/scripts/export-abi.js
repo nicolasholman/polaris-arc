@@ -19,7 +19,7 @@
 
 "use strict";
 
-const { mkdirSync, writeFileSync } = require("node:fs");
+const { existsSync, mkdirSync, readFileSync, writeFileSync } = require("node:fs");
 const { join } = require("node:path");
 
 /** Everything a client, the relayer, the indexer or the keeper calls or decodes. */
@@ -41,6 +41,9 @@ const CONTRACTS = [
   "IUSDC",
   "IERC3009",
 ];
+
+/** The CCIP layer, built with Foundry (ccip/out): exported beside the rest when built. */
+const FOUNDRY_CONTRACTS = ["PolarisCCIPReceiver", "PolarisCCIPSender"];
 
 const ABI_DIR = join(__dirname, "..", "abi");
 
@@ -69,11 +72,20 @@ function literalType(value, indent = "") {
 async function readAbis(hre) {
   const out = {};
   for (const name of CONTRACTS) out[name] = (await hre.artifacts.readArtifact(name)).abi;
+  for (const name of FOUNDRY_CONTRACTS) {
+    const file = join(__dirname, "..", "ccip", "out", `${name}.sol`, `${name}.json`);
+    if (existsSync(file)) out[name] = JSON.parse(readFileSync(file, "utf8")).abi;
+  }
   return out;
 }
 
 async function exportAbis(hre) {
   await hre.run("compile", { quiet: true });
+  try {
+    require("node:child_process").execFileSync("forge", ["build"], { cwd: join(__dirname, ".."), stdio: "ignore" });
+  } catch {
+    console.warn("forge isn't available: the CCIP ABIs keep their last export");
+  }
   const abis = await readAbis(hre);
   mkdirSync(ABI_DIR, { recursive: true });
 
@@ -95,7 +107,7 @@ async function exportAbis(hre) {
   return Object.keys(abis);
 }
 
-module.exports = { CONTRACTS, ABI_DIR, readAbis, exportAbis, camel };
+module.exports = { CONTRACTS, FOUNDRY_CONTRACTS, ABI_DIR, readAbis, exportAbis, camel };
 
 if (require.main === module) {
   const hre = require("hardhat");

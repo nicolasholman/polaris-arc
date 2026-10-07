@@ -42,6 +42,11 @@ module.exports = {
       chainId: 5042002,
       accounts,
     },
+    // CCIP source chains, where PolarisCCIPSender deploys (scripts/ccip-deploy-sender.js, user-run).
+    baseSepolia: { url: process.env.BASE_SEPOLIA_RPC_URL || "https://sepolia.base.org", chainId: 84532, accounts },
+    ethereumSepolia: { url: process.env.SEPOLIA_RPC_URL || "https://ethereum-sepolia-rpc.publicnode.com", chainId: 11155111, accounts },
+    base: { url: process.env.BASE_RPC_URL || "https://mainnet.base.org", chainId: 8453, accounts },
+    ethereum: { url: process.env.ETHEREUM_RPC_URL || "https://ethereum-rpc.publicnode.com", chainId: 1, accounts },
     // Arc mainnet. scripts/deploy.js refuses it without POLARIS_CONFIRM_MAINNET=yes.
     arcMainnet: {
       url: process.env.ARC_MAINNET_RPC_URL || "https://rpc.mainnet.arc.io",

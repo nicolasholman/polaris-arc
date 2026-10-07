@@ -60,3 +60,7 @@ services/*/.data/
 .env.local
 packages/contracts/deployments/.keys/
 .fork/
+
+# Foundry (the CCIP layer)
+packages/contracts/ccip/out/
+packages/contracts/ccip/cache/

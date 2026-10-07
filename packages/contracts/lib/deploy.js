@@ -13,6 +13,8 @@
 "use strict";
 
 const { execFileSync } = require("node:child_process");
+const fs = require("node:fs");
+const path = require("node:path");
 const { getAddress, ZeroAddress, Wallet } = require("ethers");
 
 const tx = require("./tx");
@@ -147,6 +149,30 @@ async function deployPolaris(hre, cfg, log = () => {}) {
   const thresholds = guardThresholds(cfg.guard ?? {});
   await deployContract("CreditGuard", [deployer.address, addresses.PolarisLoanEngine, thresholds]);
 
+  // -------------------------------------------------------------- CCIP
+  // Pay a Polaris link (or a plan) from another chain: CCTP moves the USDC,
+  // Chainlink CCIP carries the instruction to PolarisCCIPReceiver (ccip/, built
+  // with Foundry because @chainlink/contracts-ccip needs remappings).
+  if (cfg.network.ccip) {
+    log("Chainlink CCIP");
+    const art = foundryArtifact("PolarisCCIPReceiver");
+    const factory = new ethers.ContractFactory(art.abi, art.bytecode, deployer);
+    const d = await tx.deploy(factory, [cfg.network.ccip.router, addresses.USDC, addresses.PolarisPayments, addresses.PolarisLoanEngine, deployer.address]);
+    tally(d.receipt);
+    addresses.PolarisCCIPReceiver = d.address;
+    record.contracts.PolarisCCIPReceiver = {
+      address: d.address,
+      blockNumber: d.receipt.blockNumber,
+      txHash: d.receipt.hash,
+      gasUsed: d.receipt.gasUsed.toString(),
+      contract: "PolarisCCIPReceiver",
+      abi: "abi/PolarisCCIPReceiver.json",
+      args: jsonSafe([cfg.network.ccip.router, addresses.USDC, addresses.PolarisPayments, addresses.PolarisLoanEngine, deployer.address]),
+      build: "foundry (ccip/)",
+    };
+    log(`  PolarisCCIPReceiver    ${d.address}  (router ${cfg.network.ccip.router}; senders are allowlisted after they deploy: scripts/ccip-allow-sender.js)`);
+  }
+
   // ------------------------------------------------------------ wiring
   log("Roles");
   await send(scores, "setWriter", [addresses.PolarisLoanEngine, true]);
@@ -163,6 +189,13 @@ async function deployPolaris(hre, cfg, log = () => {}) {
   await send(engine, "setOriginator", [addresses.PolarisCheckout, true]);
   await send(payments, "setCheckout", [addresses.PolarisCheckout]);
   await send(checkout, "setCreditGuardian", [addresses.CreditGuard]);
+  // Where Chainlink's USDC / USD feed runs (Arc mainnet), the guard also checks the peg:
+  // below $0.98, or an answer older than 26 h (the feed's heartbeat is 24 h), pauses new plans.
+  if (cfg.network.feeds?.usdcUsd) {
+    const guard = await ethers.getContractAt("CreditGuard", addresses.CreditGuard, deployer);
+    await send(guard, "setPriceCheck", [cfg.network.feeds.usdcUsd, 98_000_000n, 26 * 3600]);
+    log(`  CreditGuard: USDC peg on Chainlink USDC / USD ${cfg.network.feeds.usdcUsd} (pause below $0.98 or older than 26 h)`);
+  }
   log("  ScoreManager: writer = LoanEngine, underwriter = UnderwritingReceiver, requireUnderwriting");
   log("  LoanEngine: originator = PolarisCheckout (only), vault, registry");
   log("  PolarisPayments: checkout = PolarisCheckout");
@@ -273,11 +306,25 @@ async function deployPolaris(hre, cfg, log = () => {}) {
       report: `abi.encode(uint8 kind = ${REPORT_KIND.UNDERWRITING}, ${UNDERWRITINGS_TYPE} items)`,
       entry: "submitReport(bytes report)",
     },
-    guard: { contract: addresses.CreditGuard, reasons: GUARD_REASON, overrides: GUARD_OVERRIDE, view: "creditStatus()" },
+    guard: { contract: addresses.CreditGuard, reasons: GUARD_REASON, overrides: GUARD_OVERRIDE, view: "creditStatus()", priceFeed: cfg.network.feeds?.usdcUsd ?? null },
   };
+  record.ccip = cfg.network.ccip
+    ? { ...cfg.network.ccip, receiver: addresses.PolarisCCIPReceiver, senders: {}, note: "Deploy PolarisCCIPSender on each source chain (scripts/ccip-deploy-sender.js), then allowlist it here (scripts/ccip-allow-sender.js)." }
+    : null;
+  record.feeds = cfg.network.feeds ?? null;
   record.eip712 = await domains(ethers, addresses, usdc, eurc);
   record.gas = { totalUsed: gasUsed.toString(), totalCostUsdc: ethers.formatUnits(gasCost, 18) };
   return record;
+}
+
+/** A Foundry artifact from ccip/out (run `forge build` first; the deploy script does). */
+function foundryArtifact(name) {
+  const file = path.join(__dirname, "..", "ccip", "out", `${name}.sol`, `${name}.json`);
+  if (!fs.existsSync(file)) {
+    execFileSync("forge", ["build"], { cwd: path.join(__dirname, ".."), stdio: "inherit" });
+  }
+  const json = JSON.parse(fs.readFileSync(file, "utf8"));
+  return { abi: json.abi, bytecode: json.bytecode.object };
 }
 
 /** Circle's token on Arc: check its EIP-712 domain and decimals, and record it. */

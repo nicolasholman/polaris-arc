@@ -55,6 +55,11 @@
   },
   {
     "inputs": [],
+    "name": "InvalidPriceCheck",
+    "type": "error"
+  },
+  {
+    "inputs": [],
     "name": "InvalidThresholds",
     "type": "error"
   },
@@ -140,6 +145,31 @@
     "anonymous": false,
     "inputs": [
       {
+        "indexed": true,
+        "internalType": "address",
+        "name": "feed",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "int256",
+        "name": "minPrice",
+        "type": "int256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint32",
+        "name": "maxAge",
+        "type": "uint32"
+      }
+    ],
+    "name": "PriceCheckSet",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
         "components": [
           {
             "internalType": "uint256",
@@ -181,7 +211,33 @@
   },
   {
     "inputs": [],
+    "name": "MAX_PRICE_AGE_LIMIT",
+    "outputs": [
+      {
+        "internalType": "uint32",
+        "name": "",
+        "type": "uint32"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
     "name": "REASON_BAD_DEBT",
+    "outputs": [
+      {
+        "internalType": "uint8",
+        "name": "",
+        "type": "uint8"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "REASON_DEPEG",
     "outputs": [
       {
         "internalType": "uint8",
@@ -208,6 +264,19 @@
   {
     "inputs": [],
     "name": "REASON_OWNER_PAUSE",
+    "outputs": [
+      {
+        "internalType": "uint8",
+        "name": "",
+        "type": "uint8"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "REASON_STALE_PRICE",
     "outputs": [
       {
         "internalType": "uint8",
@@ -335,6 +404,36 @@
             "internalType": "struct CreditGuard.Thresholds",
             "name": "thresholds",
             "type": "tuple"
+          },
+          {
+            "internalType": "uint8",
+            "name": "priceReasons",
+            "type": "uint8"
+          },
+          {
+            "internalType": "address",
+            "name": "priceFeed",
+            "type": "address"
+          },
+          {
+            "internalType": "int256",
+            "name": "price",
+            "type": "int256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "priceUpdatedAt",
+            "type": "uint256"
+          },
+          {
+            "internalType": "int256",
+            "name": "minPrice",
+            "type": "int256"
+          },
+          {
+            "internalType": "uint32",
+            "name": "maxPriceAge",
+            "type": "uint32"
           }
         ],
         "internalType": "struct CreditGuard.CreditStatus",
@@ -458,6 +557,59 @@
   },
   {
     "inputs": [],
+    "name": "priceCheck",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "contract IPriceFeed",
+            "name": "feed",
+            "type": "address"
+          },
+          {
+            "internalType": "int256",
+            "name": "minPrice",
+            "type": "int256"
+          },
+          {
+            "internalType": "uint32",
+            "name": "maxAge",
+            "type": "uint32"
+          }
+        ],
+        "internalType": "struct CreditGuard.PriceCheck",
+        "name": "",
+        "type": "tuple"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "priceReasons",
+    "outputs": [
+      {
+        "internalType": "uint8",
+        "name": "reasons",
+        "type": "uint8"
+      },
+      {
+        "internalType": "int256",
+        "name": "price",
+        "type": "int256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "updatedAt",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
     "name": "renounceOwnership",
     "outputs": [],
     "stateMutability": "nonpayable",
@@ -477,6 +629,29 @@
       }
     ],
     "name": "setOverride",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "contract IPriceFeed",
+        "name": "feed",
+        "type": "address"
+      },
+      {
+        "internalType": "int256",
+        "name": "minPrice",
+        "type": "int256"
+      },
+      {
+        "internalType": "uint32",
+        "name": "maxAge",
+        "type": "uint32"
+      }
+    ],
+    "name": "setPriceCheck",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"

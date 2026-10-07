@@ -6,6 +6,14 @@ import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
 import {ICreditGuard} from "./interfaces/ICreditGuard.sol";
 
+/// A Chainlink Data Feed (AggregatorV3Interface, the part the guard reads).
+interface IPriceFeed {
+    function latestRoundData()
+        external
+        view
+        returns (uint80 roundId, int256 answer, uint256 startedAt, uint256 updatedAt, uint80 answeredInRound);
+}
+
 /// The credit pool the guard reads: PolarisLoanEngine.
 interface IPolarisPool {
     /// Same layout as PolarisLoanEngine.PoolState.
@@ -36,9 +44,16 @@ interface IPolarisPool {
  *        - REASON_BAD_DEBT: unacknowledged bad debt exceeds `maxBadDebtBps`
  *          of lifetime originations, once at least `minOriginated` has been
  *          lent (on a young pool one loss is a large share).
+ *      And, where Chainlink's USDC / USD Data Feed runs (Arc mainnet:
+ *      0x84EA…7905), the peg itself, read live on the same call:
+ *        - REASON_DEPEG: USDC / USD below `minPrice`;
+ *        - REASON_STALE_PRICE: the feed's answer is older than `maxAge`, not
+ *          positive, or unreadable. New credit waits for a price it can trust.
+ *      Without a feed (Arc testnet has none) only the pool decides.
  *      The owner can force credit paused (REASON_OWNER_PAUSE), force it open
  *      for at most MAX_FORCE_RESUME, acknowledge the bad debt it has looked
- *      into, and change the thresholds. Nothing here can move money.
+ *      into, and change the thresholds and the price check. Nothing here can
+ *      move money.
  *
  *      PolarisCheckout calls `isCreditPaused()` with a gas-capped staticcall
  *      and fails open on a revert, so a broken guard can never freeze
@@ -46,10 +61,15 @@ interface IPolarisPool {
  *      collections or repayments.
  */
 contract CreditGuard is Ownable, ICreditGuard {
+    uint8 public constant REASON_DEPEG = 1;
     uint8 public constant REASON_LOW_CASH = 2;
     uint8 public constant REASON_BAD_DEBT = 4;
+    uint8 public constant REASON_STALE_PRICE = 8;
     /// The owner forced credit paused.
     uint8 public constant REASON_OWNER_PAUSE = 0x80;
+
+    /// The longest a price may be trusted for, at most: a week.
+    uint32 public constant MAX_PRICE_AGE_LIMIT = 7 days;
 
     /// The longest the owner may force credit open in one call.
     uint32 public constant MAX_FORCE_RESUME = 1 days;
@@ -72,6 +92,14 @@ contract CreditGuard is Ownable, ICreditGuard {
         uint256 minOriginated;
     }
 
+    /// The peg check: a Chainlink USDC / USD feed (zero: no check), the lowest
+    /// price that isn't a depeg (in the feed's decimals) and how old an answer may be.
+    struct PriceCheck {
+        IPriceFeed feed;
+        int256 minPrice;
+        uint32 maxAge;
+    }
+
     /// Everything a client needs to show the guard, in one read.
     struct CreditStatus {
         /// What PolarisCheckout.openPlan applies now.
@@ -88,11 +116,20 @@ contract CreditGuard is Ownable, ICreditGuard {
         uint256 badDebtAcknowledged;
         IPolarisPool.PoolState pool;
         Thresholds thresholds;
+        /// Depeg and stale price, from the feed now (0 without a feed).
+        uint8 priceReasons;
+        /// The feed and its latest answer and update time (zeros without a feed).
+        address priceFeed;
+        int256 price;
+        uint256 priceUpdatedAt;
+        int256 minPrice;
+        uint32 maxPriceAge;
     }
 
     IPolarisPool public immutable pool;
 
     Thresholds private _thresholds;
+    PriceCheck private _price;
     /// The override as set; `activeOverride()` is the one in force.
     Override public overrideMode;
     /// When a forced resume ends (unix seconds); 0 for the other modes.
@@ -103,10 +140,12 @@ contract CreditGuard is Ownable, ICreditGuard {
     event ThresholdsSet(Thresholds thresholds);
     event CreditGuardOverridden(Override mode, uint64 until);
     event BadDebtAcknowledged(uint256 badDebt);
+    event PriceCheckSet(address indexed feed, int256 minPrice, uint32 maxAge);
 
     error ZeroAddress();
     error InvalidThresholds();
     error InvalidOverride(Override mode, uint64 until);
+    error InvalidPriceCheck();
 
     constructor(address initialOwner, IPolarisPool _pool, Thresholds memory thresholds_) Ownable(initialOwner) {
         if (address(_pool) == address(0)) revert ZeroAddress();
@@ -120,6 +159,13 @@ contract CreditGuard is Ownable, ICreditGuard {
 
     function setThresholds(Thresholds calldata t) external onlyOwner {
         _setThresholds(t);
+    }
+
+    /// @notice Check the USDC peg on Chainlink's USDC / USD feed (`feed` zero turns the check off).
+    function setPriceCheck(IPriceFeed feed, int256 minPrice, uint32 maxAge) external onlyOwner {
+        if (address(feed) != address(0) && (minPrice <= 0 || maxAge == 0 || maxAge > MAX_PRICE_AGE_LIMIT)) revert InvalidPriceCheck();
+        _price = PriceCheck({feed: feed, minPrice: minPrice, maxAge: maxAge});
+        emit PriceCheckSet(address(feed), minPrice, maxAge);
     }
 
     /**
@@ -156,8 +202,27 @@ contract CreditGuard is Ownable, ICreditGuard {
         Override mode = activeOverride();
         if (mode == Override.ForcePause) return (true, REASON_OWNER_PAUSE);
         if (mode == Override.ForceResume) return (false, 0);
-        reasons = poolReasons(pool.poolState());
+        (uint8 priceBits,,) = priceReasons();
+        reasons = poolReasons(pool.poolState()) | priceBits;
         paused = reasons != 0;
+    }
+
+    /// @notice Depeg and stale price from the feed now, with its answer and update time. Zeros without a feed.
+    function priceReasons() public view returns (uint8 reasons, int256 price, uint256 updatedAt) {
+        PriceCheck memory c = _price;
+        if (address(c.feed) == address(0)) return (0, 0, 0);
+        try c.feed.latestRoundData() returns (uint80, int256 answer, uint256, uint256 at, uint80) {
+            price = answer;
+            updatedAt = at;
+            if (answer <= 0 || at == 0 || (block.timestamp > at && block.timestamp - at > c.maxAge)) return (REASON_STALE_PRICE, price, updatedAt);
+            if (answer < c.minPrice) reasons = REASON_DEPEG;
+        } catch {
+            return (REASON_STALE_PRICE, 0, 0);
+        }
+    }
+
+    function priceCheck() external view returns (PriceCheck memory) {
+        return _price;
     }
 
     /// @notice The override in force now: a forced resume past `overrideUntil` is None.
@@ -175,6 +240,11 @@ contract CreditGuard is Ownable, ICreditGuard {
         s.overrideUntil = s.overrideMode == Override.ForceResume ? overrideUntil : 0;
         s.badDebtAcknowledged = badDebtAcknowledged;
         s.thresholds = _thresholds;
+        (s.priceReasons, s.price, s.priceUpdatedAt) = priceReasons();
+        PriceCheck memory c = _price;
+        s.priceFeed = address(c.feed);
+        s.minPrice = c.minPrice;
+        s.maxPriceAge = c.maxAge;
     }
 
     function thresholds() external view returns (Thresholds memory) {

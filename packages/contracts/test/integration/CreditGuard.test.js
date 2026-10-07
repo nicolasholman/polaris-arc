@@ -220,6 +220,60 @@ describe("The credit guard (CreditGuard)", () => {
   });
 
   // ---------------------------------------------------------------------
+  describe("the USDC peg, on a Chainlink USDC / USD feed", () => {
+    const PRICE = (n) => ethers.parseUnits(String(n), 8);
+    const { DEPEG, STALE_PRICE } = keeperLib.GUARD_REASON;
+    let feed;
+
+    beforeEach(async () => {
+      feed = await (await ethers.getContractFactory("MockPriceFeed")).deploy();
+      await feed.set(PRICE("0.9998"), await now());
+      await s.guard.setPriceCheck(feed, PRICE("0.98"), 26 * 3600);
+    });
+
+    it("leaves credit open on a healthy peg, and says so in creditStatus", async () => {
+      expect(await s.checkout.creditPaused()).to.deep.equal([false, 0n]);
+      const st = await s.guard.creditStatus();
+      expect(st.priceReasons).to.equal(0);
+      expect(st.price).to.equal(PRICE("0.9998"));
+      expect(st.priceFeed).to.equal(await feed.getAddress());
+      expect(st.minPrice).to.equal(PRICE("0.98"));
+    });
+
+    it("pauses new plans on a depeg, read live, and resumes when the peg holds again", async () => {
+      await feed.set(PRICE("0.97"), await now());
+      expect(await s.checkout.creditPaused()).to.deep.equal([true, BigInt(DEPEG)]);
+      const buyer = await newBuyer();
+      await expect(s.checkout.connect(s.relayer).openPlan(...(await planArgs(buyer)))).to.be.revertedWithCustomError(s.checkout, "CreditPausedByGuardian").withArgs(DEPEG);
+      await feed.set(PRICE("0.99"), await now());
+      expect(await s.checkout.creditPaused()).to.deep.equal([false, 0n]);
+    });
+
+    it("pauses on a stale, non-positive or unreadable price, and on every reason at once", async () => {
+      await time.increase(27 * 3600);
+      expect((await s.checkout.creditPaused())[1]).to.equal(BigInt(STALE_PRICE));
+      await feed.set(0, await now());
+      expect((await s.checkout.creditPaused())[1]).to.equal(BigInt(STALE_PRICE));
+      await feed.set(PRICE("1"), await now());
+      await feed.setBroken(true);
+      expect((await s.checkout.creditPaused())[1]).to.equal(BigInt(STALE_PRICE));
+      await feed.setBroken(false);
+      await feed.set(PRICE("0.5"), await now());
+      await drainPool();
+      expect(await s.checkout.creditPaused()).to.deep.equal([true, BigInt(DEPEG | LOW_CASH)]);
+    });
+
+    it("only the owner sets the check, within bounds; zero turns it off", async () => {
+      await expect(s.guard.connect(s.stranger).setPriceCheck(feed, 1, 60)).to.be.revertedWithCustomError(s.guard, "OwnableUnauthorizedAccount");
+      await expect(s.guard.setPriceCheck(feed, 0, 60)).to.be.revertedWithCustomError(s.guard, "InvalidPriceCheck");
+      await expect(s.guard.setPriceCheck(feed, 1, 8 * 24 * 3600)).to.be.revertedWithCustomError(s.guard, "InvalidPriceCheck");
+      await feed.set(PRICE("0.5"), await now());
+      await expect(s.guard.setPriceCheck(ethers.ZeroAddress, 0, 0)).to.emit(s.guard, "PriceCheckSet");
+      expect(await s.checkout.creditPaused()).to.deep.equal([false, 0n]);
+    });
+  });
+
+  // ---------------------------------------------------------------------
   describe("while credit is paused, everything else keeps working", () => {
     beforeEach(async () => {
       await s.guard.setOverride(OVERRIDE.FORCE_PAUSE, 0);
