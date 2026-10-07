@@ -177,7 +177,7 @@ export function creditSeries(credit: CreditLine, plans: Plan[], frame: Frame, no
     if (plan.openedAt <= now) steps.push({ at: plan.openedAt, delta: -total });
     for (const i of plan.instalments) if (i.paidAt !== null && i.paidAt <= now) steps.push({ at: i.paidAt, delta: toNumber(i.amount) });
   }
-  // The line starts full when it opened (the CRE decision); before that there was no line to draw.
+  // The line starts full when it opened (the keeper's underwriting decision); before that there was no line to draw.
   return build(toNumber(credit.available), steps, frame, now, { since: credit.openedAt, base: toNumber(credit.limit) });
 }
 

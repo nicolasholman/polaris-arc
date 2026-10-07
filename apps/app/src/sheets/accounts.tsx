@@ -8,7 +8,7 @@ import { useAccounts } from "@/components/accounts";
 import { BoostSheet } from "@/components/boost-sheet";
 import { RouteSheet, useCloseSheet } from "@/components/shell/sheet-host";
 import { boostPerDollar, boostTerms } from "@/lib/boost";
-import { usd } from "@/lib/money";
+import { eur, usd } from "@/lib/money";
 import type { HomeAccount } from "@/lib/prefs";
 
 const ABOUT: Record<HomeAccount, string> = {
@@ -21,7 +21,7 @@ const ABOUT: Record<HomeAccount, string> = {
 export function AccountsSheet() {
   const close = useCloseSheet();
   const asked = useSearchParams().get("account");
-  const { accounts, selected, select, credit, boost } = useAccounts();
+  const { accounts, selected, select, credit, boost, balance } = useAccounts();
   const [picked, setPicked] = useState<HomeAccount | null>(
     asked === "dollar" || asked === "later" || asked === "boost" ? asked : null,
   );
@@ -64,6 +64,7 @@ export function AccountsSheet() {
                 ? { label: "Each $1 adds", value: `${usd(boostPerDollar(terms))} of limit` }
                 : { label: "Currency", value: "US dollars" },
             current.id === "later" && credit ? { label: "In use", value: usd(credit.used) } : { label: "Fees", value: "None" },
+            ...(current.id === "dollar" && balance?.euros != null ? [{ label: "Euros (EURC)", value: eur(balance.euros) }] : []),
           ]}
         />
       </Sheet.Body>

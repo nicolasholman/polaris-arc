@@ -39,6 +39,16 @@ export function subscribeSummary(link: Pick<PaymentLink, "merchant">, sub: Pick<
  * money moves later, one instalment at a time.
  */
 export function movesBalance(item: ActivityItem): boolean {
+  return item.kind !== "plan-opened" && !inEuros(item);
+}
+
+/** A row in euros (EURC): shown with "€", never counted in the dollar balance or in spending. */
+export function inEuros(item: ActivityItem): boolean {
+  return item.currency === "EUR";
+}
+
+/** Whether a row's amount shows signed (money in or out of an account), unlike a plan opening, which the credit pool paid. */
+export function showsSigned(item: ActivityItem): boolean {
   return item.kind !== "plan-opened";
 }
 
@@ -225,7 +235,7 @@ const ON_TIME_BONUS = 12;
 
 /**
  * The score over the last `days`, from when it was first scored (`since`:
- * the CRE decision that opened the line) and never before: it starts at the
+ * the underwriting decision that opened the line) and never before: it starts at the
  * score the line opened with, moves only when an instalment is paid on time
  * (ScoreManager's on-time bonus), and its last point is today's score, the
  * figure every headline shows. No score yet: no history.

@@ -1,9 +1,11 @@
 /**
- * Dollars, as the buyer sees them.
+ * Dollars (and euros), as the buyer sees them.
  *
- * Amounts travel as bigint base units of the dollar token (6 decimals), the
- * same integers the contracts use, and become text only here. The buyer never
- * sees a token name: everything is "$".
+ * Amounts travel as bigint base units of the token (USDC and EURC both have
+ * 6 decimals), the same integers the contracts use, and become text only
+ * here. The buyer never sees a token name: everything is "$" or "€". (Arc's
+ * native gas balance has 18 decimals; the app never reads it, only the
+ * ERC-20 `balanceOf`.)
  */
 
 import { FX_CURRENCIES, hasFxFeed } from "@polaris/fx/feeds";
@@ -21,19 +23,17 @@ export function toNumber(micros: Micros): number {
   return Number(micros) / 1e6;
 }
 
-const usdCents = new Intl.NumberFormat("en-US", {
-  style: "currency",
-  currency: "USD",
-  minimumFractionDigits: 2,
-  maximumFractionDigits: 2,
-});
+/** The two currencies Polaris holds on Arc: dollars (USDC) and euros (EURC), both 6 decimals. */
+export type Currency = "USD" | "EUR";
 
-const usdWhole = new Intl.NumberFormat("en-US", {
-  style: "currency",
-  currency: "USD",
-  minimumFractionDigits: 0,
-  maximumFractionDigits: 0,
-});
+function formatter(currency: Currency, digits: 0 | 2): Intl.NumberFormat {
+  return new Intl.NumberFormat("en-US", { style: "currency", currency, minimumFractionDigits: digits, maximumFractionDigits: digits });
+}
+
+const FORMATS: Record<Currency, { cents: Intl.NumberFormat; whole: Intl.NumberFormat }> = {
+  USD: { cents: formatter("USD", 2), whole: formatter("USD", 0) },
+  EUR: { cents: formatter("EUR", 2), whole: formatter("EUR", 0) },
+};
 
 /** Rounds half up to the cent, in integers, so $50.385 never shows as $50.38. */
 function roundToCents(micros: Micros): Micros {
@@ -45,16 +45,26 @@ function roundToCents(micros: Micros): Micros {
 }
 
 /**
- * "$1,284.50". With `trim`, whole amounts drop the cents: "$50", as a person
- * would say it. Balances keep them.
+ * "$1,284.50" or "€1,284.50". With `trim`, whole amounts drop the cents:
+ * "$50", as a person would say it. Balances keep them.
  */
-export function usd(micros: Micros, opts: { trim?: boolean; sign?: boolean } = {}): string {
+export function money(micros: Micros, currency: Currency, opts: { trim?: boolean; sign?: boolean } = {}): string {
   const rounded = roundToCents(micros);
   const abs = rounded < 0n ? -rounded : rounded;
   const whole = abs % UNIT === 0n;
-  const text = (opts.trim && whole ? usdWhole : usdCents).format(toNumber(abs));
+  const text = (opts.trim && whole ? FORMATS[currency].whole : FORMATS[currency].cents).format(toNumber(abs));
   if (opts.sign) return `${rounded < 0n ? "−" : "+"} ${text}`;
   return rounded < 0n ? `−${text}` : text;
+}
+
+/** Dollars: "$1,284.50". */
+export function usd(micros: Micros, opts: { trim?: boolean; sign?: boolean } = {}): string {
+  return money(micros, "USD", opts);
+}
+
+/** Euros: "€1,284.50". */
+export function eur(micros: Micros, opts: { trim?: boolean; sign?: boolean } = {}): string {
+  return money(micros, "EUR", opts);
 }
 
 /** Splits "$1,284.50" into "$1,284" and ".50" so the cents can sit quieter. */

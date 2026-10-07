@@ -124,7 +124,7 @@ export function SplitSheet({ id }: { id: Hex }) {
   const words = useSplitWords(split.value ?? undefined, id);
   const organiser = Boolean(split.value && owner && split.value.organiser.toLowerCase() === owner.toLowerCase());
 
-  useEffect(() => prefetchDomains("ausd", "split"), []);
+  useEffect(() => prefetchDomains("usdc", "split"), []);
 
   // A friend who opened the link keeps its words here, for their Activity.
   const s = split.value;
@@ -527,7 +527,7 @@ function FriendView({ split, words, owner, onDone }: { split: SplitStatus; words
           open={confirming}
           onOpenChange={setConfirming}
           title={`Pay ${usd(share.amount, { trim: true })} to ${who}`}
-          summary={`${named ? `${shareLabel(memo, share.index)}'s share` : "Your share"} of ${what}. It goes straight to ${who}, in under a second. No fee.`}
+          summary={`${named ? `${shareLabel(memo, share.index)}'s share` : "Your share"} of ${what}. It goes straight to ${who}, final in under a second. No fee.`}
           newLabel="Pay with Face ID"
           busyLabel="Paying…"
           onAccount={async (signer) => {

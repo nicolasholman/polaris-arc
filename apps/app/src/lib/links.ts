@@ -1,3 +1,6 @@
+import { type Hex, isHex } from "viem";
+import { amountParam, type Currency, type Micros, parseAmount } from "./money.ts";
+
 /**
  * Your receive link (`/send?to=<account>&n=<name>`, what your code holds) and
  * how it reads on screen: the site and your name, never the account's 0x
@@ -51,4 +54,31 @@ export function toAppPath(input: string, origin: string): string | null {
   if (split) return `/split/${split[1]!.toLowerCase()}${url.hash}`;
   if (url.pathname === "/send" && url.search) return `/send${url.search}`;
   return null;
+}
+
+/* ── Send links ─────────────────────────────────────────────────────────── */
+
+/** What a send link carries: the link's key, the amount, the sender's name, and the currency. */
+export type ClaimFragment = { key: Hex; amount: Micros; name: string; currency: Currency };
+
+/**
+ * A send link: `/claim#k=<key>&a=<amount>&n=<name>`, plus `&c=EUR` for a link
+ * in euros (EURC, the PolarisSend on EURC). No `c` means dollars, so every
+ * link made before euros still claims. The fragment never leaves the browser.
+ */
+export function claimUrl(origin: string, link: ClaimFragment): string {
+  const fragment = new URLSearchParams({ k: link.key, a: amountParam(link.amount), n: link.name, ...(link.currency === "EUR" ? { c: "EUR" } : {}) });
+  return `${origin}/claim#${fragment.toString()}`;
+}
+
+/** A send link's fragment, or `{ invalid: true }` when part of it is missing or malformed. */
+export function parseClaimFragment(hash: string): ClaimFragment | { invalid: true } {
+  const params = new URLSearchParams(hash.replace(/^#/, ""));
+  const key = params.get("k") ?? "";
+  const amount = parseAmount(params.get("a") ?? "");
+  // Display text from a link: strip control characters, cap the length.
+  const name = (params.get("n") ?? "").replace(/[\u0000-\u001f\u007f]/g, "").trim().slice(0, 40);
+  const c = (params.get("c") ?? "USD").toUpperCase();
+  if (!isHex(key) || key.length !== 66 || amount === null || amount <= 0n || (c !== "USD" && c !== "EUR")) return { invalid: true };
+  return { key, amount, name: name || "Someone", currency: c };
 }

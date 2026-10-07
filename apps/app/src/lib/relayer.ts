@@ -4,14 +4,15 @@ import { lockCollateralBody, withdrawCollateralBody } from "./boost";
 import { receiptUrl } from "./chain";
 import { notifyDataChanged } from "./data/changes";
 import type { PaymentLink, Person } from "./data/types";
-import type { Micros } from "./money";
+import type { Currency, Micros } from "./money";
 import type { Authorization, Cancel, CancelSubscription, Claim, CloseSplit, CreateSplit, Open, Permit, PlanIntent, RepayIntent, SubscribeIntent, Withdraw } from "./sign";
 
 /**
  * The relayer carries signatures to the chain (plan §5.3). The app signs; the
  * relayer, a policy-locked Privy server wallet run by Polaris for Business,
  * checks each signature, simulates the call and sends it, paying the gas. The
- * app never sends a transaction and the buyer never holds MON.
+ * app never sends a transaction and the buyer never buys gas: Arc's gas is
+ * USDC, and Polaris pays it.
  *
  * With `NEXT_PUBLIC_POLARIS_API_URL` set, every request goes to
  * `POST {api}/api/relay` (apps/business/src/server/relayer/relay.ts has the
@@ -50,8 +51,9 @@ export type OpenPlanRequest = { link: PaymentLink; intent: Signed<PlanIntent>; p
 /** PolarisCheckout.subscribe */
 export type SubscribeRequest = { link: PaymentLink; intent: Signed<SubscribeIntent>; permit: Signed<Permit> };
 
-/** PolarisSend.send: the sender's authorisation, and the link key's Open. */
+/** PolarisSend.send: the sender's authorisation, and the link key's Open. `EUR` is the PolarisSend on EURC. */
 export type SendRequest = {
+  currency: Currency;
   sender: Address;
   senderName: string;
   linkKey: Address;
@@ -63,6 +65,7 @@ export type SendRequest = {
 
 /** PolarisSend.claim(linkKey, to, deadline, v, r, s): signed by the link's key, naming the recipient. */
 export type ClaimRequest = {
+  currency: Currency;
   linkKey: Address;
   claim: Signed<Claim>;
   /** The same deadline the claim signs; PolarisSend takes it as its own argument. */
@@ -73,12 +76,12 @@ export type ClaimRequest = {
 };
 
 /** PolarisSend.cancel */
-export type CancelSendRequest = { cancel: Signed<Cancel> };
+export type CancelSendRequest = { cancel: Signed<Cancel>; currency: Currency };
 
 /** PolarisPayments.cancelWithSignature */
 export type CancelSubscriptionRequest = { cancel: Signed<CancelSubscription> };
 
-/** AUSD transferWithAuthorization: send to someone who already has Polaris. */
+/** USDC transferWithAuthorization: send to someone who already has Polaris. */
 export type TransferRequest = { to: Person; authorization: Signed<Authorization> };
 
 /** PolarisLoanEngine.repayWithSig: pay a plan early. */
@@ -87,7 +90,7 @@ export type PayEarlyRequest = { planId: string; loanId: bigint; borrower: Addres
 /**
  * PolarisCheckout.reauthorize: the borrower's ERC-2612 permit to the loan
  * engine, signed again after a collection failed for a lost approval. Its
- * Reauthorized event starts the collections workflow's instant retry.
+ * Reauthorized event starts the keeper's instant collection retry.
  */
 export type ReauthorizeRequest = { buyer: Address; permit: Signed<Permit> };
 
@@ -286,9 +289,10 @@ export const relayer: Relayer = {
       signature: intent.signature,
       permit: permitBody(permit),
     }),
-  send: ({ sender, linkKey, amount, expiresAt, authorization, open }) =>
+  send: ({ sender, linkKey, amount, expiresAt, authorization, open, currency }) =>
     relay({
       type: "send",
+      currency,
       sender,
       linkKey,
       amount: str(amount),
@@ -298,8 +302,10 @@ export const relayer: Relayer = {
       signature: authorization.signature,
       linkSignature: open.signature,
     }),
-  claim: ({ linkKey, claim }) => relay({ type: "claim", linkKey, to: claim.message.to, deadline: str(claim.message.deadline), signature: claim.signature }),
-  cancelSend: ({ cancel }) => relay({ type: "cancelSend", linkKey: cancel.message.linkKey, deadline: str(cancel.message.deadline), signature: cancel.signature }),
+  claim: ({ linkKey, claim, currency }) =>
+    relay({ type: "claim", currency, linkKey, to: claim.message.to, deadline: str(claim.message.deadline), signature: claim.signature }),
+  cancelSend: ({ cancel, currency }) =>
+    relay({ type: "cancelSend", currency, linkKey: cancel.message.linkKey, deadline: str(cancel.message.deadline), signature: cancel.signature }),
   cancelSubscription: ({ cancel }) =>
     relay({ type: "cancelSubscription", subId: str(cancel.message.subId), deadline: str(cancel.message.deadline), signature: cancel.signature }),
   transfer: ({ authorization }) =>

@@ -393,7 +393,7 @@ export function SectionWeb() {
             <CardStack
               name="Oat & Ember"
               last4="2431"
-              meta="AUSD"
+              meta="USDC"
               balance={62745}
               deltaLabel="This week"
               delta={11.05}

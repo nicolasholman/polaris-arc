@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "The Polaris consumer app: a mobile-first, installable PWA. Face ID accounts (Mera), checkout, send by link, plans and activity.",
+  "description": "The Polaris consumer app: a mobile-first, installable PWA. Face ID (passkey) accounts on Arc, checkout, send by link in dollars and euros, add money from another chain (CCTP),, plans and activity.",
   "scripts": {
     "dev": "next dev",
     "build": "next build",

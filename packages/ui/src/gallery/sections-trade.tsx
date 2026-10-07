@@ -231,7 +231,7 @@ export function SectionTrade() {
                 top={
                   <SwapCard
                     coin={<PolarisCoin size={42} />}
-                    symbol="AUSD"
+                    symbol="USDC"
                     caption="You send"
                     value={amount}
                     onValueChange={setAmount}
@@ -340,7 +340,7 @@ export function SectionTrade() {
             <PanelCard title="Customers this week" subtitle="Unique buyers per day" className="w-full sm:w-[260px]">
               <p className="mt-4 text-[32px] font-medium tracking-[-0.03em]">+ 12.4%</p>
             </PanelCard>
-            <PanelCard variant="filled" title="Collections" subtitle="Chainlink CRE workflow" className="w-full sm:w-[260px]">
+            <PanelCard variant="filled" title="Collections" subtitle="Polaris keeper" className="w-full sm:w-[260px]">
               <p className="mt-4 text-[32px] font-medium tracking-[-0.03em]">in 42 s</p>
             </PanelCard>
           </Specimen>
@@ -351,31 +351,31 @@ export function SectionTrade() {
               items={[
                 { id: "a", tag: "Collected", tone: "lime", title: "2 instalments collected ($100.77)", detail: "Instant retry: 7 s after the buyer signed again", meta: "12 s ago", trailing: <TxLink hash={TX} href="#ref-e" /> },
                 { id: "b", tag: "Dunned", tone: "amber", title: "1 task skipped", detail: "1 dunned: approval lost, buyer asked to sign again", meta: "1 min ago", trailing: <TxLink hash={TX2} /> },
-                { id: "c", tag: "Paused", tone: "red", title: "Attestation refused", detail: "VerdictMismatch", meta: "9 min ago" },
+                { id: "c", tag: "Paused", tone: "red", title: "Credit guard paused new plans", detail: "Free pool cash below $1,000.00", meta: "9 min ago" },
               ]}
             />
           </Specimen>
-          <Specimen label="CheckList · Meter: a guard's checks and how old its last check is">
+          <Specimen label="CheckList · Meter: the credit guard's checks, and a figure against its limit">
             <div className="grid w-full gap-5 sm:grid-cols-2">
               <CheckList
-                aria-label="The guardian's checks"
+                aria-label="The credit guard's checks"
                 items={[
-                  { key: "price", label: "AUSD/USD", value: "$0.9998", limit: "at least $0.995", ok: true },
                   { key: "cash", label: "Free pool cash", value: "$640.00", limit: "at least $1,000.00", ok: false },
+                  { key: "bad_debt", label: "Bad debt", value: "0.4%", limit: "at most 5%", ok: true },
                 ]}
               />
               <div className="grid content-start gap-2">
-                <p className="text-[13px] text-ui-muted">Last checked 12 min ago, of 60</p>
-                <Meter value={0.2} label="Time since the last check, of the hour allowed" valueText="12 minutes of 60" />
-                <Meter value={0.92} tone="amber" label="Time since the last check" valueText="55 minutes of 60" />
+                <p className="text-[13px] text-ui-muted">Bad debt, of the 5% allowed</p>
+                <Meter value={0.08} label="Bad debt, of the limit" valueText="0.4% of 5%" />
+                <Meter value={0.92} tone="amber" label="Pool cash in use" valueText="92% of the pool lent out" />
               </div>
             </div>
           </Specimen>
           <Specimen label="ProvenanceBadge · TxLink: where a figure came from">
-            <ProvenanceBadge label="Verified by Chainlink CRE" meta="Oct 2, 2026" href="#ref-e" />
-            <ProvenanceBadge size="sm" label="Verified by Chainlink CRE" meta="Oct 2" />
-            <ProvenanceBadge tone="neutral" label="Chainlink CRE (simulated)" meta="Oct 2, 2026" href="#ref-e" />
-            <ProvenanceBadge tone="neutral" size="sm" label="CRE workflow, local run" meta="Oct 2" hash="0x10d38ddb663b14507d34a5af1e5896202c879155c0998b0329e10587f5f12f11" />
+            <ProvenanceBadge label="Reviewed by the Polaris keeper" meta="Oct 2, 2026" href="#ref-e" />
+            <ProvenanceBadge size="sm" label="Reviewed by the Polaris keeper" meta="Oct 2" />
+            <ProvenanceBadge tone="neutral" label="Underwriting report" meta="Oct 2, 2026" href="#ref-e" />
+            <ProvenanceBadge size="sm" label="Reviewed by the Polaris keeper" meta="Oct 2" hash="0x10d38ddb663b14507d34a5af1e5896202c879155c0998b0329e10587f5f12f11" />
             <TxLink hash={TX} href="#ref-e" />
             <TxLink hash={TX} href="#ref-e" kind="report">View report</TxLink>
           </Specimen>

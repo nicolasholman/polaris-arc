@@ -214,7 +214,7 @@ export function ActivityDesktop() {
                   <Skeleton shape="tile" height={140} className="mt-4" />
                 )}
               </PanelCard>
-              <SideNote>Every payment lands in under a second. Sending and paying in full cost nothing; Pay in 4 is 10% a year, with every payment and the interest shown before you confirm.</SideNote>
+              <SideNote>Every payment is final in under a second on Arc. Sending and paying in full cost nothing, with no gas to buy: Arc&apos;s gas is USDC, and Polaris pays it; Pay in 4 is 10% a year, with every payment and the interest shown before you confirm.</SideNote>
             </SideColumn>
           </>
         }

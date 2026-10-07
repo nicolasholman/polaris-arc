@@ -31,7 +31,7 @@ export type CardStackProps = Omit<HTMLAttributes<HTMLDivElement>, "children"> & 
   name: string;
   /** Last four of the account or payout wallet. */
   last4: string;
-  /** Right of the number: an expiry, "AUSD", a network. */
+  /** Right of the number: an expiry, "USDC", a network. */
   meta?: ReactNode;
   balanceLabel?: string;
   /** Dollars. */
@@ -55,7 +55,7 @@ export type CardStackProps = Omit<HTMLAttributes<HTMLDivElement>, "children"> & 
  * square actions stacked beside it.
  *
  * ```tsx
- * <CardStack name="Acme Coffee" last4="2431" meta="AUSD" balance={62745} delta={11.05}
+ * <CardStack name="Acme Coffee" last4="2431" meta="USDC" balance={62745} delta={11.05}
  *   actions={[{ label: "New payout", icon: <Plus />, tone: "outline" }, { label: "Withdraw", icon: <ArrowUpFromLine />, tone: "mint" }]} />
  * ```
  */

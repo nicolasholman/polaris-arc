@@ -19,7 +19,6 @@ import {
 import { ExternalLink, Globe, Link2Off, ScanFace, Zap } from "lucide-react";
 import type { ReactNode } from "react";
 import { useEffect, useState, useSyncExternalStore } from "react";
-import { type Hex, isHex } from "viem";
 import { privateKeyToAddress } from "viem/accounts";
 import { ConfirmSheet } from "@/components/confirm-sheet";
 import { LocalEquivalent } from "@/components/local-equivalent";
@@ -30,26 +29,12 @@ import { claimLink } from "@/lib/actions";
 import { getSendLink } from "@/lib/data";
 import { useData } from "@/lib/data/hooks";
 import { prefetchDomains } from "@/lib/domains";
-import { type Micros, parseAmount, usd } from "@/lib/money";
+import { type ClaimFragment, parseClaimFragment } from "@/lib/links";
+import { money } from "@/lib/money";
 import type { RelayReceipt } from "@/lib/relayer";
 import { n } from "@/lib/view";
 
-type Parsed = { key: Hex; amount: Micros; name: string } | { invalid: true };
-
-/**
- * The link is `/claim#k=<key>&a=<amount>&n=<name>`. The fragment never leaves
- * the browser: it is not sent with the request, not logged, and not passed to
- * any API. Only the key's public address and a signature made with it are.
- */
-function parseFragment(hash: string): Parsed {
-  const params = new URLSearchParams(hash.replace(/^#/, ""));
-  const key = params.get("k") ?? "";
-  const amount = parseAmount(params.get("a") ?? "");
-  // Display text from a link: strip control characters, cap the length.
-  const name = (params.get("n") ?? "").replace(/[\u0000-\u001f\u007f]/g, "").trim().slice(0, 40);
-  if (!isHex(key) || key.length !== 66 || amount === null || amount <= 0n) return { invalid: true };
-  return { key, amount, name: name || "Someone" };
-}
+type Parsed = ClaimFragment | { invalid: true };
 
 const subscribeHash = (onChange: () => void) => {
   window.addEventListener("hashchange", onChange);
@@ -74,7 +59,7 @@ function GoToPolaris({ onClick }: { onClick: () => void }) {
   );
 }
 
-/** Claim (full): dollars someone sent you by link, yours with one Face ID. */
+/** Claim (full): dollars (or euros) someone sent you by link, yours with one Face ID. */
 export function ClaimSheet() {
   const close = useCloseSheet();
   const hash = useSyncExternalStore(
@@ -84,8 +69,8 @@ export function ClaimSheet() {
   );
   // Parsed once: after claiming, the key is taken out of the address bar.
   const [parsed, setParsed] = useState<Parsed | null>(null);
-  if (hash !== null && parsed === null) setParsed(parseFragment(hash));
-  useEffect(() => prefetchDomains("send"), []);
+  if (hash !== null && parsed === null) setParsed(parseClaimFragment(hash));
+  useEffect(() => prefetchDomains("send", "sendEurc"), []);
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -111,9 +96,12 @@ export function ClaimSheet() {
   );
 }
 
-function ClaimReady({ parsed, onDone }: { parsed: { key: Hex; amount: Micros; name: string }; onDone: () => void }) {
+function ClaimReady({ parsed, onDone }: { parsed: ClaimFragment; onDone: () => void }) {
   const linkKey = privateKeyToAddress(parsed.key);
-  const status = useData(() => getSendLink(linkKey), [linkKey]);
+  const { currency } = parsed;
+  const euros = currency === "EUR";
+  const fmt = (micros: bigint, opts?: { trim?: boolean }) => money(micros, currency, opts);
+  const status = useData(() => getSendLink(linkKey, currency), [linkKey, currency]);
   const [confirming, setConfirming] = useState(false);
   // Set when this session claimed it: then the link reads "claimed" because
   // of us, and the buyer is never told someone else may have taken it.
@@ -124,7 +112,7 @@ function ClaimReady({ parsed, onDone }: { parsed: { key: Hex; amount: Micros; na
   const state = status.value?.status;
   const rows = [
     { label: "From", value: parsed.name },
-    { label: "Amount", value: usd(amount) },
+    { label: "Amount", value: fmt(amount) },
     { label: "Network fee", value: "None" },
   ];
 
@@ -132,7 +120,7 @@ function ClaimReady({ parsed, onDone }: { parsed: { key: Hex; amount: Micros; na
   if (claimed && desktop) {
     return (
       <ClaimedHere
-        subtitle={`${usd(amount, { trim: true })} from ${parsed.name} is in your account.`}
+        subtitle={`${fmt(amount, { trim: true })} from ${parsed.name} is in your account.`}
         rows={rows}
         receiptUrl={claimed.explorerUrl}
         onDone={onDone}
@@ -145,8 +133,8 @@ function ClaimReady({ parsed, onDone }: { parsed: { key: Hex; amount: Micros; na
       <Sheet.Body className="flex flex-col [&>*]:shrink-0 gap-4 pt-1">
         <GradientCard
           tone="lime"
-          label="You've got dollars"
-          value={<Money value={n(amount)} dim="symbol" dimOpacity={0.4} />}
+          label={euros ? "You've got euros" : "You've got dollars"}
+          value={<Money value={n(amount)} currency={currency} dim="symbol" dimOpacity={0.4} />}
           meta={<span className="text-[16px] font-medium">from {parsed.name}</span>}
           className="min-h-[190px] pr-36"
           // Ref E's olive from 1024px, not the phone's bright lime.
@@ -162,12 +150,16 @@ function ClaimReady({ parsed, onDone }: { parsed: { key: Hex; amount: Micros; na
             style={{ ["--lift" as string]: "-8px", ["--turn" as string]: "8deg", ["--r" as string]: "-8deg" }}
           />
         </GradientCard>
-        <LocalEquivalent amount={amount} className="-mt-1 text-center text-[14px]" />
+        {euros ? null : <LocalEquivalent amount={amount} className="-mt-1 text-center text-[14px]" />}
 
         <ListGroup>
           <ListRow icon={<ScanFace />} title="Face ID is your account" description={EMAIL_LOGIN ? "No password, no forms. Or use your email." : "No password, no forms."} />
-          <ListRow icon={<Globe />} title="Dollars, wherever you are" description="Hold them, pay with them, send them on." />
-          <ListRow icon={<Zap />} title="No network fee to claim" description="Polaris pays it. It lands in under a second." />
+          <ListRow
+            icon={<Globe />}
+            title={euros ? "Euros, wherever you are" : "Dollars, wherever you are"}
+            description={euros ? "Hold them, send them on. They stay euros." : "Hold them, pay with them, send them on."}
+          />
+          <ListRow icon={<Zap />} title="No network fee to claim" description="No gas to buy: Arc's gas is USDC, and Polaris pays it. Final in under a second." />
         </ListGroup>
 
         {state !== undefined && state !== "open" && !claimed ? (
@@ -197,11 +189,11 @@ function ClaimReady({ parsed, onDone }: { parsed: { key: Hex; amount: Micros; na
         ) : state === "open" ? (
           desktop ? (
             <PrimaryButton size="lg" icon={<ScanFace />} onClick={() => setConfirming(true)}>
-              Claim {usd(amount, { trim: true })}
+              Claim {fmt(amount, { trim: true })}
             </PrimaryButton>
           ) : (
             <Button variant="lime" size="lg" icon={<ScanFace />} onClick={() => setConfirming(true)}>
-              Claim {usd(amount, { trim: true })}
+              Claim {fmt(amount, { trim: true })}
             </Button>
           )
         ) : (
@@ -212,12 +204,12 @@ function ClaimReady({ parsed, onDone }: { parsed: { key: Hex; amount: Micros; na
       <ConfirmSheet
         open={confirming}
         onOpenChange={setConfirming}
-        title={`Claim ${usd(amount, { trim: true })}`}
-        summary={`From ${parsed.name}. It lands in your account in under a second.`}
+        title={`Claim ${fmt(amount, { trim: true })}`}
+        summary={`From ${parsed.name}. It lands in your account, final in under a second on Arc.`}
         newLabel="Claim with Face ID"
         busyLabel="Claiming…"
         onAccount={async (signer) => {
-          const receipt = await claimLink(signer.address, parsed.key, amount, parsed.name);
+          const receipt = await claimLink(signer.address, parsed.key, amount, parsed.name, currency);
           // The key is spent: take it out of the address bar and history.
           window.history.replaceState(window.history.state, "", "/claim");
           setClaimed(receipt);
@@ -227,7 +219,7 @@ function ClaimReady({ parsed, onDone }: { parsed: { key: Hex; amount: Micros; na
         open={claimed !== null && !desktop}
         onOpenChange={() => onDone()}
         title="Arrived."
-        subtitle={`${usd(amount, { trim: true })} from ${parsed.name} is in your account.`}
+        subtitle={`${fmt(amount, { trim: true })} from ${parsed.name} is in your account.`}
         receiptUrl={claimed?.explorerUrl}
         rows={rows}
         primary={{ label: "Done", onClick: onDone }}
@@ -277,7 +269,7 @@ function ClaimedHere({
 /** The route: the intercepting page in app/@sheet (over the current tab), or the page itself (cold, over its tab). */
 export function ClaimRoute({ cold }: { cold?: boolean }) {
   return (
-    <RouteSheet label="Claim your dollars" snapPoints={["full"]} cold={cold} desktop={{ as: "dialog", size: "md", title: "Claim your dollars" }}>
+    <RouteSheet label="Claim your money" snapPoints={["full"]} cold={cold} desktop={{ as: "dialog", size: "md", title: "Claim your money" }}>
       <ClaimSheet />
     </RouteSheet>
   );

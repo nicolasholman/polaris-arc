@@ -13,10 +13,11 @@ import { DhkemX25519HkdfSha256 } from "@hpke/dhkem-x25519";
  *   polaris/v1/receipts/hpke-x25519-ikm   the seed of an X25519 "inbox" key pair (RFC 9180 DeriveKeyPair)
  *
  * The wallet path (PRF → BIP-39 → m/44'/60'/0'/0/0) is untouched. Nothing
- * here is stored: every Face ID derives the same keys again. Rules from
- * docs/research/mera.md §16.2: never the PRF output as a key, one label per
- * key, version the labels (rotation is a new label), non-extractable keys,
- * intermediate bytes zeroed, and never Mera's own `mera.v1.encrypt.secret`.
+ * here is stored: every Face ID derives the same keys again. The rules:
+ * never the PRF output as a key, one label per key, version the labels
+ * (rotation is a new label), non-extractable keys, intermediate bytes
+ * zeroed, and never the passkey library's own vault label
+ * (`mera.v1.encrypt.secret`, from @category-labs/mera).
  *
  * Changing either label orphans every receipt sealed so far.
  */
@@ -63,7 +64,7 @@ export async function deriveReceiptKeys(prfOutput: Uint8Array): Promise<ReceiptK
   const material = own(prfOutput);
   let seed: Uint8Array<ArrayBuffer> | null = null;
   try {
-    // HKDF with an empty salt: the PRF output is already uniformly random (Mera assumes the same).
+    // HKDF with an empty salt: the PRF output is already uniformly random (the passkey library assumes the same).
     const ikm = await crypto.subtle.importKey("raw", material, "HKDF", false, ["deriveKey", "deriveBits"]);
     const aesKey = await crypto.subtle.deriveKey(
       { name: "HKDF", hash: "SHA-256", salt: new Uint8Array(0), info: AES_INFO },

@@ -1,7 +1,7 @@
 /**
  * The two texts a buyer's account signs (EIP-191 personal messages) for its
  * receipts. A Face ID ceremony proves nothing to a server by itself; a
- * signature from the key that Face ID derived does (docs/research/mera.md §8).
+ * signature from the key that Face ID derived does.
  * Both are signed with the session that is already open: no extra prompt.
  *
  * The app signs them and the API checks them, from this one copy.

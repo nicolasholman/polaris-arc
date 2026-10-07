@@ -1,23 +1,15 @@
 import type { CreditProvenance } from "./data/types";
 
+/** What the app calls the report behind a credit line. */
+export const KEEPER_REVIEW_LABEL = "Reviewed by the Polaris keeper";
+
 /**
- * What the app may call a credit line's report, from the forwarder that
- * delivered it (Polaris for Business works it out: apps/business
- * src/server/cre/provenance.ts). Only a report Chainlink's DON signed,
- * delivered through Chainlink's KeystoneForwarder, is "Verified by Chainlink
- * CRE". A simulated run (the CRE CLI's simulator, through Chainlink's public
- * MockKeystoneForwarder, no DON signature) and a local one are named for what
- * they are. An API that doesn't say is never read as verified.
+ * What the app may call a credit line's report: the underwriting decision the
+ * Polaris keeper (services/keeper) submitted to UnderwritingReceiver on Arc,
+ * with its transaction on the Arc explorer. It is shown as reviewed only when
+ * there is a transaction to point at; anything else is named plainly.
  */
-export function provenanceOf(v: Pick<CreditProvenance, "delivery">): { label: string; verified: boolean } {
-  switch (v.delivery) {
-    case "don":
-      return { label: "Verified by Chainlink CRE", verified: true };
-    case "simulation":
-      return { label: "Chainlink CRE (simulated)", verified: false };
-    case "local":
-      return { label: "CRE workflow, local run", verified: false };
-    default:
-      return { label: "CRE workflow report", verified: false };
-  }
+export function provenanceOf(v: Pick<CreditProvenance, "by" | "txHash">): { label: string; verified: boolean } {
+  if (v.by === "Polaris keeper" && /^0x[0-9a-fA-F]{64}$/.test(v.txHash)) return { label: KEEPER_REVIEW_LABEL, verified: true };
+  return { label: "Underwriting report", verified: false };
 }

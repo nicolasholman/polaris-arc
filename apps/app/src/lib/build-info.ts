@@ -21,7 +21,6 @@ export type BuildInfo = {
   localDemo: boolean;
   /** The local faucet behind Add money (a local chain only). */
   localFaucet: boolean;
-  target: "web" | "android";
   chainId: number;
   /** NEXT_PUBLIC_POLARIS_API_URL: Polaris for Business (the relayer, checkout sessions). Null: the offline demo. */
   apiUrl: string | null;
@@ -39,7 +38,6 @@ export type BuildInputs = {
   devSignerPersist: string | undefined;
   localDemo: string | undefined;
   localFaucetUrl: string | undefined;
-  buildTarget: string | undefined;
 };
 
 export function buildInfo(input: BuildInputs): BuildInfo {
@@ -51,8 +49,7 @@ export function buildInfo(input: BuildInputs): BuildInfo {
     devSigner: env.devSigner,
     devSignerPersist: input.devSignerPersist === "1",
     localDemo: input.localDemo === "1",
-    localFaucet: (env.chainId === 31337 || env.localChain === true) && Boolean(input.localFaucetUrl?.trim()),
-    target: input.buildTarget === "android" ? "android" : "web",
+    localFaucet: env.localChain && Boolean(input.localFaucetUrl?.trim()),
     chainId: env.chainId,
     apiUrl: env.apiUrl ?? null,
     rpId: env.rpId ?? null,

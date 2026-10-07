@@ -6,7 +6,7 @@ import { ActivityAvatar } from "@/components/avatars";
 import { ReceiptWhat } from "@/components/sealed-receipt";
 import type { ActivityItem } from "@/lib/data";
 import { shortDate, time } from "@/lib/dates";
-import { movesBalance, n, signed, when } from "@/lib/view";
+import { showsSigned, n, signed, when } from "@/lib/view";
 
 /** The status pill for a row: what kind of money it was, in ref E's tints. */
 export function activityPill(item: ActivityItem): { tone: StatusPillTone; text: string } {
@@ -75,9 +75,9 @@ export function ActivityPill({ item, size }: { item: ActivityItem; size?: "sm" |
 
 /** A row's amount: signed when it moved your dollars, plain when it didn't (a plan opening). */
 export function ActivityAmount({ item, className }: { item: ActivityItem; className?: string }) {
-  if (!movesBalance(item)) return <Money value={n(item.amount)} dim="none" className={cn("ui-figure text-ui-muted", className)} />;
+  if (!showsSigned(item)) return <Money value={n(item.amount)} dim="none" className={cn("ui-figure text-ui-muted", className)} />;
   const v = signed(item);
-  return <Money value={v} signed dim="none" className={cn("ui-figure", v > 0 && "text-ui-up", className)} />;
+  return <Money value={v} currency={item.currency ?? "USD"} signed dim="none" className={cn("ui-figure", v > 0 && "text-ui-up", className)} />;
 }
 
 type ColumnKey = "who" | "what" | "amount" | "status" | "when";

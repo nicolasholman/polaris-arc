@@ -19,7 +19,7 @@ export const receiptAad = (owner: string, id: string): Uint8Array<ArrayBuffer> =
 
 export type Sealed = { enc: Uint8Array<ArrayBuffer>; ct: Uint8Array<ArrayBuffer> };
 
-/** Anyone (our API, a CRE path, the buyer's device) seals with the public key alone. No prompt. */
+/** Anyone (our API, the Polaris keeper, the buyer's device) seals with the public key alone. No prompt. */
 export async function sealToInbox(inboxPublicKey: Uint8Array, aad: Uint8Array, plaintext: Uint8Array): Promise<Sealed> {
   if (inboxPublicKey.length !== 32) throw new Error("An inbox public key is 32 bytes");
   const recipientPublicKey = await suite.kem.deserializePublicKey(buf(inboxPublicKey));

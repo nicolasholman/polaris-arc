@@ -78,7 +78,7 @@ export type BalanceCardProps = Omit<HTMLAttributes<HTMLDivElement>, "children"> 
   /** The account pill ("Main account ▾"). */
   account?: string;
   onAccountClick?: () => void;
-  /** Small labels over the figure ("USD", "AUSD"). */
+  /** Small labels over the figure ("USD", "USDC"). */
   labels?: string[];
   /** Dollars. */
   balance: number;
@@ -97,14 +97,14 @@ export type BalanceCardProps = Omit<HTMLAttributes<HTMLDivElement>, "children"> 
  * Ref A's lime balance card.
  *
  * ```tsx
- * <BalanceCard account="Main account" labels={["USD", "AUSD"]} balance={1284.5} delta={2.1}
+ * <BalanceCard account="Main account" labels={["USD", "USDC"]} balance={1284.5} delta={2.1}
  *   quickActions={[{ label: "Boost", icon: <Zap /> }]} actions={[{ label: "Add", icon: <Plus /> }]} more={{ label: "More" }} />
  * ```
  */
 export function BalanceCard({
   account = "Main account",
   onAccountClick,
-  labels = ["USD", "AUSD"],
+  labels = ["USD", "USDC"],
   balance,
   delta,
   deltaNote,

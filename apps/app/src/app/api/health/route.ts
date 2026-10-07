@@ -18,7 +18,6 @@ export function GET(): Response {
     devSignerPersist: process.env.NEXT_PUBLIC_DEV_SIGNER_PERSIST,
     localDemo: process.env.NEXT_PUBLIC_LOCAL_DEMO,
     localFaucetUrl: process.env.NEXT_PUBLIC_LOCAL_FAUCET_URL,
-    buildTarget: process.env.NEXT_PUBLIC_BUILD_TARGET,
   });
   return Response.json({ ok: true, ...info });
 }

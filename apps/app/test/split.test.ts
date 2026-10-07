@@ -8,7 +8,7 @@ import { equalShares, memoHash, memoMatches, parseSplitFragment, planSplit, shar
 /**
  * Split-the-bill links in the app: the shares a form makes, the link's
  * words and the hash the organiser signs over them. The contracts' suite
- * (packages/contracts test/metropolis/PolarisSplit.test.js) hashes the words
+ * (packages/contracts' PolarisSplit tests) hashes the words
  * the same way.
  */
 

@@ -7,7 +7,6 @@ import {
   cn,
   DeltaChip,
   Dialog,
-  DollarCoin,
   IconDisc,
   IconSquareButton,
   ListGroup,
@@ -41,7 +40,8 @@ import { getActivity, getBalance, getContacts, getCreditLine, getPlans, getProfi
 import { useData } from "@/lib/data/hooks";
 import { shortDate } from "@/lib/dates";
 import { prefetchDomains } from "@/lib/domains";
-import { type Micros, parseAmount, toNumber, usd } from "@/lib/money";
+import { type Currency, type Micros, money, parseAmount, toNumber, usd } from "@/lib/money";
+import { CurrencyChoice, CurrencyCoin, useEuroLinks } from "@/components/currency-choice";
 import { setPrefs, usePrefs } from "@/lib/prefs";
 import type { RelayReceipt } from "@/lib/relayer";
 import { creditFreed } from "@/lib/series";
@@ -188,16 +188,21 @@ export function SendForm({ initial, onDone, showPay = true }: { initial?: Recipi
   const [result, setResult] = useState<Result | null>(null);
   // Asked once, in the confirm of the first link: the name the claimer sees.
   const [nameField, setNameField] = useState("");
+  const [chosenCurrency, setCurrency] = useState<Currency>("USD");
+  const euroLinks = useEuroLinks();
 
-  useEffect(() => prefetchDomains("ausd", "send"), []);
+  useEffect(() => prefetchDomains("usdc", "send", "eurc", "sendEurc"), []);
 
   const recipient = picked ?? initial ?? { kind: "link" };
   const who = recipient.kind === "link" ? null : recipient.person;
+  // Euros go by link only (EURC in the PolarisSend on EURC); straight to an account is dollars.
+  const currency: Currency = euroLinks && recipient.kind !== "account" ? chosenCurrency : "USD";
+  const fmt = (micros: Micros, opts?: { trim?: boolean }) => money(micros, currency, opts);
   const amount = parseAmount(value || "0") ?? 0n;
-  const available = balance.value?.available;
+  const available = currency === "EUR" ? (balance.value ? (balance.value.euros ?? 0n) : undefined) : balance.value?.available;
   const tooMuch = available !== undefined && state.status !== "none" && amount > available;
-  // Nothing to send yet: Add money is the way forward.
-  const broke = available === 0n && state.status !== "none";
+  // Nothing to send yet: Add money is the way forward (in dollars; euros arrive by link).
+  const broke = available === 0n && state.status !== "none" && currency === "USD";
   const senderName = prefs.name || profile.value?.name || "";
 
   const finish = () => {
@@ -213,17 +218,18 @@ export function SendForm({ initial, onDone, showPay = true }: { initial?: Recipi
 
   return (
     <>
+      {euroLinks && recipient.kind !== "account" ? <CurrencyChoice value={currency} onChange={setCurrency} className="justify-self-start" /> : null}
       <SwapStack
         top={
           <SwapCard
-            coin={<DollarCoin size={42} />}
-            symbol="USD"
+            coin={<CurrencyCoin currency={currency} size={42} />}
+            symbol={currency}
             caption="You send"
             value={value}
             onValueChange={(v) => setValue(cleanAmount(v))}
             // "12.5" reads "12.50" once you leave the field, like the card under it.
             inputProps={{ onBlur: () => setValue((v) => (v && Number.isFinite(Number(v)) ? Number(v).toFixed(2) : v)) }}
-            inputLabel="Amount to send, in dollars"
+            inputLabel={currency === "EUR" ? "Amount to send, in euros" : "Amount to send, in dollars"}
             invalid={tooMuch}
             metaLabel="Balance"
             meta={available !== undefined ? figure(available) : "…"}
@@ -241,7 +247,7 @@ export function SendForm({ initial, onDone, showPay = true }: { initial?: Recipi
         }
         toggle={<SwapToggle label="Change who gets it" onClick={() => setPicking(true)} />}
       />
-      {tooMuch ? null : <LocalEquivalent amount={amount} className="px-1 text-[14px]" />}
+      {tooMuch || currency === "EUR" ? null : <LocalEquivalent amount={amount} className="px-1 text-[14px]" />}
       {tooMuch ? (
         <p role="status" className="px-1 text-[14px] text-ui-down">
           That&apos;s more than your balance.
@@ -256,7 +262,7 @@ export function SendForm({ initial, onDone, showPay = true }: { initial?: Recipi
         </>
       ) : (
         <PrimaryButton size="lg" block icon={<ArrowUpRight />} disabled={amount === 0n || tooMuch} onClick={() => setConfirming(true)}>
-          Send {usd(amount)}
+          Send {fmt(amount)}
         </PrimaryButton>
       )}
       {showPay ? (
@@ -311,13 +317,13 @@ export function SendForm({ initial, onDone, showPay = true }: { initial?: Recipi
       <ConfirmSheet
         open={confirming}
         onOpenChange={setConfirming}
-        title={`Send ${usd(amount, { trim: true })}`}
+        title={`Send ${fmt(amount, { trim: true })}`}
         summary={
           <>
             {recipient.kind === "account"
-              ? `Straight to ${recipient.person.name}'s account. It lands in under a second.`
+              ? `Straight to ${recipient.person.name}'s account. Final in under a second on Arc, and Polaris pays the gas.`
               : who
-                ? `A link for ${firstName(who.name)}. Whoever opens it gets the dollars, so share it only with them.`
+                ? `A link for ${firstName(who.name)}. Whoever opens it gets the ${currency === "EUR" ? "euros" : "dollars"}, so share it only with them.`
                 : "A link anyone can claim with Face ID. Share it only with the person it's for."}
             {recipient.kind !== "account" && !prefs.name ? <SenderNameField value={nameField} onChange={setNameField} /> : null}
           </>
@@ -331,7 +337,7 @@ export function SendForm({ initial, onDone, showPay = true }: { initial?: Recipi
           } else {
             const typed = nameField.trim();
             if (typed && !prefs.name) setPrefs({ name: typed });
-            const link = await createSendLink(signer, amount, typed || senderName || "A friend", window.location.origin);
+            const link = await createSendLink(signer, amount, typed || senderName || "A friend", window.location.origin, currency);
             setResult({ kind: "link", link, recipient });
           }
         }}

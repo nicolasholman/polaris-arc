@@ -12,7 +12,7 @@ import { pressable } from "../primitives/Button";
 export type SwapCardProps = {
   /** The round coin at the top left. */
   coin?: ReactNode;
-  /** "ETH", "AUSD". */
+  /** "ETH", "USDC". */
   symbol: ReactNode;
   /** The muted note at the top right: "You Buy", "You send". */
   caption?: ReactNode;
@@ -42,7 +42,7 @@ export type SwapCardProps = {
  * an input.
  *
  * ```tsx
- * <SwapCard coin={<PolarisCoin size={42} />} symbol="AUSD" caption="You send" value={amount} onValueChange={setAmount} inputLabel="Amount" metaLabel="Balance" meta="3,196.97" />
+ * <SwapCard coin={<PolarisCoin size={42} />} symbol="USDC" caption="You send" value={amount} onValueChange={setAmount} inputLabel="Amount" metaLabel="Balance" meta="3,196.97" />
  * ```
  */
 export const SwapCard = forwardRef<HTMLDivElement, SwapCardProps>(function SwapCard(

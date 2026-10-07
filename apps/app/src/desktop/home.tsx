@@ -26,7 +26,7 @@ import { SignAgainNotice } from "@/components/sign-again";
 import { useOwner } from "@/lib/account/hooks";
 import { getActivity, getPlans, getProfile } from "@/lib/data";
 import { useData } from "@/lib/data/hooks";
-import { toNumber } from "@/lib/money";
+import { eur, toNumber } from "@/lib/money";
 import { type HomeAccount, setPrefs } from "@/lib/prefs";
 import { balanceSeries, boostSeries, creditSeries, type Frame, FRAMES, restIndex, type Series } from "@/lib/series";
 import { useNow } from "@/lib/use-now";
@@ -132,6 +132,11 @@ function BalanceChart({ className }: { className?: string }) {
         valueTitle={`${what}, now`}
         right={<TimeframeChips options={["1h", "24h", "1w", "1m"] as const} value={frame} onValueChange={setFrame} aria-label="Timeframe" />}
       />
+      {account === "dollar" && balance?.euros != null ? (
+        <p className="mt-2 text-[14px] text-ui-muted">
+          And <span className="ui-figure text-ui-text">{eur(balance.euros)}</span> in euros (EURC)
+        </p>
+      ) : null}
 
       <div className="mt-6">
         {!series ? (

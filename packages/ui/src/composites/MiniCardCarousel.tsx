@@ -14,8 +14,10 @@ export type MiniCard = {
   last4?: string;
   /** Or a name instead of the masked number. */
   title?: string;
-  /** Dollars. */
+  /** In `currency` (dollars when unset). */
   balance: number;
+  /** ISO code of the figure: "EUR" for a euro account. Dollars when unset. */
+  currency?: string;
   /** The card's dark tint (ref A: brown, indigo, plum, slate). */
   tint?: string;
 };
@@ -101,7 +103,7 @@ export function MiniCardCarousel({
                   </>
                 )}
               </span>
-              <Money value={c.balance} dim="symbol" dimOpacity={0.5} className="mt-0.5 text-[15px] leading-tight font-medium" />
+              <Money value={c.balance} currency={c.currency} dim="symbol" dimOpacity={0.5} className="mt-0.5 text-[15px] leading-tight font-medium" />
             </span>
           </button>
         );

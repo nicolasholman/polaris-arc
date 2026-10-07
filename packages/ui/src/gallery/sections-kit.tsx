@@ -234,7 +234,7 @@ function Controls({ theme }: { theme: Theme }) {
           Market
         </Pill>
         <Pill tone="surface" size="sm">
-          USD · AUSD
+          USD · USDC
         </Pill>
         <Pill tone="outline" icon={<Repeat />}>
           Monthly

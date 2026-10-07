@@ -2,15 +2,16 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
 import { duePayment, owedOnOpenPlans, plansNeedingSignature, signAgainState } from "../src/lib/collection.ts";
-import { GUARD_PAUSED_MESSAGE, laterPausedMessage, staleGuardLine, toGuardView } from "../src/lib/credit-guard.ts";
+import { GUARD_PAUSED_MESSAGE, laterPausedMessage, toGuardView } from "../src/lib/credit-guard.ts";
 import type { CreditGuardView, PaymentLink, Plan } from "../src/lib/data/types.ts";
-import { provenanceOf } from "../src/lib/provenance.ts";
+import { KEEPER_REVIEW_LABEL, provenanceOf } from "../src/lib/provenance.ts";
 
 /**
- * The Chainlink states the app shows: the risk guard (paused, or late and
- * failing open) and a plan's collection after a lost approval (sign again,
- * collecting, collected). Pure functions over what Polaris for Business
- * serves; the screens only lay them out.
+ * The keeper and credit-guard states the app shows: the credit guard (open,
+ * or paused for low pool cash, bad debt or the owner's pause), a plan's
+ * collection after a lost approval (sign again, collecting, collected), and
+ * the report behind a credit line. Pure functions over what Polaris for
+ * Business serves; the screens only lay them out.
  */
 
 const NOW = Date.UTC(2026, 9, 2, 12, 0, 0);
@@ -62,22 +63,23 @@ describe("a plan after a lost approval", () => {
   });
 });
 
-describe("the risk guard", () => {
-  const view = (over: Partial<CreditGuardView>): CreditGuardView => ({ state: "open", paused: false, message: null, ageSeconds: 120, readAt: NOW, ...over });
+describe("the credit guard", () => {
+  const view = (over: Partial<CreditGuardView>): CreditGuardView => ({ state: "open", paused: false, reasons: [], message: null, readAt: NOW, ...over });
 
-  it("takes the API's guard, with the buyer's words while paused", () => {
-    const paused = toGuardView({ state: "paused", paused: true, message: null, ageSeconds: 30, readAt: new Date(NOW).toISOString() });
-    assert.deepEqual(paused, { state: "paused", paused: true, message: GUARD_PAUSED_MESSAGE, ageSeconds: 30, readAt: NOW });
-    assert.equal(GUARD_PAUSED_MESSAGE, "Pay in 4 is paused by our risk guard; pay now works as usual.");
-    assert.equal(toGuardView({ state: "open", paused: false, message: "ignored", ageSeconds: 30, readAt: new Date(NOW).toISOString() }).message, null);
+  it("takes the API's guard, with the buyer's words and its reasons while paused", () => {
+    const paused = toGuardView({ state: "paused", paused: true, reasons: ["low_cash", "bad_debt"], message: null, ageSeconds: null, readAt: new Date(NOW).toISOString() });
+    assert.deepEqual(paused, { state: "paused", paused: true, reasons: ["low_cash", "bad_debt"], message: GUARD_PAUSED_MESSAGE, readAt: NOW });
+    assert.equal(GUARD_PAUSED_MESSAGE, "Pay in 4 is paused by our credit guard; pay now works as usual.");
+    const open = toGuardView({ state: "open", paused: false, reasons: [], message: "ignored", ageSeconds: null, readAt: new Date(NOW).toISOString() });
+    assert.equal(open.message, null);
+    assert.deepEqual(open.reasons, []);
   });
 
-  it("says when a late guard last checked, counting from when it was read", () => {
-    assert.equal(staleGuardLine(view({ state: "stale", ageSeconds: 4320 }), NOW), "Risk guard last checked 72 min ago");
-    assert.equal(staleGuardLine(view({ state: "stale", ageSeconds: 3000 }), NOW + 600_000), "Risk guard last checked 60 min ago");
-    assert.equal(staleGuardLine(view({ state: "stale", ageSeconds: 3 * 3600 }), NOW), "Risk guard last checked 3 h ago");
-    assert.equal(staleGuardLine(view({ state: "open" }), NOW), null);
-    assert.equal(staleGuardLine(null, NOW), null);
+  it("keeps only the reasons Arc's guard has, and reads an older API's stale states as open", () => {
+    const g = toGuardView({ state: "paused", paused: true, reasons: ["depeg", "owner_pause", "stale_price"], readAt: new Date(NOW).toISOString() });
+    assert.deepEqual(g.reasons, ["owner_pause"]);
+    assert.equal(toGuardView({ state: "stale", paused: false, ageSeconds: 4320, readAt: new Date(NOW).toISOString() }).state, "open");
+    assert.equal(toGuardView({ state: "unconfigured", paused: false, readAt: new Date(NOW).toISOString() }).state, "unconfigured");
   });
 
   it("shows Pay in 4 as paused only when the checkout offered it and the guard is why", () => {
@@ -102,14 +104,13 @@ describe("the risk guard", () => {
 });
 
 describe("a credit line's report", () => {
-  // Judge finding: "Verified by Chainlink CRE" appeared for any report, a
-  // local run through a mock forwarder and a simulator-signed one included.
-  it("reads as verified only when the DON signed it; a simulated or local run says what it is", () => {
-    assert.deepEqual(provenanceOf({ delivery: "don" }), { label: "Verified by Chainlink CRE", verified: true });
-    assert.deepEqual(provenanceOf({ delivery: "simulation" }), { label: "Chainlink CRE (simulated)", verified: false });
-    assert.deepEqual(provenanceOf({ delivery: "local" }), { label: "CRE workflow, local run", verified: false });
-    assert.deepEqual(provenanceOf({ delivery: "unknown" }), { label: "CRE workflow report", verified: false });
-    // An API that doesn't say who delivered it is never read as verified.
-    assert.deepEqual(provenanceOf({}), { label: "CRE workflow report", verified: false });
+  it("reads as reviewed by the Polaris keeper when there is a report transaction", () => {
+    assert.equal(KEEPER_REVIEW_LABEL, "Reviewed by the Polaris keeper");
+    assert.deepEqual(provenanceOf({ by: "Polaris keeper", txHash: TX }), { label: "Reviewed by the Polaris keeper", verified: true });
+  });
+
+  it("never claims a review without a transaction to point at", () => {
+    assert.deepEqual(provenanceOf({ by: "Polaris keeper", txHash: "0x" as `0x${string}` }), { label: "Underwriting report", verified: false });
+    assert.deepEqual(provenanceOf({ by: "someone else" as "Polaris keeper", txHash: TX }), { label: "Underwriting report", verified: false });
   });
 });

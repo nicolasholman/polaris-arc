@@ -20,7 +20,7 @@ Next.js apps add `transpilePackages: ["@polaris/brand"]` to `next.config`.
 | `assets/mark-{16,32,48,256,512,1024}.png` | The mark on transparent |
 | `assets/favicon.ico` | 16, 32 and 48 px |
 | `assets/app-icon-{192,512}.png`, `assets/app-icon-maskable-512.png`, `assets/apple-touch-icon.png` | The lime star on ink, for PWA manifests and home screens |
-| `assets/shortcut-{send,receive}.svg`, `.png` | App shortcut icons (long-press the app icon): a lime arrow (Lucide's `arrow-up-right` and `arrow-down-left`, ISC) on the app icon's ink, full bleed so a launcher can mask it. The PNGs are the SVGs rendered at 192 px in Chrome. Used by the web manifest's shortcuts and the Android app's Send and Receive |
+| `assets/shortcut-{send,receive}.svg`, `.png` | App shortcut icons (long-press the app icon): a lime arrow (Lucide's `arrow-up-right` and `arrow-down-left`, ISC) on the app icon's ink, full bleed so a launcher can mask it. The PNGs are the SVGs rendered at 192 px in Chrome. Used by the web manifest's shortcuts (Send and Receive) |
 | `assets/mark-source.png` | The original artwork the vector was fitted to |
 | `assets/wordmark.png` | The "Polaris" logotype (raster, transparent) |
 

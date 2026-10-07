@@ -2,9 +2,8 @@ import { notFound } from "next/navigation";
 import { brandPng } from "@/lib/brand-assets";
 
 /**
- * PWA icons for the manifest, from @polaris/brand. The Android app
- * (apps/android/twa-manifest.json) takes its launcher, splash and shortcut
- * icons from these URLs too.
+ * PWA icons for the manifest (launcher, maskable and shortcut icons), from
+ * @polaris/brand.
  */
 const ICONS = {
   "icon-192.png": "app-icon-192.png",

@@ -10,7 +10,8 @@ import type { LocalAccount } from "viem";
 import { deriveEvmKey } from "./derive";
 
 /**
- * The Mera path: Face ID → PRF (32 bytes) → secp256k1 key → viem account.
+ * The passkey path (the @category-labs/mera library): Face ID → PRF (32
+ * bytes) → secp256k1 key → viem account, an ordinary EOA on Arc.
  * This is the entire account layer. There is no seed phrase to write down,
  * no extension, and no server that holds a key.
  *

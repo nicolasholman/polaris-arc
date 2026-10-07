@@ -1,5 +1,5 @@
 import type { Address, Hex } from "viem";
-import type { Micros } from "../money";
+import type { Currency, Micros } from "../money";
 import type { Eip712Domain } from "../sign";
 
 /** Countries we draw a flag for. Anything else shows no badge. */
@@ -33,8 +33,10 @@ export type Person = {
 export type Profile = { name: string; memberSince: number | null };
 
 export type Balance = {
-  /** Spendable dollars, base units (6 decimals). */
+  /** Spendable dollars: USDC `balanceOf`, base units (6 decimals). */
   available: Micros;
+  /** Euros: EURC `balanceOf`, base units (6 decimals). Null where the network has no EURC. */
+  euros: Micros | null;
   updatedAt: number;
 };
 
@@ -59,8 +61,8 @@ export type Boost = {
   /**
    * The vault's EIP-712 domain (ERC-5267) when it takes signed withdrawals
    * (`withdrawWithSig`), which is what "Take out of Boost" signs under. Null
-   * on a vault that predates them (Monad testnet's today): the app then says
-   * taking out isn't available on this network yet.
+   * on a vault that predates them: the app then says taking out isn't
+   * available on this network yet.
    */
   takeOut: Eip712Domain | null;
   updatedAt: number;
@@ -97,52 +99,50 @@ export type CreditLine = {
   boostAtFaceValue: boolean | null;
   /** The opening line never goes past this; higher tiers come from repaying. */
   openingCap: Micros;
-  /** When the line opened (the CRE decision); null when not known. */
+  /** When the line opened (the keeper's underwriting decision); null when not known. */
   openedAt?: number | null;
   /** The score the line opened with; its history starts there. */
   openingScore?: number | null;
   /**
-   * The report behind the line: the transaction the Chainlink CRE
-   * underwriting workflow wrote, and when. Null until one exists.
+   * The report behind the line: the transaction the Polaris keeper's
+   * underwriting run wrote on Arc, and when. Null until one exists.
    */
   verified: CreditProvenance | null;
 };
 
 /**
- * The underwriting report behind a credit line: its transaction, and which
- * forwarder delivered it (lib/provenance.ts turns that into words: "Verified
- * by Chainlink CRE" only for a DON-signed report).
+ * The underwriting report behind a credit line: the transaction the Polaris
+ * keeper wrote to UnderwritingReceiver on Arc (lib/provenance.ts turns it
+ * into "Reviewed by the Polaris keeper").
  */
 export type CreditProvenance = {
-  by: "Chainlink CRE";
-  /** The CRE workflow that wrote it: polaris-underwrite. */
-  workflow: string;
+  by: "Polaris keeper";
   txHash: Hex;
   /** Null on a local chain, which has no explorer. */
   explorerUrl: string | null;
   /** When the report landed (its block time), ms. */
   at: number;
-  /**
-   * Who delivered it: `don` (Chainlink's KeystoneForwarder, DON-signed),
-   * `simulation` (the CRE CLI's simulator through Chainlink's
-   * MockKeystoneForwarder), `local` (a local chain), `unknown`. Missing from
-   * an older API, which then never reads as verified.
-   */
-  delivery?: "don" | "simulation" | "local" | "unknown";
+  /** The keeper account that submitted it. */
+  keeper?: Address | null;
+  /** The API's own words for it ("Reviewed by the Polaris keeper"). */
+  label?: string;
 };
 
+/** Why the credit guard paused new Pay in 4 plans (CreditGuard's reasons on Arc). */
+export type CreditGuardReason = "low_cash" | "bad_debt" | "owner_pause";
+
 /**
- * The risk guard (the Chainlink CRE guardian's verdict, as PolarisCheckout
- * applies it to new Pay in 4 plans). A stale guard fails open: Pay in 4
- * keeps working and the screens say when it last checked.
+ * The credit guard (CreditGuard on Arc, which reads the credit pool live, as
+ * PolarisCheckout applies it to new Pay in 4 plans). It pauses Pay in 4 for
+ * low pool cash, bad debt, or the owner's pause; Pay now carries on.
  */
 export type CreditGuardView = {
-  state: "open" | "paused" | "stale" | "never" | "unconfigured" | "unavailable";
+  state: "open" | "paused" | "unconfigured" | "unavailable";
   paused: boolean;
+  /** Why it is paused; empty when open. */
+  reasons: CreditGuardReason[];
   /** What the buyer reads while it is paused. */
   message: string | null;
-  /** Seconds since it last checked, as of `readAt`; null before the first check. */
-  ageSeconds: number | null;
   /** When the API read it, ms. */
   readAt: number;
 };
@@ -174,7 +174,7 @@ export type PlanCollection = {
   failure: { reason: "insufficient_funds" | "allowance_lost" | "other"; at: number; nextAttemptAt: number | null } | null;
   /** Polaris can no longer take this plan's payments: the buyer signs once more (PolarisCheckout.reauthorize). */
   needsSignature: boolean;
-  /** They signed again, and the collection that followed (the CRE collections run), once it lands. */
+  /** They signed again, and the collection that followed (the keeper's collections run), once it lands. */
   reauthorized: { at: number; txHash: Hex; collected: { at: number; txHash: Hex } | null } | null;
 };
 
@@ -233,6 +233,8 @@ export type ActivityItem = {
   shareIndex?: number;
   /** The receipt sealed to this account's Face ID that says what was bought (lib/receipts). */
   receiptId?: string;
+  /** "EUR" for a move in euros (EURC: a euro send link, euros received); absent means dollars. */
+  currency?: Currency;
 };
 
 export type PlanOffer = {
@@ -285,7 +287,7 @@ export type CheckoutSessionInfo = {
   expiresAt: number;
   /** Why Pay in 4 isn't offered, in the buyer's words, when it isn't. */
   payLaterUnavailable: string | null;
-  /** The risk guard as the checkout read it: paused (Pay in 4 shown as unavailable) or stale ("last checked 72 min ago"). */
+  /** The credit guard as the checkout read it: paused, Pay in 4 shows as unavailable. */
   creditGuard: CreditGuardView | null;
   /** The way to pay the merchant's page chose (the session's first mode): the checkout opens on it. */
   preferredMode: "now" | "later" | "subscription" | null;
@@ -301,6 +303,8 @@ export type CheckoutSessionInfo = {
 
 export type SendLinkStatus = {
   linkKey: Address;
+  /** Dollars (PolarisSend on USDC) or euros (PolarisSend on EURC). */
+  currency: Currency;
   /** Known when the index has seen the link; the fragment carries it otherwise. */
   amount: Micros | null;
   senderName: string | null;
@@ -353,13 +357,14 @@ export interface PolarisData {
   getCreditLine(owner: Address | null): Promise<CreditLine>;
   /** What the account has locked in Boost; null when the network has no CollateralVault (the app then shows no Boost). */
   getBoost(owner: Address | null): Promise<Boost | null>;
-  /** The risk guard now; null when there is none to show. */
+  /** The credit guard now; null when there is none to show. */
   getCreditGuard(): Promise<CreditGuardView | null>;
   getPlans(owner: Address | null): Promise<{ plans: Plan[]; subscriptions: Subscription[] }>;
   getActivity(owner: Address | null): Promise<ActivityItem[]>;
   getContacts(owner: Address | null): Promise<Person[]>;
   getPaymentLink(id: string): Promise<PaymentLink | null>;
-  getSendLink(linkKey: Address): Promise<SendLinkStatus | null>;
+  /** A send link on the dollar PolarisSend, or (`EUR`) the euro one. */
+  getSendLink(linkKey: Address, currency?: Currency): Promise<SendLinkStatus | null>;
   /** A split by its id, or null when there is none. `viewer` is who is looking. */
   getSplit(id: Hex, viewer: Address | null): Promise<SplitStatus | null>;
   /** The splits this account organised, newest first. */

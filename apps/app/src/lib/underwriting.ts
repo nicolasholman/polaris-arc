@@ -6,16 +6,18 @@ import { env } from "./env";
 import { notifyDataChanged } from "./data/changes";
 
 /**
- * Getting a Pay in 4 line (plan §5.5), through the CRE underwriting workflow.
+ * Getting a Pay in 4 line (plan §5.5), through the Polaris keeper's
+ * underwriting run.
  *
  * The buyer's account signs its consent to be underwritten (Face ID, no
  * prompt beyond it); to "Bring your history", the wallet they already use
  * also signs that its history counts toward this account (their wallet's
- * own prompt). Polaris for Business checks both, queues the workflow's
- * HTTP trigger, and the DON checks them again before it reads Nansen and
- * the chain and writes the facts to ScoreManager. The texts come from the
- * API (`/api/public/credit/{account}/messages`), which serves exactly what
- * the workflow verifies. Without the API nothing is asked for or signed.
+ * own prompt). Polaris for Business checks both and queues the request; the
+ * keeper reads the history (Nansen, Zerion, the chain), and submits the
+ * facts to UnderwritingReceiver on Arc, which writes them to ScoreManager.
+ * The texts come from the API (`/api/public/credit/{account}/messages`),
+ * which serves exactly what the keeper verifies. Without the API nothing is
+ * asked for or signed.
  */
 
 type Messages = { account: Address; wallet: Address | null; issuedAt: number; nonce: string; consent: string; link: string | null };
@@ -36,7 +38,7 @@ type HistoryWallet = { address: Address; signMessage(message: string): Promise<H
 /**
  * `pnpm demo:local` on a local chain (NEXT_PUBLIC_LOCAL_DEMO=1, env.localChain)
  * with no wallet in the browser: a throwaway key stands in for the buyer's
- * old wallet. The local CRE trigger reads its history from the live
+ * old wallet. The keeper reads its history from the live
  * providers (it starts empty), and the app says so. Never on any other chain.
  */
 export const LOCAL_HISTORY_WALLET = process.env.NEXT_PUBLIC_LOCAL_DEMO === "1" && env.localChain;
@@ -74,7 +76,7 @@ async function waitForDecision(account: Address, timeoutMs: number): Promise<Cre
 
 /**
  * Ask for a Pay in 4 line, optionally bringing a wallet's history. Resolves
- * with the workflow's decision once it arrives (up to `waitMs`), or null
+ * with the keeper's decision once it arrives (up to `waitMs`), or null
  * while it is still being reviewed (the credit screen keeps polling).
  */
 export async function requestCredit(opts: { withHistory?: boolean; waitMs?: number } = {}): Promise<CreditRequestResult> {

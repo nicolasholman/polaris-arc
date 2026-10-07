@@ -28,6 +28,7 @@ import { HomeDesktop } from "@/desktop/home";
 import { useOwner } from "@/lib/account/hooks";
 import { getActivity, getContacts, getPlans, getProfile } from "@/lib/data";
 import { useData } from "@/lib/data/hooks";
+import { eur } from "@/lib/money";
 import { balanceDelta, DELTA_PERIOD, deltaFigure, subAmount, when } from "@/lib/view";
 
 /** Home: ref A's first screen on a phone, ref E's main screen from 1024px. */
@@ -73,7 +74,7 @@ function HomePhone() {
           className="mt-1.5"
           account={selected.pill}
           onAccountClick={() => open("/accounts")}
-          labels={["USD", "AUSD"]}
+          labels={["USD", "USDC"]}
           balance={selected.balance}
           delta={delta}
           deltaNote={delta !== undefined ? DELTA_PERIOD : undefined}
@@ -91,6 +92,12 @@ function HomePhone() {
       ) : (
         <Skeleton shape="card" height={278} className="mt-1.5" />
       )}
+      {selected?.id === "dollar" && balance?.euros != null ? (
+        <p className="mt-2 flex items-baseline justify-between px-2 text-[14px] text-ui-muted">
+          <span>Euros (EURC)</span>
+          <span className="ui-figure text-ui-text">{eur(balance.euros)}</span>
+        </p>
+      ) : null}
 
       <Card padding="none" className="mt-3 px-5 pt-5 pb-3">
         <SectionHeader title="Quick transfer" actionLabel="See all" onAction={() => open("/send")} />

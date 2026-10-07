@@ -14,10 +14,9 @@
  * share), the split id, and the ERC-5267 field filtering.
  *
  * The sources come from packages/contracts/contracts. A contract that isn't in
- * this checkout yet (PolarisCheckout lives on its own branch until it merges)
- * is read from git: the refs in POLARIS_CONTRACTS_REFS (comma separated),
- * metropolis/checkout and then metropolis/api by default. A contract found
- * nowhere fails the check.
+ * this checkout can be read from git: the refs in POLARIS_CONTRACTS_REFS
+ * (comma separated; none by default). A contract found nowhere fails the
+ * check.
  *
  * Runs on Node 22.18+ (built-in TypeScript type stripping).
  */
@@ -80,7 +79,7 @@ const buyer = privateKeyToAccount(generatePrivateKey());
 const domain: Eip712Domain = {
   name: "Polaris Test",
   version: "1",
-  chainId: 10143,
+  chainId: 5042002,
   verifyingContract: getAddress("0x2222222222222222222222222222222222222222"),
 };
 
@@ -105,7 +104,7 @@ const ozDomainSeparator = keccak256(
 const here = dirname(fileURLToPath(import.meta.url));
 const repo = resolve(here, "../../..");
 const contractsDir = resolve(repo, "packages/contracts/contracts");
-const REFS = (process.env.POLARIS_CONTRACTS_REFS ?? "metropolis/checkout,metropolis/api")
+const REFS = (process.env.POLARIS_CONTRACTS_REFS ?? "")
   .split(",")
   .map((r) => r.trim())
   .filter(Boolean);
@@ -138,7 +137,7 @@ function solidity(file: string): Source {
       }
     }
   }
-  assert.ok(found, `${file} wasn't found in packages/contracts or on ${REFS.join(", ")}`);
+  assert.ok(found, `${file} wasn't found in packages/contracts${REFS.length ? ` or on ${REFS.join(", ")}` : ""}`);
   sources.set(file, found);
   return found;
 }
@@ -285,7 +284,7 @@ await check("split id is keccak256(abi.encode(organiser, bytes32 salt))", () => 
 
 await check("ERC-5267 fields 0x0f drop the unused salt", () => {
   const d = domainFromErc5267(
-    { name: "AUSD", version: "1", chainId: 10143, verifyingContract: merchant, salt: pad("0x0") },
+    { name: "CollateralVault", version: "1", chainId: 5042002, verifyingContract: merchant, salt: pad("0x0") },
     "0x0f",
   );
   assert.deepEqual(Object.keys(d).sort(), ["chainId", "name", "verifyingContract", "version"]);

@@ -178,7 +178,6 @@ export const withdrawTypes = {
   ],
 } as const;
 
-/** Every struct with the typehash preimage the contract declares for it. */
 /**
  * Every struct with the typehash preimage the app believes the contract
  * declares, and where the contract declares it (`contract`: the Solidity
@@ -204,22 +203,22 @@ export const TYPE_REGISTRY = [
     primaryType: "ReceiveWithAuthorization",
     types: receiveWithAuthorizationTypes,
     solidity: RECEIVE_WITH_AUTHORIZATION_TYPE,
-    contract: "MockAUSD.sol",
+    contract: "MockUSDC.sol",
     constant: "RECEIVE_WITH_AUTHORIZATION_TYPEHASH",
   },
   {
     primaryType: "TransferWithAuthorization",
     types: transferWithAuthorizationTypes,
     solidity: TRANSFER_WITH_AUTHORIZATION_TYPE,
-    contract: "MockAUSD.sol",
+    contract: "MockUSDC.sol",
     constant: "TRANSFER_WITH_AUTHORIZATION_TYPEHASH",
   },
-  // ERC-2612 comes from OpenZeppelin's ERC20Permit, which MockAUSD inherits.
+  // ERC-2612 with Circle's typehash, as USDC and EURC on Arc declare it (MockUSDC mirrors them).
   {
     primaryType: "Permit",
     types: permitTypes,
     solidity: PERMIT_TYPE,
-    contract: "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol",
+    contract: "MockUSDC.sol",
     constant: "PERMIT_TYPEHASH",
   },
   { primaryType: "Open", types: openTypes, solidity: OPEN_TYPE, contract: "PolarisSend.sol", constant: "OPEN_TYPEHASH" },

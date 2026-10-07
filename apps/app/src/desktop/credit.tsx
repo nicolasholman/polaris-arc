@@ -262,7 +262,7 @@ export function ScoreDesktop() {
   const now = useNow();
   const days = RANGES.find((r) => r.value === range)!.days;
 
-  // From when the line was scored (its CRE decision), never before: the last point is today's score.
+  // From when the line was scored (the keeper's underwriting decision), never before: the last point is today's score.
   const points = useMemo(() => {
     if (!credit.value || !plans.value || !profile.value || !now) return null;
     const history = scoreHistory(credit.value, plans.value.plans, credit.value.openedAt ?? profile.value.memberSince ?? now, days, now);

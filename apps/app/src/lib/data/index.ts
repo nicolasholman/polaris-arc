@@ -1,5 +1,6 @@
 import type { Address, Hex } from "viem";
 import { apiConfigured } from "../api";
+import type { Currency } from "../money";
 import { liveData } from "./live";
 import { getRemotePaymentLink, isRemoteLinkId, type LinkLookup, lookupRemotePaymentLink } from "./remote";
 import type { PolarisData } from "./types";
@@ -29,6 +30,6 @@ export const getPaymentLink = (id: string) => (apiConfigured() && isRemoteLinkId
 export const lookupPaymentLink = (id: string): Promise<LinkLookup> =>
   apiConfigured() && isRemoteLinkId(id) ? lookupRemotePaymentLink(id) : Promise.resolve({ link: null, gone: "not_found" });
 export type { LinkLookup } from "./remote";
-export const getSendLink = (linkKey: Address) => data.getSendLink(linkKey);
+export const getSendLink = (linkKey: Address, currency: Currency = "USD") => data.getSendLink(linkKey, currency);
 export const getSplit = (id: Hex, viewer: Address | null) => data.getSplit(id, viewer);
 export const getSplits = (owner: Address | null) => data.getSplits(owner);

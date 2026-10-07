@@ -22,7 +22,7 @@ import { safeNext } from "@/lib/next-path";
 const PAGES = [
   { line1: "Get paid in dollars.", line2: "Instantly.", sub: "Hold dollars, pay in full, and get paid by anyone, anywhere." },
   { line1: "Split it in four.", line2: "Pay as you go.", sub: "Pay in 4 shows every payment and the total interest before you confirm." },
-  { line1: "Send money anywhere.", line2: "By link.", sub: "Share a link. Whoever opens it gets the dollars in under a second." },
+  { line1: "Send money anywhere.", line2: "By link.", sub: "Share a link. Whoever opens it gets the dollars, final in under a second." },
 ] as const;
 
 /** Onboarding, on ref B's first screen: three pages of glass art, then Face ID (and email beneath it). */

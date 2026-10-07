@@ -22,9 +22,9 @@ import { type Micros, usd } from "./money.ts";
  * `withdrawCollateral`). The vault pays the borrower and nobody else, and
  * only what `withdrawable(owner)` says is free: everything locked, or nothing
  * while any Pay in 4 plan is open (the vault releases nothing while debt is
- * outstanding). A vault that predates `withdrawWithSig` (Monad testnet's
- * today) has no domain to sign under, and then the app says taking out
- * isn't available on this network yet.
+ * outstanding). A vault that predates `withdrawWithSig` has no domain to
+ * sign under, and then the app says taking out isn't available on this
+ * network yet.
  *
  * Pure functions only (no I/O), so test/boost.test.ts checks them as they are.
  */

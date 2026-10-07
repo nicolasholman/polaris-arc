@@ -25,7 +25,7 @@ export function AccountProviders({ children }: { children: ReactNode }) {
   return (
     <PrivyProvider
       appId={env.privyAppId}
-      // The web app client, or the Android app's when NEXT_PUBLIC_BUILD_TARGET=android (see env.ts).
+      // The web origin's own Privy app client, when one is set (see env.ts).
       {...(env.privyClientId ? { clientId: env.privyClientId } : {})}
       config={{
         // Google is off in the Privy app, so email is the one method offered.

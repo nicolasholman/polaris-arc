@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Receipts only the buyer can read: keys derived from the same Face ID (Mera PRF) output as the wallet key, RFC 9180 HPKE sealing to the buyer's inbox key, and the texts a buyer signs to register it and to read their receipts. Browser and Node 22.",
+  "description": "Receipts only the buyer can read: keys derived from the same Face ID (passkey PRF) output as the wallet key, RFC 9180 HPKE sealing to the buyer's inbox key, and the texts a buyer signs to register it and to read their receipts. Browser and Node 22.",
   "license": "MIT",
   "exports": {
     ".": "./src/index.ts",

@@ -6,8 +6,11 @@ import { parseAbi } from "viem";
  * in packages/contracts/abi (test/reads.test.ts checks).
  */
 
-/** The dollar: the account's balance. */
-export const ausdAbi = parseAbi(["function balanceOf(address owner) view returns (uint256)"]);
+/**
+ * USDC (and EURC): the account's balance, in 6-decimal base units. Arc's
+ * native balance is the same dollars in 18 decimals; the app reads only this.
+ */
+export const tokenAbi = parseAbi(["function balanceOf(address owner) view returns (uint256)"]);
 
 /** PolarisSend: a send link's state. */
 export const sendAbi = parseAbi([

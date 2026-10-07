@@ -18,7 +18,7 @@ export default function manifest(): MetadataRoute.Manifest {
       { src: "/icons/icon-512.png", sizes: "512x512", type: "image/png", purpose: "any" },
       { src: "/icons/maskable-512.png", sizes: "512x512", type: "image/png", purpose: "maskable" },
     ],
-    // The Android app (apps/android/twa-manifest.json) offers Send and Receive with the same icons.
+    // Installed, the PWA offers these on a long press of its icon.
     shortcuts: [
       { name: "Pay or claim", url: "/pay", description: "Scan or paste a Polaris link" },
       {

@@ -1,30 +1,36 @@
 "use client";
 
 import { DetailsList, ListGroup, ListRow, Sheet, TileButton, toast, useIsDesktop } from "@polaris/ui";
-import { ArrowDownLeft, Droplets, ScanLine, Send } from "lucide-react";
+import { ArrowDownLeft, ArrowRightLeft, Droplets, ExternalLink, ScanLine, Send } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useAccounts } from "@/components/accounts";
+import { CrossChainDeposit, IncomingTransfer, useIncomingTransfers } from "@/components/cross-chain-deposit";
 import { useAccountState } from "@/lib/account/hooks";
 import { useOrigin } from "@/lib/browser";
 import { notifyDataChanged } from "@/lib/data/changes";
-import { env } from "@/lib/env";
+import { useData } from "@/lib/data/hooks";
+import { ARC_TESTNET, env } from "@/lib/env";
 import { receiveLink } from "@/lib/links";
-import { usd } from "@/lib/money";
+import { eur, usd } from "@/lib/money";
+import { getNetwork } from "@/lib/network";
 import { usePrefs } from "@/lib/prefs";
 import { RouteSheet } from "@/components/shell/sheet-host";
 
 /**
- * `pnpm demo:local`'s faucet: test dollars on the local chain only (AUSD
- * from Agora's faucet on its fork of Monad testnet, MockAUSD on a Hardhat
- * node). Unset everywhere else, so no other build shows it.
+ * `pnpm demo:local`'s faucet: test dollars (MockUSDC) on a local Hardhat
+ * node only. Unset everywhere else, so no other build shows it.
  */
 const LOCAL_FAUCET = env.localChain ? (process.env.NEXT_PUBLIC_LOCAL_FAUCET_URL?.trim() || "").replace(/\/+$/, "") : "";
+
+/** Circle's faucet: testnet USDC and EURC, straight to an Arc testnet address. */
+const CIRCLE_FAUCET = "https://faucet.circle.com";
 
 /**
  * Add money: the ways dollars come in today, on ref C's Send / Receive /
  * Top Up tiles. Ask someone (a link to pay you), show your code, or claim a
- * link someone sent you.
+ * link someone sent you; move USDC from another chain with Circle's CCTP
+ * (where Polaris relays the mint); and, on a test network, a faucet.
  */
 export function AddMoneySheet() {
   const router = useRouter();
@@ -35,6 +41,10 @@ export function AddMoneySheet() {
   const desktop = useIsDesktop();
   const address = state.status === "ready" || state.status === "locked" ? state.address : null;
   const [minting, setMinting] = useState(false);
+  const network = useData(async () => (await getNetwork()) ?? null, []);
+  const cctp = network.value?.cctp ?? null;
+  const incoming = useIncomingTransfers();
+  const [bridging, setBridging] = useState(false);
 
   async function testDollars() {
     if (!address) {
@@ -104,6 +114,33 @@ export function AddMoneySheet() {
           </p>
         </>
       )}
+      {incoming.burns.map((burn) => (
+        <IncomingTransfer key={burn.txHash} burn={burn} onDismiss={() => incoming.dismiss(burn.txHash)} />
+      ))}
+      {cctp ? (
+        <ListGroup label="From another chain">
+          <ListRow
+            icon={<ArrowRightLeft />}
+            tone="tint-teal"
+            title="Move USDC to Polaris"
+            description={`From ${cctp.sources.map((s) => s.name).join(", ")}, with Circle's CCTP`}
+            onClick={() => (address ? setBridging(true) : router.push("/onboard?next=/"))}
+          />
+        </ListGroup>
+      ) : null}
+      {env.chainId === ARC_TESTNET ? (
+        <ListGroup label="Testnet">
+          <ListRow
+            icon={<Droplets />}
+            tone="tint-lime"
+            title="Circle's testnet faucet"
+            description="Free test USDC and EURC on Arc testnet. Paste your account from My code."
+            trailing={<ExternalLink aria-hidden size={16} className="text-ui-muted" />}
+            chevron={false}
+            onClick={() => window.open(CIRCLE_FAUCET, "_blank", "noopener,noreferrer")}
+          />
+        </ListGroup>
+      ) : null}
       {LOCAL_FAUCET ? (
         <ListGroup label="Local demo">
           <ListRow
@@ -117,11 +154,15 @@ export function AddMoneySheet() {
       ) : null}
       <DetailsList
         items={[
-          { label: "Lands in", value: "Under a second" },
-          { label: "Fee", value: "None" },
+          { label: "Lands in", value: "Final in under a second on Arc" },
+          { label: "Fee", value: "None. No gas to buy: Arc's gas is USDC, and Polaris pays it" },
           { label: "Balance", value: balance ? usd(balance.available) : "…" },
+          ...(balance?.euros != null ? [{ label: "Euros", value: eur(balance.euros) }] : []),
         ]}
       />
+      {cctp && address && network.value ? (
+        <CrossChainDeposit open={bridging} onOpenChange={setBridging} network={network.value} recipient={address} onSent={incoming.add} />
+      ) : null}
     </Sheet.Body>
   );
 }
@@ -129,7 +170,7 @@ export function AddMoneySheet() {
 /** The route: the intercepting page in app/@sheet (over the current tab), or the page itself (cold, over its tab). */
 export function AddMoneyRoute({ cold }: { cold?: boolean }) {
   return (
-    <RouteSheet label="Add money" title="Add money" description="Dollars land in under a second" cold={cold}>
+    <RouteSheet label="Add money" title="Add money" description="Dollars land in under a second, final on Arc" cold={cold}>
       <AddMoneySheet />
     </RouteSheet>
   );

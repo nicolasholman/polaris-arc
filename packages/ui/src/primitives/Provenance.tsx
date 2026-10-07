@@ -6,7 +6,7 @@ import { IconSlot } from "../lib/icon";
 import { shortHash } from "./TxLink";
 
 export type ProvenanceBadgeProps = {
-  /** Who vouches for the figure beside it: "Verified by Chainlink CRE". */
+  /** Who vouches for the figure beside it: "Reviewed by the Polaris keeper". */
   label: ReactNode;
   /** When, or what: "Oct 2, 2026". */
   meta?: ReactNode;
@@ -18,11 +18,10 @@ export type ProvenanceBadgeProps = {
   hash?: string | null;
   icon?: ReactNode;
   /**
-   * `verified` (the default): a lime pill with a shield, for a fact a third
-   * party attested (a DON-signed report). `neutral`: a plain pill with a
-   * flask, for a report that is real but vouched for by no one (a simulated
-   * or local CRE run): it says where the figure came from without claiming
-   * a verification.
+   * `verified` (the default): a lime pill with a shield, for a fact with a
+   * report on chain behind it (the keeper's underwriting report). `neutral`:
+   * a plain pill with a flask, for a figure whose report can't be pointed at:
+   * it says where the figure came from without claiming a review.
    */
   tone?: "verified" | "neutral";
   size?: "sm" | "md";
@@ -32,13 +31,14 @@ export type ProvenanceBadgeProps = {
 /**
  * Where a figure came from, with a link to the proof: a lime-tinted pill
  * with a shield, the source and its date, and "View report" opening the
- * transaction. For facts a third party attested on chain (a credit line
- * written by a Chainlink CRE workflow), never for anything computed here.
+ * transaction. For facts written on chain by a report (a credit line the
+ * Polaris keeper's underwriting report opened on Arc), never for anything
+ * computed here.
  *
  * ```tsx
- * <ProvenanceBadge label="Verified by Chainlink CRE" meta="Oct 2" href={explorerUrl} linkLabel="View report" />
- * <ProvenanceBadge label="Verified by Chainlink CRE" meta="Oct 2" hash={txHash} />   // no explorer: the hash, unlinked
- * <ProvenanceBadge tone="neutral" label="Chainlink CRE (simulated)" meta="Oct 2" href={explorerUrl} />
+ * <ProvenanceBadge label="Reviewed by the Polaris keeper" meta="Oct 2" href={explorerUrl} linkLabel="View report" />
+ * <ProvenanceBadge label="Reviewed by the Polaris keeper" meta="Oct 2" hash={txHash} />   // no explorer: the hash, unlinked
+ * <ProvenanceBadge tone="neutral" label="Underwriting report" meta="Oct 2" href={explorerUrl} />
  * ```
  */
 export function ProvenanceBadge({ label, meta, href, linkLabel = "View report", hash, icon, tone = "verified", size = "md", className }: ProvenanceBadgeProps) {

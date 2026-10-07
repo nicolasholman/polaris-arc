@@ -7,9 +7,10 @@ import { publicClient } from "./chain";
 import type { PaymentLink, Person, Plan } from "./data/types";
 import { getDomain, isConfigured, resolveContract } from "./domains";
 import { getNetwork } from "./network";
-import { amountParam, type Micros, usd } from "./money";
+import { type Currency, type Micros, usd } from "./money";
 import { inboxReady } from "./receipts/inbox";
 import { RelayError, type RelayReceipt, relayer, type Signed } from "./relayer";
+import { claimUrl } from "./links";
 import { memoHash, rememberSplit, SPLIT_LIFETIME_DAYS, type SplitMemo, splitUrl } from "./split";
 import {
   buildCancel,
@@ -55,7 +56,7 @@ function randomNonce(): Hex {
 const noncesAbi = parseAbi(["function nonces(address owner) view returns (uint256)"]);
 
 /** `nonces(owner)` on a contract, or 0 when it isn't reachable (the relayer's simulation then refuses a stale signature). */
-async function readNonce(name: "ausd" | "checkout" | "loanEngine", owner: Address): Promise<bigint> {
+async function readNonce(name: "usdc" | "checkout" | "loanEngine", owner: Address): Promise<bigint> {
   if (!isConfigured(name)) return 0n;
   try {
     const address = await resolveContract(name);
@@ -98,17 +99,17 @@ async function buyerState(link: PaymentLink, buyer: Address): Promise<BuyerState
       };
     }
   }
-  const [checkoutNonce, tokenNonce] = await Promise.all([readNonce("checkout", buyer), readNonce("ausd", buyer)]);
+  const [checkoutNonce, tokenNonce] = await Promise.all([readNonce("checkout", buyer), readNonce("usdc", buyer)]);
   return { checkoutNonce, tokenNonce, permitValue: null, subscriptionPermitValue: null };
 }
 
 const allowanceAbi = parseAbi(["function allowance(address owner, address spender) view returns (uint256)"]);
 
-/** AUSD `allowance(owner, spender)`, or 0 when it isn't reachable. */
+/** USDC `allowance(owner, spender)`, or 0 when it isn't reachable. */
 async function readAllowance(owner: Address, spender: Address): Promise<bigint> {
-  if (!isConfigured("ausd")) return 0n;
+  if (!isConfigured("usdc")) return 0n;
   try {
-    const address = await resolveContract("ausd");
+    const address = await resolveContract("usdc");
     if (address === zeroAddress) return 0n;
     return await publicClient().readContract({ address, abi: allowanceAbi, functionName: "allowance", args: [owner, spender] });
   } catch {
@@ -135,7 +136,7 @@ export async function payLink(
   await inboxReady(account.address);
   const t = now();
   if (mode === "now") {
-    const [domain, payments] = await Promise.all([getDomain("ausd"), resolveContract("payments")]);
+    const [domain, payments] = await Promise.all([getDomain("usdc"), resolveContract("payments")]);
     const signed = await sign(
       account,
       buildReceiveWithAuthorization(domain, {
@@ -151,7 +152,7 @@ export async function payLink(
     return relayer.payNow({ link, payer: account.address, authorization: signed });
   }
 
-  const [checkoutDomain, tokenDomain, state] = await Promise.all([getDomain("checkout"), getDomain("ausd"), buyerState(link, account.address)]);
+  const [checkoutDomain, tokenDomain, state] = await Promise.all([getDomain("checkout"), getDomain("usdc"), buyerState(link, account.address)]);
   const deadline = t + 15n * MINUTE;
 
   if (mode === "later") {
@@ -220,29 +221,50 @@ export async function payLink(
 export type CreatedSendLink = {
   url: string;
   linkKey: Address;
+  /** Dollars (USDC) or euros (EURC). */
+  currency: Currency;
   amount: Micros;
   expiresAt: number;
   receipt: RelayReceipt;
 };
 
+/** The token, its PolarisSend, and their domains, for a currency. */
+const SEND_CONTRACTS = {
+  USD: { token: "usdc", send: "send" },
+  EUR: { token: "eurc", send: "sendEurc" },
+} as const;
+
+/** Whether this network takes euro send links (EURC and its PolarisSend are deployed). */
+export async function eurosAvailable(): Promise<boolean> {
+  const network = getNetwork();
+  return network ? Boolean((await network).euro?.sendEurc) : false;
+}
+
 /**
  * Send by link. A throwaway key is born here and travels only inside the
  * link's fragment, which browsers never send to a server. The sender's
- * signature escrows the dollars against that key's address, and the key
+ * signature escrows the money against that key's address, and the key
  * itself signs `Open`, so only whoever holds the link could have opened it.
+ *
+ * Dollars escrow USDC in PolarisSend; euros (`EUR`) escrow EURC in the
+ * PolarisSend deployed on EURC, under EURC's and that contract's own domains.
+ * The link says which (`c=EUR`), so the claim goes to the same contract.
  */
 export async function createSendLink(
   account: LocalAccount,
   amount: Micros,
   senderName: string,
   origin: string,
+  currency: Currency = "USD",
 ): Promise<CreatedSendLink> {
+  const names = SEND_CONTRACTS[currency];
   const linkPrivateKey = generatePrivateKey();
   const linkAccount = privateKeyToAccount(linkPrivateKey);
   const linkKey = linkAccount.address;
   const t = now();
   const expiresAt = t + BigInt(SEND_LINK_LIFETIME_DAYS) * 86_400n;
-  const [tokenDomain, sendDomain, send] = await Promise.all([getDomain("ausd"), getDomain("send"), resolveContract("send")]);
+  const [tokenDomain, sendDomain, send] = await Promise.all([getDomain(names.token), getDomain(names.send), resolveContract(names.send)]);
+  if (send === zeroAddress) throw new RelayError("unavailable", currency === "EUR" ? "Sending euros isn't available on this network yet." : "Sending by link isn't available here yet.");
   const authorization = await sign(
     account,
     buildReceiveWithAuthorization(tokenDomain, {
@@ -256,11 +278,11 @@ export async function createSendLink(
     }),
   );
   const open = await sign(linkAccount, buildOpen(sendDomain, { sender: account.address, amount, expiresAt }));
-  const receipt = await relayer.send({ sender: account.address, senderName, linkKey, amount, expiresAt, authorization, open });
-  const fragment = new URLSearchParams({ k: linkPrivateKey, a: amountParam(amount), n: senderName });
+  const receipt = await relayer.send({ sender: account.address, senderName, linkKey, amount, expiresAt, authorization, open, currency });
   return {
-    url: `${origin}/claim#${fragment.toString()}`,
+    url: claimUrl(origin, { key: linkPrivateKey, amount, name: senderName, currency }),
     linkKey,
+    currency,
     amount,
     expiresAt: Number(expiresAt) * 1000,
     receipt,
@@ -277,18 +299,20 @@ export async function claimLink(
   linkPrivateKey: Hex,
   amount: Micros,
   senderName: string,
+  currency: Currency = "USD",
 ): Promise<RelayReceipt> {
   const linkAccount = privateKeyToAccount(linkPrivateKey);
-  const domain = await getDomain("send");
+  const domain = await getDomain(SEND_CONTRACTS[currency].send);
+  if (domain.verifyingContract === zeroAddress) throw new RelayError("unavailable", "Euro links aren't available on this network.");
   const deadline = now() + 15n * MINUTE;
   const claim = await sign(linkAccount, buildClaim(domain, { to: recipient, deadline }));
-  return relayer.claim({ linkKey: linkAccount.address, claim, deadline, amount, senderName });
+  return relayer.claim({ linkKey: linkAccount.address, claim, deadline, amount, senderName, currency });
 }
 
-export async function cancelSendLink(account: LocalAccount, linkKey: Address): Promise<RelayReceipt> {
-  const domain = await getDomain("send");
+export async function cancelSendLink(account: LocalAccount, linkKey: Address, currency: Currency = "USD"): Promise<RelayReceipt> {
+  const domain = await getDomain(SEND_CONTRACTS[currency].send);
   const cancel = await sign(account, buildCancel(domain, { linkKey, deadline: now() + 15n * MINUTE }));
-  return relayer.cancelSend({ cancel });
+  return relayer.cancelSend({ cancel, currency });
 }
 
 /* ── Split the bill (PolarisSplit) ──────────────────────────────────────── */
@@ -335,7 +359,7 @@ export async function payShare(account: LocalAccount, split: SplitStatus, index:
     const short = ((share.amount - opts.balance + 9_999n) / 10_000n) * 10_000n;
     throw new RelayError("insufficient-funds", `Add ${usd(short)} to pay your share.`);
   }
-  const [domain, to] = await Promise.all([getDomain("ausd"), resolveContract("split")]);
+  const [domain, to] = await Promise.all([getDomain("usdc"), resolveContract("split")]);
   const t = now();
   const authorization = await sign(
     account,
@@ -368,7 +392,7 @@ export async function cancelSubscription(account: LocalAccount, subId: bigint): 
 /** Send straight to someone who already has Polaris (their Receive code). */
 export async function transferTo(account: LocalAccount, to: Person, amount: Micros): Promise<RelayReceipt> {
   if (!to.address || to.address === zeroAddress) throw new Error("That code has no account on it");
-  const domain = await getDomain("ausd");
+  const domain = await getDomain("usdc");
   const t = now();
   const authorization = await sign(
     account,
@@ -395,7 +419,7 @@ const debtAbi = parseAbi(["function activeDebtOf(address borrower) view returns 
  */
 export async function reauthorizePayments(account: LocalAccount, plans: Plan[]): Promise<RelayReceipt> {
   let owed = owedOnOpenPlans(plans);
-  const [domain, loanEngine, nonce] = await Promise.all([getDomain("ausd"), resolveContract("loanEngine"), readNonce("ausd", account.address)]);
+  const [domain, loanEngine, nonce] = await Promise.all([getDomain("usdc"), resolveContract("loanEngine"), readNonce("usdc", account.address)]);
   if (isConfigured("loanEngine") && loanEngine !== zeroAddress) {
     try {
       owed = await publicClient().readContract({ address: loanEngine, abi: debtAbi, functionName: "activeDebtOf", args: [account.address] });
@@ -454,7 +478,7 @@ export async function addToBoost(account: LocalAccount, amount: Micros, opts: { 
   const network = getNetwork();
   const vault = network ? (await network).vault : null;
   if (!vault) throw new RelayError("unavailable", "Boost isn't available on this network.");
-  const [domain, nonce] = await Promise.all([getDomain("ausd"), readNonce("ausd", account.address)]);
+  const [domain, nonce] = await Promise.all([getDomain("usdc"), readNonce("usdc", account.address)]);
   const permit = await sign(account, buildBoostPermit(domain, { owner: account.address, vault, amount, nonce, deadline: now() + BOOST_PERMIT_SECONDS }));
   return relayer.lockCollateral({ permit });
 }

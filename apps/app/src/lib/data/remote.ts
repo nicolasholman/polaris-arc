@@ -36,7 +36,7 @@ type PublicSession = {
     principalUnits: string;
     totalUnits: string;
     schedule: Array<{ amountUnits: string }>;
-    /** The risk guard behind a pause, and when it last checked. */
+    /** The credit guard behind a pause, and why. */
     guard?: ApiCreditGuard | null;
   } | null;
   subscription: { planId: string | null; pricePerPeriodUnits: string; periodSeconds: number; periodsAuthorised: number } | null;

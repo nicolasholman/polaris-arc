@@ -17,8 +17,8 @@ import { getActivity, getContacts, getPlans } from "@/lib/data";
 import { useData } from "@/lib/data/hooks";
 import { longDate, time } from "@/lib/dates";
 import { prefetchDomains } from "@/lib/domains";
-import { usd } from "@/lib/money";
-import { isOpenLink, KIND_LABEL, movesBalance, n, signed, statusOf } from "@/lib/view";
+import { money } from "@/lib/money";
+import { inEuros, isOpenLink, KIND_LABEL, n, showsSigned, signed, statusOf } from "@/lib/view";
 
 /** Payment details (half): the amount, what it was, and the one road to the receipt. */
 export function TransactionSheet({ id }: { id: string }) {
@@ -67,12 +67,13 @@ export function TransactionSheet({ id }: { id: string }) {
         <ActivityAvatar item={item} size="lg" />
         <p className="mt-2 text-[16px] font-medium">{item.title}</p>
         <Money
-          value={movesBalance(item) ? signed(item) : n(item.amount)}
-          signed={movesBalance(item)}
+          value={showsSigned(item) ? signed(item) : n(item.amount)}
+          currency={item.currency ?? "USD"}
+          signed={showsSigned(item)}
           dim="cents"
           className={`text-[40px] leading-none font-semibold tracking-[-0.035em] ${item.direction === "in" ? "text-ui-up" : ""}`}
         />
-        <LocalEquivalent amount={item.amount} className="text-[14px]" />
+        {inEuros(item) ? null : <LocalEquivalent amount={item.amount} className="text-[14px]" />}
         <DetailsList
           size="sm"
           className="mt-3 w-full text-left"
@@ -117,13 +118,13 @@ export function TransactionSheet({ id }: { id: string }) {
           open={cancelling}
           onOpenChange={setCancelling}
           danger
-          title={`Cancel this ${usd(item.amount, { trim: true })} link?`}
+          title={`Cancel this ${money(item.amount, item.currency ?? "USD", { trim: true })} link?`}
           summary="Nobody has claimed it yet. The money comes straight back to your account, and the link stops working."
           confirmLabel="Cancel with Face ID"
           busyLabel="Cancelling…"
           onAccount={async (signer) => {
-            await cancelSendLink(signer, item.linkKey!);
-            toast({ title: `${usd(item.amount)} is back in your account`, tone: "success" });
+            await cancelSendLink(signer, item.linkKey!, item.currency ?? "USD");
+            toast({ title: `${money(item.amount, item.currency ?? "USD")} is back in your account`, tone: "success" });
           }}
         />
       ) : null}

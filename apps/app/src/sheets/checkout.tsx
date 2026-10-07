@@ -22,7 +22,7 @@ import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "
 import { MerchantAvatar } from "@/components/avatars";
 import { BringHistorySheet } from "@/components/bring-history";
 import { ConfirmSheet } from "@/components/confirm-sheet";
-import { GuardPausedNotice, GuardStaleLine } from "@/components/credit-guard-note";
+import { GuardPausedNotice } from "@/components/credit-guard-note";
 import { LocalEquivalent } from "@/components/local-equivalent";
 import { RouteSheet, useCloseSheet } from "@/components/shell/sheet-host";
 import { SuccessSheet } from "@/components/success-sheet";
@@ -57,7 +57,7 @@ export function initialMode(link: PaymentLink): PayMode {
   return preferred && modes.includes(preferred) ? preferred : (modes[0] ?? "now");
 }
 
-/** Why Pay in 4 is shown but can't be chosen: the risk guard (the Chainlink CRE guardian) has paused new plans. */
+/** Why Pay in 4 is shown but can't be chosen: the credit guard (CreditGuard, reading the pool live) has paused new plans. */
 export const laterPaused = laterPausedMessage;
 
 export function modesOf(link: PaymentLink): PayMode[] {
@@ -83,7 +83,7 @@ export function CheckoutSheet({ link }: { link: PaymentLink }) {
   const [raising, setRaising] = useState(false);
 
   // Read the signing domains now, so Confirm goes straight to Face ID.
-  useEffect(() => prefetchDomains("ausd", "payments", "checkout"), []);
+  useEffect(() => prefetchDomains("usdc", "payments", "checkout"), []);
 
   const later = link.modes.later;
   const sub = link.modes.subscription;
@@ -150,7 +150,7 @@ export function CheckoutSheet({ link }: { link: PaymentLink }) {
     });
   }
   // Pay now says it in its tiles; Pay in 4 and Subscribe say it here. Polaris's relayer pays the gas for every step.
-  if (mode !== "now") details.push({ label: "Network fee", value: "None, Polaris pays it" });
+  if (mode !== "now") details.push({ label: "Network fee", value: "None. Arc's gas is USDC, and Polaris pays it" });
 
   async function share() {
     const url = window.location.href;
@@ -237,7 +237,6 @@ export function CheckoutSheet({ link }: { link: PaymentLink }) {
                 year, {usd(later.total)} in total.
               </p>
             )}
-            <GuardStaleLine guard={link.session?.creditGuard} />
             {!credit.value.historyLinked ? (
               <Button variant="outline" size="md" icon={<TrendingUp />} onClick={() => setRaising(true)}>
                 Raise your limit

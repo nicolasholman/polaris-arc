@@ -110,7 +110,7 @@ export function SectionA() {
           <BalanceCard
             account="Main account"
             onAccountClick={() => {}}
-            labels={["USD", "AUSD"]}
+            labels={["USD", "USDC"]}
             balance={1284.5}
             delta={2.1}
             quickActions={[
@@ -627,7 +627,7 @@ export function SectionD() {
           <CardStack
             name="Oat & Ember"
             last4="2431"
-            meta="AUSD"
+            meta="USDC"
             balance={62745}
             deltaLabel="This week"
             delta={11.05}

@@ -21,7 +21,7 @@ import { useEffect, useId, useState } from "react";
 import { MerchantAvatar } from "@/components/avatars";
 import { BringHistorySheet } from "@/components/bring-history";
 import { ConfirmSheet } from "@/components/confirm-sheet";
-import { GuardPausedNotice, GuardStaleLine } from "@/components/credit-guard-note";
+import { GuardPausedNotice } from "@/components/credit-guard-note";
 import { LocalEquivalent } from "@/components/local-equivalent";
 import { useCloseSheet } from "@/components/shell/sheet-host";
 import { type PayMode, payLink } from "@/lib/actions";
@@ -58,7 +58,7 @@ export function CheckoutDesktop({ link }: { link: PaymentLink }) {
   const [raising, setRaising] = useState(false);
   const id = useId();
 
-  useEffect(() => prefetchDomains("ausd", "payments", "checkout"), []);
+  useEffect(() => prefetchDomains("usdc", "payments", "checkout"), []);
 
   const later = link.modes.later;
   const sub = link.modes.subscription;
@@ -139,7 +139,7 @@ export function CheckoutDesktop({ link }: { link: PaymentLink }) {
 
           <ListGroup className="mt-6">
             <ListRow icon={<ScanFace />} tone="tint-lime" title="One Face ID to pay" description="No card number, no password" />
-            <ListRow icon={<Zap />} tone="tint-teal" title="Lands in under a second" description={`${link.merchant.name} sees it straight away`} />
+            <ListRow icon={<Zap />} tone="tint-teal" title="Final in under a second" description={`On Arc. ${link.merchant.name} sees it straight away`} />
           </ListGroup>
 
           <p className="mt-auto flex items-start gap-2 pt-6 text-[13px] leading-relaxed text-ui-muted">
@@ -248,10 +248,9 @@ export function CheckoutDesktop({ link }: { link: PaymentLink }) {
                 </p>
               )
             ) : null}
-            {mode === "later" && later ? <GuardStaleLine guard={link.session?.creditGuard} /> : null}
             {mode === "later" && paused ? (
               <p className="text-[14px] leading-snug text-ui-muted">
-                Plans you already have keep going as scheduled. Pay in 4 comes back here as soon as the risk guard lifts the pause.
+                Plans you already have keep going as scheduled. Pay in 4 comes back here as soon as the credit guard lifts the pause.
               </p>
             ) : mode === "subscription" && sub ? (
               <p className="text-[14px] leading-snug text-ui-muted">

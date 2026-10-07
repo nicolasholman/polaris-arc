@@ -104,7 +104,7 @@ export function SectionShell() {
               <span className="flex items-center gap-2 text-ui-text">
                 <span className="size-2 rounded-full bg-ui-lime" /> Test mode
               </span>
-              <span className="mt-1 block">Monad testnet</span>
+              <span className="mt-1 block">Arc testnet</span>
             </Card>
           }
           className="static block h-[620px] md:block md:w-[264px] xl:w-[264px]"

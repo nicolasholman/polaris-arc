@@ -21,7 +21,7 @@ import { usd } from "@/lib/money";
  * payments is gone (the chain says InsufficientAllowance), the plan needs
  * one more signature: an ERC-2612 permit to the loan engine, which the
  * relayer carries to PolarisCheckout.reauthorize. Its Reauthorized event
- * starts the Chainlink CRE collections workflow's instant retry, and the
+ * starts the Polaris keeper's instant collection retry, and the
  * plan reads "Collected" as soon as that run lands (the API's chain sync;
  * this polls it every 2 seconds meanwhile).
  */

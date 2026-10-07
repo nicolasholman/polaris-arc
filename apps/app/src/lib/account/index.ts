@@ -22,7 +22,10 @@ import { forgetStoredAccount, loadStoredAccount, STORED_ACCOUNT_KEY, saveStoredA
  * The Polaris account: one interface, three implementations, a viem
  * LocalAccount out. The rest of the app never asks which one is in use.
  *
- *   mera   Face ID. A passkey's PRF output derives the key (the primary sign-up).
+ *   mera   Face ID. A passkey's PRF output derives the key (the primary sign-up),
+ *          through the chain-agnostic @category-labs/mera library. The key is
+ *          an ordinary secp256k1 account, so it works on Arc unchanged; the
+ *          relayer pays the gas in USDC.
  *   privy  "Continue with email". Privy's embedded wallet signs (useSignTypedData).
  *   dev    NEXT_PUBLIC_DEV_SIGNER=1: a key in this tab's sessionStorage stands in
  *          for Face ID, so flows run headlessly. Never in a deployed build.
@@ -447,7 +450,7 @@ export function accountCreatedAt(address: Address | null): number | null {
   return stored && mine(stored.address) ? stored.createdAt : null;
 }
 
-/** The device's public Face ID account record (Mera path only). */
+/** The device's public Face ID account record (passkey path only). */
 export function storedAccount(): StoredAccount | null {
   return typeof window === "undefined" || DEV_SIGNER ? null : loadStoredAccount();
 }

@@ -31,8 +31,8 @@ import { PERMIT_TYPE, WITHDRAW_TYPE } from "../src/lib/sign/types.ts";
 
 const USD = (n: number) => BigInt(Math.round(n * 1e6));
 const VAULT = getAddress("0xc2f006ae9836a700ce8f1e457d11346cc42e23dc");
-const AUSD = getAddress("0x00000000000000000000000000000000000a05d0");
-const domain = { name: "AUSD", version: "1", chainId: 10143, verifyingContract: AUSD };
+const USDC = getAddress("0x3600000000000000000000000000000000000000");
+const domain = { name: "USDC", version: "2", chainId: 5042002, verifyingContract: USDC };
 const buyer = privateKeyToAccount(generatePrivateKey());
 
 describe("the Boost permit", () => {
@@ -51,7 +51,7 @@ describe("the Boost permit", () => {
     const recovered = await recoverTypedDataAddress({ ...typed, signature });
     assert.equal(recovered, buyer.address);
     // Pointed at any other spender, the same signature is someone else's (the token rejects it).
-    const elsewhere = { ...typed, message: { ...typed.message, spender: AUSD } };
+    const elsewhere = { ...typed, message: { ...typed.message, spender: USDC } };
     assert.notEqual(hashTypedData(elsewhere), hashTypedData(typed));
     assert.notEqual(await recoverTypedDataAddress({ ...elsewhere, signature }), buyer.address);
   });
@@ -156,7 +156,7 @@ describe("what Boost adds to the limit", () => {
  * a Pay in 4 plan is open.
  */
 describe("the Take out Withdraw", () => {
-  const vaultDomain = { name: "CollateralVault", version: "1", chainId: 10143, verifyingContract: VAULT };
+  const vaultDomain = { name: "CollateralVault", version: "1", chainId: 5042002, verifyingContract: VAULT };
   const typed = buildTakeOut(vaultDomain, { borrower: buyer.address, amount: USD(40), nonce: 2n, deadline: 2_000_000_000n });
 
   it("is CollateralVault's Withdraw for the account and the amount, under the vault's domain", () => {
@@ -173,7 +173,7 @@ describe("the Take out Withdraw", () => {
     const signature = await buyer.signTypedData(typed);
     assert.equal(await recoverTypedDataAddress({ ...typed, signature }), buyer.address);
     for (const elsewhere of [
-      { ...typed, domain: { ...vaultDomain, verifyingContract: AUSD } },
+      { ...typed, domain: { ...vaultDomain, verifyingContract: USDC } },
       { ...typed, domain: { ...vaultDomain, chainId: 143 } },
       { ...typed, message: { ...typed.message, amount: USD(41) } },
     ]) {
@@ -195,7 +195,7 @@ describe("the Take out Withdraw", () => {
 });
 
 describe("what Take out offers", () => {
-  const domain = { name: "CollateralVault", version: "1", chainId: 10143, verifyingContract: VAULT };
+  const domain = { name: "CollateralVault", version: "1", chainId: 5042002, verifyingContract: VAULT };
 
   it("says why not: a vault that predates signed withdrawal, nothing in Boost, Boost securing a plan", () => {
     assert.equal(takeOutState({ locked: USD(40), withdrawable: USD(40), takeOut: null }), "unsupported");

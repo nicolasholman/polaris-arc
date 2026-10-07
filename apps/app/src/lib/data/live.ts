@@ -7,12 +7,12 @@ import { resolveContract } from "../domains";
 import { env } from "../env";
 import { type Eip712Domain, readDomain } from "../sign";
 import { getNetwork } from "../network";
-import type { Micros } from "../money";
+import type { Currency, Micros } from "../money";
 import { prefsName } from "../prefs";
 import { pairReceipts, type ReceiptIndexEntry } from "../receipts/pair";
 import { knownSplit, shareLabel } from "../split";
 import { dataGeneration, hasDataListeners, notifyDataChanged, onDataChanged } from "./changes";
-import { ausdAbi, sendAbi, vaultAbi } from "./reads";
+import { sendAbi, tokenAbi, vaultAbi } from "./reads";
 import { getRemotePaymentLink } from "./remote";
 import type {
   ActivityItem,
@@ -34,20 +34,22 @@ import type {
  * The data source, Polaris for Business (`NEXT_PUBLIC_POLARIS_API_URL`)
  * and the chain. Every figure is the account's own.
  *
- * - Balance: `AUSD.balanceOf(owner)`, read from the chain.
+ * - Balance: `USDC.balanceOf(owner)` (and `EURC.balanceOf(owner)` where the
+ *   network has EURC), read from Arc. Never the native balance: it is the
+ *   same dollars in 18 decimals.
  * - Boost: `CollateralVault.lockedOf(owner)`, read from the chain, at the
  *   vault Polaris for Business's deployment record reports. No vault on the
  *   network: no Boost.
  * - Credit line: `GET /api/public/credit/{owner}`, which reads ScoreManager
  *   (`creditLimitOf`, the score, whether Boost counts at face value) and
- *   PolarisLoanEngine (`activeDebtOf`) now, and carries the CRE workflow's
- *   decision with its reasons, each from the provider behind it (Nansen,
- *   Zerion).
+ *   PolarisLoanEngine (`activeDebtOf`) now, and carries the Polaris keeper's
+ *   underwriting decision with its reasons, each from the provider behind
+ *   it (Nansen, Zerion).
  * - Plans, subscriptions, activity: `GET /api/public/buyers/{owner}`, the
  *   records the API's chain sync keeps from PlanOpened, PaymentMade and the
  *   subscription events, and every other dollar in or out of the account
  *   (`moves`: money added, transfers, send links made and claimed,
- *   instalments), read from the chain's AUSD and PolarisSend logs.
+ *   instalments), read from the chain's USDC and PolarisSend logs.
  * - Member since: when this device created the account (Face ID's record,
  *   or the dev signer's), or its first move on chain.
  * - A send link: `PolarisSend.linkOf(linkKey)` and `keyUsed(linkKey)`.
@@ -79,14 +81,15 @@ type CreditStatus = {
     reason: string | null;
     linkedWallet: Address | null;
     explanation: { reasons: Array<{ text: string; points: number | null; provider: string | null }> } | null;
-    /** The underwriting report's transaction (Chainlink CRE), when it landed, and which forwarder delivered it. */
+    /** The underwriting report's transaction (the Polaris keeper's, on Arc), and when it landed. */
     verified?: {
-      by: "Chainlink CRE";
-      workflow: string;
+      by: "Polaris keeper";
       txHash: Hex;
       at: string;
+      blockNumber?: number | string | null;
       explorerUrl: string | null;
-      delivery?: "don" | "simulation" | "local" | "unknown";
+      keeper?: Address | null;
+      label?: string;
     } | null;
   } | null;
 };
@@ -130,6 +133,8 @@ type BuyerBook = {
     linkKey: Address | null;
     settledAs: "claimed" | "returned" | null;
     settledAt: string | null;
+    /** "EUR" for a move of EURC (a euro send link, euros received); absent or "USD" for dollars. */
+    currency?: "USD" | "EUR";
     /** split-paid and split-received. */
     splitId?: Hex | null;
     shareIndex?: number | null;
@@ -264,7 +269,15 @@ type Move = NonNullable<BuyerBook["moves"]>[number];
 
 /** A move the payment rows don't already show, as the row the buyer reads. */
 function moveRow(m: Move, merchants: Map<string, Merchant>): ActivityItem | null {
-  const base = { id: `move-${m.id}`, direction: m.direction, amount: BigInt(m.amountUnits), at: Date.parse(m.at), txHash: m.txHash, status: "settled" as const };
+  const base = {
+    id: `move-${m.id}`,
+    direction: m.direction,
+    amount: BigInt(m.amountUnits),
+    at: Date.parse(m.at),
+    txHash: m.txHash,
+    status: "settled" as const,
+    ...(m.currency === "EUR" ? { currency: "EUR" as const } : {}),
+  };
   const merchant = merchants.get(m.counterparty.toLowerCase());
   const who = merchant ? { kind: "merchant" as const, name: merchant.name } : { kind: "person" as const, name: short(m.counterparty) };
   switch (m.kind) {
@@ -431,10 +444,15 @@ export const liveData: PolarisData = {
   },
 
   async getBalance(owner): Promise<Balance> {
-    if (!owner) return { available: 0n, updatedAt: Date.now() };
-    const ausd = await resolveContract("ausd");
-    const available = ausd === zeroAddress ? 0n : await publicClient().readContract({ address: ausd, abi: ausdAbi, functionName: "balanceOf", args: [owner] });
-    return { available, updatedAt: Date.now() };
+    const [usdc, eurc] = await Promise.all([resolveContract("usdc"), resolveContract("eurc")]);
+    const euros = eurc === zeroAddress ? null : 0n;
+    if (!owner) return { available: 0n, euros, updatedAt: Date.now() };
+    const client = publicClient();
+    const [available, eurosHeld] = await Promise.all([
+      usdc === zeroAddress ? 0n : client.readContract({ address: usdc, abi: tokenAbi, functionName: "balanceOf", args: [owner] }),
+      eurc === zeroAddress ? null : client.readContract({ address: eurc, abi: tokenAbi, functionName: "balanceOf", args: [owner] }),
+    ]);
+    return { available, euros: eurosHeld, updatedAt: Date.now() };
   },
 
   async getBoost(owner): Promise<Boost | null> {
@@ -477,7 +495,7 @@ export const liveData: PolarisData = {
       const due = plan.instalments.find((i) => i.paidAt === null);
       if (due && (!nextPayment || due.dueAt < nextPayment.dueAt)) nextPayment = { amount: due.amount, dueAt: due.dueAt, merchant: plan.merchant.name, planId: plan.id };
     }
-    // The CRE decision's reasons, explained by @polarispay/underwriting, each with the provider behind it.
+    // The keeper's underwriting decision's reasons, explained by @polarispay/underwriting, each with the provider behind it.
     const reasons = (status.decision?.explanation?.reasons ?? []).map((r) => ({
       label: r.text.replace(/ · [+\-−]?\d+$/, ""),
       points: r.points ?? 0,
@@ -497,10 +515,20 @@ export const liveData: PolarisData = {
       boostAtFaceValue: typeof status.onChain?.boostAtFaceValue === "boolean" ? status.onChain.boostAtFaceValue : null,
       // ScoreManager caps an opening line at $1,000; paying on time raises it from there.
       openingCap: limit > OPENING_CAP ? limit : OPENING_CAP,
-      // The line and its score start at the CRE decision that opened them.
+      // The line and its score start at the underwriting decision that opened them.
       openedAt: limit > 0n && status.decision?.status === "applied" && status.decision.at ? Date.parse(status.decision.at) : null,
       openingScore: status.decision?.status === "applied" ? (status.decision.score ?? null) : null,
-      verified: status.decision?.status === "applied" && status.decision.verified ? { ...status.decision.verified, at: Date.parse(status.decision.verified.at) } : null,
+      verified:
+        status.decision?.status === "applied" && status.decision.verified
+          ? {
+              by: status.decision.verified.by,
+              txHash: status.decision.verified.txHash,
+              explorerUrl: status.decision.verified.explorerUrl,
+              at: Date.parse(status.decision.verified.at),
+              keeper: status.decision.verified.keeper ?? null,
+              ...(status.decision.verified.label ? { label: status.decision.verified.label } : {}),
+            }
+          : null,
     };
   },
 
@@ -539,8 +567,8 @@ export const liveData: PolarisData = {
     return ((await book(owner)).splits ?? []).map(toSplit);
   },
 
-  async getSendLink(linkKey): Promise<SendLinkStatus | null> {
-    const send = await resolveContract("send");
+  async getSendLink(linkKey, currency: Currency = "USD"): Promise<SendLinkStatus | null> {
+    const send = await resolveContract(currency === "EUR" ? "sendEurc" : "send");
     if (send === zeroAddress) return null;
     const client = publicClient();
     const [link, used] = await Promise.all([
@@ -550,10 +578,10 @@ export const liveData: PolarisData = {
     const key = getAddress(linkKey);
     if (link.sender === zeroAddress) {
       // Settled (claimed or cancelled: the chain keeps only that the key was used), or not sent yet.
-      return used ? { linkKey: key, amount: null, senderName: null, status: "claimed", expiresAt: null, settledAt: null } : null;
+      return used ? { linkKey: key, currency, amount: null, senderName: null, status: "claimed", expiresAt: null, settledAt: null } : null;
     }
     const expiresAt = Number(link.expiresAt) * 1000;
-    return { linkKey: key, amount: link.amount, senderName: null, status: expiresAt <= Date.now() ? "expired" : "open", expiresAt, settledAt: null };
+    return { linkKey: key, currency, amount: link.amount, senderName: null, status: expiresAt <= Date.now() ? "expired" : "open", expiresAt, settledAt: null };
   },
 
   subscribe(listener) {

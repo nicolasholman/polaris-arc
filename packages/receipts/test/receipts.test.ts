@@ -71,7 +71,7 @@ describe("deriveReceiptKeys", () => {
     expect(toHex(aesRaw)).not.toBe(toHex(seed));
     expect(toHex(aesRaw)).not.toBe(toHex(material));
     expect(toHex(seed)).not.toBe(toHex(material));
-    // Never Mera's own vault label.
+    // Never the passkey library's (@category-labs/mera) own vault label.
     expect([AES_LABEL, HPKE_LABEL]).not.toContain("mera.v1.encrypt.secret");
 
     // The session's AES key is exactly HKDF(prf, AES label): an independent raw import opens its ciphertext.

@@ -8,7 +8,7 @@ export type AccountSupport =
   | { ok: false; reason: "no-webauthn" | "no-prf" | "insecure" | "host" };
 
 /**
- * Mera ships no capability check, so this is the best a page can do before a
+ * The passkey library ships no capability check, so this is the best a page can do before a
  * ceremony. "No" is definitive; "yes" means try, and a `PRF_UNAVAILABLE` from
  * the ceremony still routes to the same "Open on your phone" screen (desktop
  * Chrome's local profile, for one, reports PRF and then can't do it).

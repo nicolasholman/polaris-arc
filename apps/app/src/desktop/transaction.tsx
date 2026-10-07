@@ -15,8 +15,8 @@ import { getActivity, getContacts, getPlans } from "@/lib/data";
 import { useData } from "@/lib/data/hooks";
 import { longDate, time } from "@/lib/dates";
 import { prefetchDomains } from "@/lib/domains";
-import { usd } from "@/lib/money";
-import { isOpenLink, KIND_LABEL, movesBalance, n, planProgress, signed, statusOf } from "@/lib/view";
+import { money } from "@/lib/money";
+import { inEuros, isOpenLink, KIND_LABEL, n, planProgress, showsSigned, signed, statusOf } from "@/lib/view";
 import { ActivityAmount, ActivityPill, whatOf } from "./bits";
 
 /** Dark buttons step up a surface on the drawer's own #1D2129. */
@@ -77,7 +77,7 @@ export function TransactionDrawerContent({ id }: { id: string }) {
         ? { label: item.direction === "in" ? "From" : "To", value: item.counterparty.name }
         : { label: "Status", value: statusOf(item) };
   const tiles: KeyValue[] = [
-    { label: "Amount", value: usd(item.amount) },
+    { label: "Amount", value: money(item.amount, item.currency ?? "USD") },
     { label: "Network fee", value: "None" },
     plan && progress
       ? {
@@ -110,14 +110,15 @@ export function TransactionDrawerContent({ id }: { id: string }) {
         </div>
         <div>
           <p className="text-[14px] text-ui-muted">
-            {!movesBalance(item) ? "Paid by your Pay later line" : item.direction === "in" ? "Came in" : waiting ? "Held for the link" : "Went out"}
+            {!showsSigned(item) ? "Paid by your Pay later line" : item.direction === "in" ? "Came in" : waiting ? "Held for the link" : "Went out"}
           </p>
           <Money
-            value={movesBalance(item) ? signed(item) : n(item.amount)}
-            signed={movesBalance(item)}
+            value={showsSigned(item) ? signed(item) : n(item.amount)}
+            currency={item.currency ?? "USD"}
+            signed={showsSigned(item)}
             className={`ui-figure mt-1 block text-[40px] leading-none font-medium tracking-[-0.035em] ${item.direction === "in" ? "text-ui-up" : ""}`}
           />
-          <LocalEquivalent amount={item.amount} className="mt-2 text-[14px] text-ui-muted" />
+          {inEuros(item) ? null : <LocalEquivalent amount={item.amount} className="mt-2 text-[14px] text-ui-muted" />}
         </div>
         <KeyValueGrid items={tiles} />
         <DetailsList
@@ -190,13 +191,13 @@ export function TransactionDrawerContent({ id }: { id: string }) {
           open={cancelling}
           onOpenChange={setCancelling}
           danger
-          title={`Cancel this ${usd(item.amount, { trim: true })} link?`}
+          title={`Cancel this ${money(item.amount, item.currency ?? "USD", { trim: true })} link?`}
           summary="Nobody has claimed it yet. The money comes straight back to your account, and the link stops working."
           confirmLabel="Cancel with Face ID"
           busyLabel="Cancelling…"
           onAccount={async (signer) => {
-            await cancelSendLink(signer, item.linkKey!);
-            toast({ title: `${usd(item.amount)} is back in your account`, tone: "success" });
+            await cancelSendLink(signer, item.linkKey!, item.currency ?? "USD");
+            toast({ title: `${money(item.amount, item.currency ?? "USD")} is back in your account`, tone: "success" });
           }}
         />
       ) : null}

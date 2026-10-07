@@ -21,7 +21,7 @@ import {
   TxRow,
   useIsDesktop,
 } from "@polaris/ui";
-import { Check, Copy, History, Link2, RefreshCw, Share2 } from "lucide-react";
+import { Check, Copy, Euro, History, Link2, RefreshCw, Share2 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState, Suspense } from "react";
 import { getAddress, isAddress } from "viem";
@@ -39,11 +39,13 @@ import { getContacts, getProfile, getSendLink, type Person } from "@/lib/data";
 import { useData } from "@/lib/data/hooks";
 import { longDate } from "@/lib/dates";
 import { prefetchDomains } from "@/lib/domains";
-import { type Micros, parseAmount, usd } from "@/lib/money";
+import { type Currency, type Micros, money, parseAmount, usd } from "@/lib/money";
+import { useEuroLinks } from "@/components/currency-choice";
 import type { HomeAccount } from "@/lib/prefs";
 import { setPrefs, usePrefs } from "@/lib/prefs";
 import { SenderNameField } from "@/components/sender-name";
 import type { RelayReceipt } from "@/lib/relayer";
+import { n } from "@/lib/view";
 
 export type Recipient =
   | { kind: "link" }
@@ -71,7 +73,9 @@ export function SendSheet() {
   const { accounts, balance } = useAccounts();
 
   const [value, setValue] = useState("");
-  const [from, setFrom] = useState<HomeAccount>("dollar");
+  // Where the money comes from: an account face, or (where euro links exist) the euro balance.
+  const [from, setFrom] = useState<HomeAccount | "euro">("dollar");
+  const euroLinks = useEuroLinks();
   const [picked, setPicked] = useState<Recipient | null>(null);
   const [picking, setPicking] = useState(false);
   const [confirming, setConfirming] = useState(false);
@@ -79,7 +83,7 @@ export function SendSheet() {
   // Asked once, in the confirm of the first link: the name the claimer sees.
   const [nameField, setNameField] = useState("");
 
-  useEffect(() => prefetchDomains("ausd", "send"), []);
+  useEffect(() => prefetchDomains("usdc", "send", "eurc", "sendEurc"), []);
 
   // Who the money is for: a Receive code (?to=), a saved contact (?contact=), or anyone with a link.
   let fromUrl: Recipient = { kind: "link" };
@@ -97,21 +101,32 @@ export function SendSheet() {
   }
   const recipient = picked ?? fromUrl;
 
+  // Euros go by link only (EURC in the PolarisSend on EURC); straight to an account is dollars.
+  const euroCard =
+    euroLinks && balance && balance.euros !== null
+      ? { id: "euro", mark: <Euro size={18} strokeWidth={1.75} className="text-ui-purple-text" />, title: "Euros", balance: n(balance.euros), currency: "EUR", tint: "#2e283e" }
+      : null;
+  const cards = euroCard && accounts.length ? [accounts[0]!, euroCard, ...accounts.slice(1)] : accounts;
+  const currency: Currency = from === "euro" && euroCard ? "EUR" : "USD";
+  const fmt = (micros: Micros, opts?: { trim?: boolean }) => money(micros, currency, opts);
   const amount = parseAmount(value || "0") ?? 0n;
-  const available = balance?.available;
+  const available = currency === "EUR" ? (balance ? (balance.euros ?? 0n) : undefined) : balance?.available;
   const tooMuch = available !== undefined && state.status !== "none" && amount > available;
-  const wrongAccount = from !== "dollar";
+  const eurosToAccount = currency === "EUR" && recipient.kind === "account";
+  const wrongAccount = (from !== "dollar" && from !== "euro") || eurosToAccount;
   const senderName = prefs.name || profile.value?.name || "";
   const who = recipient.kind === "link" ? null : recipient.person;
 
-  const hint = wrongAccount
+  const hint = eurosToAccount
+    ? "Euros go by link. Send a link, or send dollars to this account."
+    : wrongAccount
     ? from === "later"
       ? "Pay later works at checkout. Send from your dollar account."
       : "Boost is locked to raise your line. Send from your dollar account."
     : tooMuch
       ? "That's more than your balance"
       : available !== undefined
-        ? `Available ${usd(available)}`
+        ? `Available ${fmt(available)}`
         : " ";
 
   return (
@@ -148,7 +163,7 @@ export function SendSheet() {
         />
 
         {accounts.length ? (
-          <MiniCardCarousel aria-label="Send from" cards={accounts} value={from} onValueChange={(id) => setFrom(id as HomeAccount)} />
+          <MiniCardCarousel aria-label="Send from" cards={cards} value={from} onValueChange={(id) => setFrom(id as HomeAccount | "euro")} />
         ) : (
           <div className="flex gap-2 overflow-hidden py-1">
             {[0, 1, 2, 3].map((i) => (
@@ -159,11 +174,12 @@ export function SendSheet() {
 
         <div className="flex min-h-[112px] flex-1 items-center justify-center">
           <AmountDisplay
+            currency={currency}
             value={value}
             invalid={tooMuch}
             hint={
               <span className="flex flex-col items-center gap-1.5">
-                {tooMuch || wrongAccount ? null : <LocalEquivalent amount={amount} className="text-[13px]" />}
+                {tooMuch || wrongAccount || currency === "EUR" ? null : <LocalEquivalent amount={amount} className="text-[13px]" />}
                 <span className={tooMuch ? "text-ui-down" : undefined}>{hint}</span>
               </span>
             }
@@ -223,13 +239,13 @@ export function SendSheet() {
       <ConfirmSheet
         open={confirming}
         onOpenChange={setConfirming}
-        title={`Send ${usd(amount, { trim: true })}`}
+        title={`Send ${fmt(amount, { trim: true })}`}
         summary={
           <>
             {recipient.kind === "account"
-              ? `Straight to ${recipient.person.name}'s account. It lands in under a second.`
+              ? `Straight to ${recipient.person.name}'s account. Final in under a second on Arc, and Polaris pays the gas.`
               : who
-                ? `A link for ${firstName(who.name)}. Whoever opens it gets the dollars, so share it only with them.`
+                ? `A link for ${firstName(who.name)}. Whoever opens it gets the ${currency === "EUR" ? "euros" : "dollars"}, so share it only with them.`
                 : "A link anyone can claim with Face ID. Share it only with the person it's for."}
             {recipient.kind !== "account" && !prefs.name ? <SenderNameField value={nameField} onChange={setNameField} /> : null}
           </>
@@ -243,7 +259,7 @@ export function SendSheet() {
           } else {
             const typed = nameField.trim();
             if (typed && !prefs.name) setPrefs({ name: typed });
-            const link = await createSendLink(signer, amount, typed || senderName || "A friend", window.location.origin);
+            const link = await createSendLink(signer, amount, typed || senderName || "A friend", window.location.origin, currency);
             setResult({ kind: "link", link, recipient });
           }
         }}
@@ -285,14 +301,15 @@ export function LinkReady({
   /** Render in the dialog it was made in (the desktop Send), not as a sheet on top of it. */
   inline?: boolean;
 }) {
-  const status = useData(() => getSendLink(link.linkKey), [link.linkKey]);
+  const status = useData(() => getSendLink(link.linkKey, link.currency), [link.linkKey, link.currency]);
+  const fmt = (micros: Micros, opts?: { trim?: boolean }) => money(micros, link.currency, opts);
   const [cancelling, setCancelling] = useState(false);
   const desktop = useIsDesktop();
   const who = recipient.kind === "contact" ? firstName(recipient.person.name) : null;
   const state = status.value?.status ?? "open";
 
   async function share() {
-    const text = `${usd(link.amount, { trim: true })} from ${senderName || "a friend"}. Open the link to claim it.`;
+    const text = `${fmt(link.amount, { trim: true })} from ${senderName || "a friend"}. Open the link to claim it.`;
     if (navigator.share) {
       try {
         await navigator.share({ title: "Polaris", text, url: link.url });
@@ -316,17 +333,17 @@ export function LinkReady({
   const title = state === "claimed" ? "Claimed." : state === "cancelled" ? "Cancelled." : "Link ready.";
   const subtitle =
     state === "claimed"
-      ? `${usd(link.amount, { trim: true })} arrived${who ? ` with ${who}` : ""}.`
+      ? `${fmt(link.amount, { trim: true })} arrived${who ? ` with ${who}` : ""}.`
       : state === "cancelled"
         ? "The money is back in your account."
         : (
             <>
-              Whoever opens it gets {usd(link.amount, { trim: true })}. Share it only with {who ?? "the person it's for"}.
-              <LocalEquivalent amount={link.amount} className="mt-1.5 block text-[13px]" />
+              Whoever opens it gets {fmt(link.amount, { trim: true })}. Share it only with {who ?? "the person it's for"}.
+              {link.currency === "EUR" ? null : <LocalEquivalent amount={link.amount} className="mt-1.5 block text-[13px]" />}
             </>
           );
   const rows = [
-    { label: "Amount", value: usd(link.amount) },
+    { label: "Amount", value: fmt(link.amount) },
     { label: "For", value: who ?? "Anyone with the link" },
     { label: state === "open" ? "Claim by" : "Status", value: state === "open" ? longDate(link.expiresAt) : state === "claimed" ? "Claimed" : "Cancelled" },
   ];
@@ -335,12 +352,12 @@ export function LinkReady({
       open={cancelling}
       onOpenChange={setCancelling}
       title="Cancel this link?"
-      summary={`${usd(link.amount, { trim: true })} comes back to your account, and the link stops working.`}
+      summary={`${fmt(link.amount, { trim: true })} comes back to your account, and the link stops working.`}
       confirmLabel="Cancel link with Face ID"
       busyLabel="Cancelling…"
       danger
       onAccount={async (signer) => {
-        await cancelSendLink(signer, link.linkKey);
+        await cancelSendLink(signer, link.linkKey, link.currency);
         status.reload();
       }}
     />

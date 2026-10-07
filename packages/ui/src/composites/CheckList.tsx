@@ -5,7 +5,7 @@ import { cn } from "../lib/cn";
 
 export type CheckItem = {
   key: string;
-  /** What is checked: "AUSD/USD", "Free pool cash". */
+  /** What is checked: "Free pool cash", "Bad debt". */
   label: ReactNode;
   /** The observed figure: "$0.9998". */
   value: ReactNode;
@@ -16,7 +16,7 @@ export type CheckItem = {
 
 export type CheckListProps = {
   items: CheckItem[];
-  /** Read before the list: "The guardian's checks". */
+  /** Read before the list: "The credit guard's checks". */
   "aria-label"?: string;
   className?: string;
 };
@@ -24,11 +24,11 @@ export type CheckListProps = {
 /**
  * A set of pass/fail checks, each with the figure observed and the rule it
  * was held to: a lime check or an amber warning in a round well, the label,
- * and on the right the figure over its limit. For the risk guard's four
- * checks, readiness lists and the like.
+ * and on the right the figure over its limit. For the credit guard's checks,
+ * readiness lists and the like.
  *
  * ```tsx
- * <CheckList items={[{ key: "price", label: "AUSD/USD", value: "$0.9998", limit: "at least $0.995", ok: true }]} />
+ * <CheckList items={[{ key: "cash", label: "Free pool cash", value: "$1,640.00", limit: "at least $1,000.00", ok: true }]} />
  * ```
  */
 export function CheckList({ items, className, ...props }: CheckListProps) {

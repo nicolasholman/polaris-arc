@@ -89,7 +89,7 @@ export function BoostSheet({ open, onOpenChange, mode: initialMode = "add" }: { 
   }
 
   useEffect(() => {
-    if (open) prefetchDomains("ausd");
+    if (open) prefetchDomains("usdc");
   }, [open]);
 
   const amount = parseAmount(value || "0") ?? 0n;

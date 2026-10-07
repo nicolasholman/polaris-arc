@@ -64,7 +64,7 @@ export function ScoreSheet() {
 
   const days = RANGE_DAYS[range];
   const now = useNow();
-  // From when the line was scored (its CRE decision), never before: the last point is today's score.
+  // From when the line was scored (the keeper's underwriting decision), never before: the last point is today's score.
   const history = useMemo(
     () =>
       credit.value && plans.value && profile.value && now

@@ -29,8 +29,8 @@ export type RunListProps = {
 /**
  * A log of runs or events in ref E's table language: a status pill, what
  * happened and a muted line under it, and a link on the right. Below 640px
- * the pill moves in front of the title. For automated jobs (the Chainlink
- * CRE workflows' reports) and event feeds.
+ * the pill moves in front of the title. For automated jobs (the Polaris
+ * keeper's collection and underwriting runs) and event feeds.
  *
  * ```tsx
  * <RunList items={[{ id, tag: "Collected", tone: "lime", title: "2 instalments collected", meta: "12 s ago", trailing: <TxLink … /> }]} />

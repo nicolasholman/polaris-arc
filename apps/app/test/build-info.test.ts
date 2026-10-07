@@ -19,18 +19,17 @@ function inputs(overrides: Partial<Omit<BuildInputs, "env">> & { env?: Partial<t
     env: {
       ...appEnv,
       devSigner: false,
-      chainId: 10143,
+      chainId: 5042002,
       apiUrl: "https://business.example",
       rpId: "example",
       privyAppId: "cm-test",
-      contracts: { ausd: ZERO, payments: ZERO, checkout: ZERO, send: ZERO, loanEngine: ZERO },
+      contracts: { usdc: ZERO, eurc: ZERO, payments: ZERO, checkout: ZERO, send: ZERO, sendEurc: ZERO, split: ZERO, loanEngine: ZERO },
       ...env,
     } as typeof appEnv,
     nodeEnv: "production",
     devSignerPersist: undefined,
     localDemo: undefined,
     localFaucetUrl: undefined,
-    buildTarget: undefined,
     ...rest,
   };
 }
@@ -44,8 +43,7 @@ describe("buildInfo", () => {
       devSignerPersist: false,
       localDemo: false,
       localFaucet: false,
-      target: "web",
-      chainId: 10143,
+      chainId: 5042002,
       apiUrl: "https://business.example",
       rpId: "example",
       privyAppId: "cm-test",
@@ -55,7 +53,7 @@ describe("buildInfo", () => {
 
   it("names every switch a public deployment must not have", () => {
     const info = buildInfo(
-      inputs({ env: { devSigner: true, chainId: 31337 }, nodeEnv: "development", devSignerPersist: "1", localDemo: "1", localFaucetUrl: "http://127.0.0.1:3650" }),
+      inputs({ env: { devSigner: true, chainId: 31337, localChain: true }, nodeEnv: "development", devSignerPersist: "1", localDemo: "1", localFaucetUrl: "http://127.0.0.1:3650" }),
     );
     assert.equal(info.production, false);
     assert.equal(info.devSigner, true);
@@ -70,12 +68,11 @@ describe("buildInfo", () => {
 
   it("lists only the contracts the build pins, and reports an unset API, relying party and Privy app as null", () => {
     const info = buildInfo(
-      inputs({ env: { apiUrl: undefined, rpId: undefined, privyAppId: undefined, contracts: { ausd: ZERO, payments: ZERO, checkout: CHECKOUT, send: ZERO, split: ZERO, loanEngine: ZERO } }, buildTarget: "android" }),
+      inputs({ env: { apiUrl: undefined, rpId: undefined, privyAppId: undefined, contracts: { usdc: ZERO, eurc: ZERO, payments: ZERO, checkout: CHECKOUT, send: ZERO, sendEurc: ZERO, split: ZERO, loanEngine: ZERO } } }),
     );
     assert.deepEqual(info.pinnedContracts, { checkout: CHECKOUT });
     assert.equal(info.apiUrl, null);
     assert.equal(info.rpId, null);
     assert.equal(info.privyAppId, null);
-    assert.equal(info.target, "android");
   });
 });

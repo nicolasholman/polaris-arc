@@ -1,8 +1,9 @@
 # @polaris/receipts
 
 Receipts only the buyer can read: the keys a Face ID gives besides the wallet
-key, and sealing a receipt so that only those keys open it. The design and
-its sources are in [`docs/research/mera.md` §16](../../docs/research/mera.md).
+key (from the same passkey PRF output), and sealing a receipt so that only
+those keys open it. Nothing here is chain-specific: the wallet key is an
+ordinary EOA on Arc.
 The Polaris app derives the keys and opens receipts; Polaris for Business
 seals them with the public key alone.
 
