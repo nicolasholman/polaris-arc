@@ -33,7 +33,7 @@ import { QrCode } from "@/components/qr";
 import { RouteSheet, useCloseSheet } from "@/components/shell/sheet-host";
 import { SuccessSheet } from "@/components/success-sheet";
 import { SendDialogContent } from "@/desktop/money-widget";
-import { cancelSendLink, type CreatedSendLink, createSendLink, transferTo } from "@/lib/actions";
+import { recoverInitialSend, recoverSendLinkAction, cancelSendLink, type CreatedSendLink, createSendLink, transferTo } from "@/lib/actions";
 import { useAccountState, useOwner } from "@/lib/account/hooks";
 import { getContacts, getProfile, getSendLink, type Person } from "@/lib/data";
 import { useData } from "@/lib/data/hooks";
@@ -73,6 +73,9 @@ export function SendSheet() {
   const { accounts, balance } = useAccounts();
 
   const [value, setValue] = useState("");
+  const [initialRecovery,setInitialRecovery]=useState<Awaited<ReturnType<typeof recoverInitialSend>>|null>(null);
+  const [initialRecoveryMessage,setInitialRecoveryMessage]=useState<string|null>(null);
+  const [recoverCancel,setRecoverCancel]=useState(false);
   // Where the money comes from: an account face, or (where euro links exist) the euro balance.
   const [from, setFrom] = useState<HomeAccount | "euro">("dollar");
   const euroLinks = useEuroLinks();
@@ -138,6 +141,10 @@ export function SendSheet() {
         className="-mt-2 shrink-0 px-5"
       />
       <div className="flex min-h-0 flex-1 flex-col gap-3 px-5 pb-[max(16px,env(safe-area-inset-bottom))]">
+        <SecondaryButton onClick={async()=>{setInitialRecovery(null);try{if(!owner)throw Error('Sign in to check the original sender account.');const recovered=await recoverInitialSend(owner);setInitialRecovery(recovered);setInitialRecoveryMessage(recovered.url?'Original funding is finalized and the original in-memory share link is available.':'Original funding is finalized and the link is open. Its bearer key was never stored on disk, so this check cannot reconstruct a share link. You can cancel the original link to return its funds.');}catch(e){setInitialRecoveryMessage(e instanceof Error?e.message:'Original send could not be verified.');}}}>Check original send receipt</SecondaryButton>
+        {initialRecoveryMessage?<p role="status" className="text-sm text-ui-muted">{initialRecoveryMessage}</p>:null}
+        {initialRecovery?<SecondaryButton onClick={()=>setRecoverCancel(true)}>Cancel original link</SecondaryButton>:null}
+        {initialRecovery?.url?<SecondaryButton onClick={async()=>{try{await navigator.clipboard.writeText(initialRecovery.url!);setInitialRecoveryMessage("Original verified share link copied. Share it only with its intended recipient.");}catch{setInitialRecoveryMessage("The verified share link could not be copied. Keep this page open and retry.");}}}>Copy original share link</SecondaryButton>:null}
         <TxRow
           static
           variant="card"
@@ -236,6 +243,7 @@ export function SendSheet() {
         </Sheet.Body>
       </BottomSheet>
 
+      {initialRecovery?<ConfirmSheet open={recoverCancel} onOpenChange={setRecoverCancel} title="Cancel original link" summary="Return the original verified link funds to the sender." newLabel="Cancel with Face ID" busyLabel="Checking cancellation…" onAccount={async(signer)=>{if(!owner||signer.address.toLowerCase()!==owner.toLowerCase())throw Error('Restore the original sender account before cancelling.');await cancelSendLink(signer,initialRecovery.linkKey,initialRecovery.currency);setInitialRecovery(null);setInitialRecoveryMessage('The original cancellation receipt and return of funds were verified.');}}/>:null}
       <ConfirmSheet
         open={confirming}
         onOpenChange={setConfirming}
@@ -301,12 +309,13 @@ export function LinkReady({
   /** Render in the dialog it was made in (the desktop Send), not as a sheet on top of it. */
   inline?: boolean;
 }) {
-  const status = useData(() => getSendLink(link.linkKey, link.currency), [link.linkKey, link.currency]);
+  const status = useData(() => getSendLink(link.linkKey, link.currency, link.receipt.txHash), [link.linkKey, link.currency, link.receipt.txHash]);
   const fmt = (micros: Micros, opts?: { trim?: boolean }) => money(micros, link.currency, opts);
   const [cancelling, setCancelling] = useState(false);
+  const [recoveryError,setRecoveryError]=useState<string|null>(null);
   const desktop = useIsDesktop();
   const who = recipient.kind === "contact" ? firstName(recipient.person.name) : null;
-  const state = status.value?.status ?? "open";
+  const state = status.status === "ready" ? status.value?.status ?? "unknown" : "unknown";
 
   async function share() {
     const text = `${fmt(link.amount, { trim: true })} from ${senderName || "a friend"}. Open the link to claim it.`;
@@ -330,12 +339,15 @@ export function LinkReady({
     }
   }
 
-  const title = state === "claimed" ? "Claimed." : state === "cancelled" ? "Cancelled." : "Link ready.";
+  const title = state === "claimed" ? "Claimed." : state === "refunded" ? "Refunded." : state === "cancelled" ? "Cancelled." : state === "expired" ? "Expired." : state === "settled" ? "Settled." : state === "unknown" ? "Status unavailable." : "Link ready.";
   const subtitle =
     state === "claimed"
-      ? `${fmt(link.amount, { trim: true })} arrived${who ? ` with ${who}` : ""}.`
-      : state === "cancelled"
+      ? `${fmt(link.amount, { trim: true })} arrived at ${status.value?.recipient ?? "the verified recipient"}.`
+      : state === "cancelled" || state === "refunded"
         ? "The money is back in your account."
+        : state === "settled" ? "The link is closed. Its final recipient cannot be confirmed without its receipt."
+        : state === "expired" ? "The claim window has ended. Cancel the link to return its funds."
+        : state === "unknown" ? "The link status could not be confirmed. Check again before sharing or cancelling."
         : (
             <>
               Whoever opens it gets {fmt(link.amount, { trim: true })}. Share it only with {who ?? "the person it's for"}.
@@ -345,7 +357,7 @@ export function LinkReady({
   const rows = [
     { label: "Amount", value: fmt(link.amount) },
     { label: "For", value: who ?? "Anyone with the link" },
-    { label: state === "open" ? "Claim by" : "Status", value: state === "open" ? longDate(link.expiresAt) : state === "claimed" ? "Claimed" : "Cancelled" },
+    { label: state === "open" ? "Claim by" : "Status", value: state === "open" ? longDate(link.expiresAt) : state === "claimed" ? "Claimed" : state === "refunded" ? "Refunded" : state === "cancelled" ? "Cancelled" : state === "expired" ? "Expired" : state === "settled" ? "Settled; receipt unavailable" : "Unavailable" },
   ];
   const cancelSheet = (
     <ConfirmSheet
@@ -363,6 +375,7 @@ export function LinkReady({
     />
   );
 
+  const recovery = <div className="text-center"><Button variant="ghost" size="sm" onClick={async()=>{try{setRecoveryError(null);await recoverSendLinkAction(link.linkKey,link.currency);status.reload();}catch(error){setRecoveryError(error instanceof Error?error.message:'Original receipt unavailable.');}}}>Check original action receipt</Button>{recoveryError&&<p role="status">{recoveryError}</p>}</div>;
   const actions =
     state === "open" ? (
       <div className="flex flex-col items-center gap-3">
@@ -386,20 +399,21 @@ export function LinkReady({
           Cancel link
         </Button>
       </div>
-    ) : null;
+    ) : state === "expired" ? <Button variant="ghost" size="sm" onClick={() => setCancelling(true)}>Cancel expired link</Button> : state === "unknown" ? <Button variant="ghost" size="sm" onClick={status.reload}>Check again</Button> : null;
 
   // From 1024px the link takes the Send form's place in its one Dialog (as a claim's receipt does).
   if (inline) {
     return (
       <>
         <div className="flex flex-col items-center gap-2 pt-2 text-center">
-          <SuccessCheck label={title.replace(/\.$/, "")} size={80} />
+          {state === "open" || state === "claimed" || state === "cancelled" ? <SuccessCheck label={title.replace(/\.$/, "")} size={80} /> : null}
           <h2 className="mt-3 text-[34px] leading-none font-semibold tracking-[-0.035em]">{title}</h2>
           <p role="status" className="max-w-[34ch] text-[15px] leading-[1.45] text-ui-muted">
             {subtitle}
           </p>
           <DetailsList size="sm" items={rows} className="mt-3 w-full text-left" />
           {actions ? <div className="mt-2 w-full">{actions}</div> : null}
+          {recovery}
         </div>
         <Button variant="lime" size="lg" block onClick={onDone}>
           Done
@@ -411,8 +425,9 @@ export function LinkReady({
 
   return (
     <>
-      <SuccessSheet open onOpenChange={() => onDone()} snapPoints={["full"]} title={title} subtitle={subtitle} rows={rows} primary={{ label: "Done", onClick: onDone }}>
+      <SuccessSheet open confirmed={state === "open" || state === "claimed" || state === "cancelled"} onOpenChange={() => onDone()} snapPoints={["full"]} title={title} subtitle={subtitle} rows={rows} primary={{ label: "Done", onClick: onDone }}>
         {actions}
+        {recovery}
       </SuccessSheet>
       {cancelSheet}
     </>

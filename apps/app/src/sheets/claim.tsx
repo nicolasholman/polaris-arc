@@ -26,7 +26,7 @@ import { LocalEquivalent } from "@/components/local-equivalent";
 import { RouteSheet, useCloseSheet } from "@/components/shell/sheet-host";
 import { SuccessSheet } from "@/components/success-sheet";
 import { EMAIL_LOGIN } from "@/lib/account";
-import { claimLink } from "@/lib/actions";
+import { claimLink, recoverSendLinkAction } from "@/lib/actions";
 import { getSendLink } from "@/lib/data";
 import { useData } from "@/lib/data/hooks";
 import { prefetchDomains } from "@/lib/domains";
@@ -104,13 +104,16 @@ function ClaimReady({ parsed, onDone }: { parsed: ClaimFragment; onDone: () => v
   const fmt = (micros: bigint, opts?: { trim?: boolean }) => money(micros, currency, opts);
   const status = useData(() => getSendLink(linkKey, currency), [linkKey, currency]);
   const [confirming, setConfirming] = useState(false);
+  const [recoveryError,setRecoveryError]=useState<string|null>(null);
+  const [recoveredAmount,setRecoveredAmount]=useState<bigint|null>(null);
+  const [recoveredRecipient,setRecoveredRecipient]=useState<string|null>(null);
   // Set when this session claimed it: then the link reads "claimed" because
   // of us, and the buyer is never told someone else may have taken it.
   const [claimed, setClaimed] = useState<RelayReceipt | null>(null);
   const desktop = useIsDesktop();
   // What the index says was escrowed wins over what the link text says.
-  const amount = status.value?.amount ?? parsed.amount;
-  const state = status.value?.status;
+  const amount = recoveredAmount ?? status.value?.amount ?? parsed.amount;
+  const state = status.status === "ready" ? status.value?.status : undefined;
   const rows = [
     { label: "From", value: parsed.name },
     { label: "Amount", value: fmt(amount) },
@@ -121,7 +124,7 @@ function ClaimReady({ parsed, onDone }: { parsed: ClaimFragment; onDone: () => v
   if (claimed && desktop) {
     return (
       <ClaimedHere
-        subtitle={`${fmt(amount, { trim: true })} from ${parsed.name} is in your account.`}
+        subtitle={recoveredRecipient?`${fmt(amount,{trim:true})} arrived at ${recoveredRecipient}.`:`${fmt(amount, { trim: true })} from ${parsed.name} is in your account.`}
         rows={rows}
         receiptUrl={claimed.explorerUrl}
         onDone={onDone}
@@ -170,15 +173,18 @@ function ClaimReady({ parsed, onDone }: { parsed: ClaimFragment; onDone: () => v
                 ? "This link has already been claimed."
                 : state === "cancelled"
                   ? `${parsed.name} cancelled this link.`
-                  : "This link has expired."}
+                  : state === "refunded" ? "This link was refunded." : state === "settled" ? "This link is closed; its recipient is unconfirmed." : "This link has expired."}
             </span>{" "}
             <span className="text-ui-muted">
               {state === "claimed"
                 ? "Each link pays out once. If it wasn't you, ask the sender for a new one."
-                : "The money went back to the sender. Ask them for a new link."}
+                : state === "cancelled" || state === "refunded" ? "The money went back to the sender. Ask them for a new link." : "No return of funds has been verified. Ask the sender to check its receipt."}
             </span>
           </p>
         ) : null}
+        <Button variant="ghost" size="sm" onClick={async()=>{try{setRecoveryError(null);const outcome=await recoverSendLinkAction(linkKey,currency);if(outcome.status!=='claimed'){setRecoveryError(`The verified action is ${outcome.status}; no claim was recorded.`);status.reload();return;}setRecoveredRecipient(outcome.recipient);setRecoveredAmount(outcome.amount);setClaimed({txHash:outcome.hash,submittedAt:outcome.at,finalizedAt:outcome.at,explorerUrl:null});}catch(error){setRecoveryError(error instanceof Error?error.message:'Original receipt unavailable.');}}}>Check original action receipt</Button>
+        {recoveryError&&<p role="status">{recoveryError}</p>}
+        {status.status==='error'&&<p role="alert">Link status is unavailable. <button onClick={status.reload}>Check again</button></p>}
       </Sheet.Body>
       <Sheet.Footer className="lg:[&>*]:flex-1">
         {state === undefined ? (
@@ -220,7 +226,7 @@ function ClaimReady({ parsed, onDone }: { parsed: ClaimFragment; onDone: () => v
         open={claimed !== null && !desktop}
         onOpenChange={() => onDone()}
         title="Arrived."
-        subtitle={`${fmt(amount, { trim: true })} from ${parsed.name} is in your account.`}
+        subtitle={recoveredRecipient?`${fmt(amount,{trim:true})} arrived at ${recoveredRecipient}.`:`${fmt(amount, { trim: true })} from ${parsed.name} is in your account.`}
         receiptUrl={claimed?.explorerUrl}
         rows={rows}
         primary={{ label: "Done", onClick: onDone }}

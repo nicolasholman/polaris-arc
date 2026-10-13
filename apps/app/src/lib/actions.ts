@@ -1,8 +1,14 @@
-import { type Address, type Hex, type LocalAccount, parseAbi, zeroAddress } from "viem";
+import {withOriginTransactionLock} from "./origin-transaction-lock";
+import {SubmissionBoundary} from "./submission-boundary";
+import { type Address, type Hex, type LocalAccount, decodeFunctionData, parseAbi, zeroAddress } from "viem";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 import { api, apiConfigured } from "./api";
 import { BOOST_PERMIT_SECONDS, boostAmountProblem, buildBoostPermit, buildTakeOut, TAKE_OUT_SIGNATURE_SECONDS, type TakeOutBoost, takeOutProblem } from "./boost";
 import { owedOnOpenPlans } from "./collection";
+import { env } from "./env";
+import { linkEvidenceAbi, sentLinkProof, terminalLinkProof, type LinkProof } from "./send-link-evidence";
+import { readLinkIntent, saveLinkIntent, clearLinkIntent } from "./send-link-journal";
+import {readCreateIntent,saveCreateIntent,clearCreateIntent,type CreateIntent} from "./send-create-journal";
 import { publicClient } from "./chain";
 import type { PaymentLink, Person, Plan } from "./data/types";
 import { getDomain, isConfigured, resolveContract } from "./domains";
@@ -250,43 +256,142 @@ export async function eurosAvailable(): Promise<boolean> {
  * PolarisSend deployed on EURC, under EURC's and that contract's own domains.
  * The link says which (`c=EUR`), so the claim goes to the same contract.
  */
-export async function createSendLink(
+const createInFlight=new Set<string>();
+const createBearers=new Map<string,{key:Hex;origin:string;senderName:string;currency:Currency}>();
+async function verifyCreatedSend(p:CreateIntent){
+ if(!p.hash)throw new RelayError('unavailable','The original send has no known transaction hash. Genuine relayer history is required; no new signature was requested.');
+ const client=publicClient();const proof=await sentLinkProof(client,p,p.hash);
+ if(proof.sender.toLowerCase()!==p.sender.toLowerCase()||proof.amount!==BigInt(p.amount)||proof.expiresAt!==BigInt(p.expiresAt))throw new RelayError('unavailable','The send receipt does not match the frozen original amount, sender and expiry.');
+ const tx=await client.getTransaction({hash:p.hash});const call=decodeFunctionData({abi:linkEvidenceAbi,data:tx.input});
+ if(call.functionName!=='send'||call.args[4]!==0n||call.args[5]!==BigInt(p.validBefore))throw new RelayError('unavailable','The original send authorization window does not match.');
+ const block=await client.getBlock({blockTag:'finalized'});if(block.number===null)throw new RelayError('unavailable','Finalized link state is unavailable.');
+ const link=await client.readContract({address:p.send,abi:linkEvidenceAbi,functionName:'linkOf',args:[p.linkKey],blockNumber:block.number});
+ if(link.sender.toLowerCase()!==p.sender.toLowerCase()||link.amount!==BigInt(p.amount)||link.expiresAt!==BigInt(p.expiresAt)||block.timestamp>=link.expiresAt)throw new RelayError('unavailable','The original link is not a verified open claimable link. No share link was shown.');
+ return proof;
+}
+/** Read-only funding recovery. Bearer keys never persist; reload cannot reconstruct a share link. */
+export async function recoverInitialSend(sender:Address){
+ return withOriginTransactionLock(`polaris:send-journals:${env.chainId}`,()=>recoverInitialSendLocked(sender));
+}
+async function recoverInitialSendLocked(sender:Address){
+ const p=readCreateIntent(localStorage,env.chainId,sender);if(!p)throw new RelayError('unavailable','No original send is saved on this device.');
+ for(const currency of ['USD','EUR'] as const){const names=SEND_CONTRACTS[currency];const [send,token]=await Promise.all([resolveContract(names.send),resolveContract(names.token)]);if(send.toLowerCase()===p.send.toLowerCase()&&token.toLowerCase()===p.token.toLowerCase()){await verifyCreatedSend(p);const bearer=createBearers.get(`${p.chainId}:${p.sender.toLowerCase()}`);let url:string|undefined;
+ if(bearer&&privateKeyToAccount(bearer.key).address.toLowerCase()===p.linkKey.toLowerCase()){url=claimUrl(bearer.origin,{key:bearer.key,amount:BigInt(p.amount),name:bearer.senderName,currency});clearCreateIntent(localStorage,p);createBearers.delete(`${p.chainId}:${p.sender.toLowerCase()}`);}
+ return {linkKey:p.linkKey,hash:p.hash!,amount:BigInt(p.amount),currency,url};}}
+ throw new RelayError('unavailable','The original send contract or token is not configured on this network. No outcome was inferred.');
+}
+
+export async function createSendLink(account:LocalAccount,amount:Micros,senderName:string,origin:string,currency:Currency="USD"):Promise<CreatedSendLink>{
+ return withOriginTransactionLock(`polaris:send-journals:${env.chainId}`,()=>createSendLinkLocked(account,amount,senderName,origin,currency));
+}
+
+async function createSendLinkLocked(
   account: LocalAccount,
   amount: Micros,
   senderName: string,
   origin: string,
   currency: Currency = "USD",
 ): Promise<CreatedSendLink> {
-  const names = SEND_CONTRACTS[currency];
-  const linkPrivateKey = generatePrivateKey();
-  const linkAccount = privateKeyToAccount(linkPrivateKey);
-  const linkKey = linkAccount.address;
-  const t = now();
-  const expiresAt = t + BigInt(SEND_LINK_LIFETIME_DAYS) * 86_400n;
-  const [tokenDomain, sendDomain, send] = await Promise.all([getDomain(names.token), getDomain(names.send), resolveContract(names.send)]);
-  if (send === zeroAddress) throw new RelayError("unavailable", currency === "EUR" ? "Sending euros isn't available on this network yet." : "Sending by link isn't available here yet.");
-  const authorization = await sign(
-    account,
-    buildReceiveWithAuthorization(tokenDomain, {
-      from: account.address,
-      to: send,
-      value: amount,
-      validAfter: 0n,
-      validBefore: t + 10n * MINUTE,
-      // Commits the signature to this link key and expiry.
-      nonce: sendNonce(linkKey, expiresAt),
-    }),
-  );
-  const open = await sign(linkAccount, buildOpen(sendDomain, { sender: account.address, amount, expiresAt }));
-  const receipt = await relayer.send({ sender: account.address, senderName, linkKey, amount, expiresAt, authorization, open, currency });
-  return {
-    url: claimUrl(origin, { key: linkPrivateKey, amount, name: senderName, currency }),
-    linkKey,
-    currency,
-    amount,
-    expiresAt: Number(expiresAt) * 1000,
-    receipt,
-  };
+  const active=`${env.chainId}:${account.address.toLowerCase()}`;
+  if(createInFlight.has(active))throw new RelayError('unavailable','The original send is still in progress. No second signature was requested.');
+  createInFlight.add(active);
+  let ownedCreate:CreateIntent|undefined;const createBoundary=new SubmissionBoundary();
+  try {
+  if(readCreateIntent(localStorage,env.chainId,account.address))throw new RelayError('unavailable','An original send is unresolved. Check its receipt before creating another link. The bearer key is not stored on disk.');
+  const names=SEND_CONTRACTS[currency];
+  const [tokenDomain,sendDomain,send,token]=await Promise.all([getDomain(names.token),getDomain(names.send),resolveContract(names.send),resolveContract(names.token)]);
+  const client=publicClient();
+  if(send===zeroAddress||token===zeroAddress||await client.getChainId()!==env.chainId||tokenDomain.chainId!==env.chainId||sendDomain.chainId!==env.chainId||sendDomain.verifyingContract?.toLowerCase()!==send.toLowerCase()||tokenDomain.verifyingContract?.toLowerCase()!==token.toLowerCase())throw new RelayError('unavailable','Sending by link is unavailable on this network.');
+  const linkPrivateKey=generatePrivateKey();const linkAccount=privateKeyToAccount(linkPrivateKey);const linkKey=linkAccount.address;
+  const t=now();const expiresAt=t+BigInt(SEND_LINK_LIFETIME_DAYS)*86_400n;
+  let pending:CreateIntent={version:1,chainId:env.chainId,sender:account.address,send,token,linkKey,amount:amount.toString(),expiresAt:expiresAt.toString(),validBefore:(t+10n*MINUTE).toString()};
+  if(readCreateIntent(localStorage,env.chainId,account.address))throw new RelayError('unavailable','Another original send was saved while checking the network. No signature was requested.');
+  saveCreateIntent(localStorage,pending); // Public metadata only, before signing; bearer key stays in memory.
+  ownedCreate=pending;
+  createBearers.set(active,{key:linkPrivateKey,origin,senderName,currency});
+  const authorization=await sign(account,buildReceiveWithAuthorization(tokenDomain,{from:account.address,to:send,value:amount,validAfter:0n,validBefore:BigInt(pending.validBefore),nonce:sendNonce(linkKey,expiresAt)}));
+  const open=await sign(linkAccount,buildOpen(sendDomain,{sender:account.address,amount,expiresAt}));
+  createBoundary.enter(); // From this point response loss cannot prove rejection.
+  const receipt=await relayer.send({sender:account.address,senderName,linkKey,amount,expiresAt,authorization,open,currency});
+  pending={...pending,hash:receipt.txHash};saveCreateIntent(localStorage,pending);
+  await verifyCreatedSend(pending);
+  const result={url:claimUrl(origin,{key:linkPrivateKey,amount,name:senderName,currency}),linkKey,currency,amount,expiresAt:Number(expiresAt)*1000,receipt};
+  clearCreateIntent(localStorage,pending);
+  createBearers.delete(active);
+  return result;
+  } catch(error){
+    if(ownedCreate&&!ownedCreate.hash)createBoundary.releaseUnsigned(()=>{clearCreateIntent(localStorage,ownedCreate!);createBearers.delete(active);});
+    throw error;
+  } finally {createInFlight.delete(active);}
+
+}
+
+function clearReturnedCreation(proof:LinkProof,status:string){
+ if(status!=='cancelled'&&status!=='refunded')return;
+ const original=readCreateIntent(localStorage,proof.chainId,proof.sender);
+ if(original&&original.send.toLowerCase()===proof.send.toLowerCase()&&original.token.toLowerCase()===proof.token.toLowerCase()&&original.linkKey.toLowerCase()===proof.linkKey.toLowerCase()&&BigInt(original.amount)===proof.amount&&BigInt(original.expiresAt)===proof.expiresAt) {clearCreateIntent(localStorage,original);createBearers.delete(`${proof.chainId}:${proof.sender.toLowerCase()}`);}
+}
+const terminalInFlight=new Set<string>();
+/** Durable link-key-scoped lock; re-entry only reads the original outcome. */
+async function terminalAction(kind:'claim'|'cancel',currency:Currency,linkKey:Address,recipient:Address,submit:(broadcast:()=>void)=>Promise<RelayReceipt>):Promise<RelayReceipt>{
+ return withOriginTransactionLock(`polaris:send-journals:${env.chainId}`,()=>terminalActionLocked(kind,currency,linkKey,recipient,submit));
+}
+async function terminalActionLocked(kind: 'claim'|'cancel', currency: Currency, linkKey: Address, recipient: Address, submit:(broadcast:()=>void)=>Promise<RelayReceipt>):Promise<RelayReceipt> {
+  const names=SEND_CONTRACTS[currency];
+  const [send,token]=await Promise.all([resolveContract(names.send),resolveContract(names.token)]);
+  if(send===zeroAddress||token===zeroAddress)throw new RelayError('unavailable','Send links are unavailable on this network.');
+  const activeKey=`${env.chainId}:${send.toLowerCase()}:${linkKey.toLowerCase()}`;
+  if(terminalInFlight.has(activeKey))throw new RelayError('unavailable','The original link action is still in progress. No second signature was requested.');
+  terminalInFlight.add(activeKey);
+  let ownedTerminal:ReturnType<typeof readLinkIntent>=null;const terminalBoundary=new SubmissionBoundary();
+  try {
+  const client=publicClient();
+  let pending=readLinkIntent(localStorage,env.chainId,send,linkKey);
+  const recovered=Boolean(pending);
+  if(pending&&(pending.kind!==kind||pending.recipient.toLowerCase()!==recipient.toLowerCase()||pending.token.toLowerCase()!==token.toLowerCase()))throw new RelayError('unavailable','An original link action is unresolved. Restore its original recipient and check its receipt before signing anything else.');
+  if(!pending){
+    if(await client.getChainId()!==env.chainId)throw new RelayError('unavailable','The RPC is on a different network.');
+    const block=await client.getBlock({blockTag:'finalized'});if(block.number===null||!block.hash)throw new RelayError('unavailable','Finalized link state is unavailable.');
+    const [link,actualToken]=await Promise.all([client.readContract({address:send,abi:linkEvidenceAbi,functionName:'linkOf',args:[linkKey],blockNumber:block.number}),client.readContract({address:send,abi:linkEvidenceAbi,functionName:'stablecoin',blockNumber:block.number})]);
+    if(actualToken.toLowerCase()!==token.toLowerCase()||link.sender===zeroAddress||link.amount<=0n)throw new RelayError('already-settled','No matching funded open link was verified.');
+    if(kind==='cancel'&&recipient.toLowerCase()!==link.sender.toLowerCase())throw new RelayError('invalid-signature','Only the original sender can cancel this link.');
+    pending={version:1,chainId:env.chainId,send,token,linkKey,sender:link.sender,recipient,kind,amount:link.amount.toString(),expiresAt:link.expiresAt.toString(),fromBlock:block.number.toString(),stateBlockHash:block.hash};
+    if(readLinkIntent(localStorage,env.chainId,send,linkKey))throw new RelayError('unavailable','An original link action was saved while checking the chain. Recover it before signing.');
+    saveLinkIntent(localStorage,pending); // Before signing or handing anything to the relayer.
+    ownedTerminal=pending;
+  }
+  if(!recovered){
+    const receipt=await submit(()=>{terminalBoundary.enter();});pending={...pending,hash:receipt.txHash};saveLinkIntent(localStorage,pending);
+  }
+  const proof:LinkProof={...pending,amount:BigInt(pending.amount),expiresAt:BigInt(pending.expiresAt),fromBlock:BigInt(pending.fromBlock)};
+  const outcome=await terminalLinkProof(client,proof,pending.hash);
+  if(!outcome)throw new RelayError('unavailable','The original action is unresolved. Provider or relayer history is required; no new signature was requested.');
+  if(outcome.status!==(kind==='claim'?'claimed':'cancelled')||outcome.recipient.toLowerCase()!==recipient.toLowerCase())throw new RelayError('already-settled','The link closed through a different verified action. No new signature was requested.');
+  clearReturnedCreation(proof,outcome.status);
+  saveLinkIntent(localStorage,{...pending,hash:outcome.hash}); // Permanent exact receipt identity; later calls stay read-only.
+  // Recovery times describe the verified inclusion block, never a fabricated relay submission.
+  return {txHash:outcome.hash,submittedAt:outcome.at,finalizedAt:outcome.at,explorerUrl:env.explorerUrl?`${env.explorerUrl}/tx/${outcome.hash}`:null};
+  } catch(error){
+    if(ownedTerminal&&!ownedTerminal.hash)terminalBoundary.releaseUnsigned(()=>clearLinkIntent(localStorage,ownedTerminal!));
+    throw error;
+  } finally { terminalInFlight.delete(activeKey); }
+}
+
+/** Reconcile a saved action without obtaining an account or requesting any signature. */
+export async function recoverSendLinkAction(linkKey:Address,currency:Currency='USD'){
+ return withOriginTransactionLock(`polaris:send-journals:${env.chainId}`,()=>recoverSendLinkActionLocked(linkKey,currency));
+}
+async function recoverSendLinkActionLocked(linkKey:Address,currency:Currency='USD'){
+ const names=SEND_CONTRACTS[currency];const send=await resolveContract(names.send);
+ const pending=readLinkIntent(localStorage,env.chainId,send,linkKey);
+ if(!pending)throw new RelayError('unavailable','No original unresolved action is saved on this device.');
+ const token=await resolveContract(names.token);if(token.toLowerCase()!==pending.token.toLowerCase())throw new RelayError('unavailable','The configured token changed. No outcome was inferred.');
+ const proof:LinkProof={...pending,amount:BigInt(pending.amount),expiresAt:BigInt(pending.expiresAt),fromBlock:BigInt(pending.fromBlock)};
+ const outcome=await terminalLinkProof(publicClient(),proof,pending.hash);
+ if(!outcome)throw new RelayError('unavailable','The original action is unresolved. Genuine provider or relayer history is required. No new signature was requested.');
+ clearReturnedCreation(proof,outcome.status);
+ saveLinkIntent(localStorage,{...pending,hash:outcome.hash});
+ return outcome;
 }
 
 /**
@@ -304,15 +409,21 @@ export async function claimLink(
   const linkAccount = privateKeyToAccount(linkPrivateKey);
   const domain = await getDomain(SEND_CONTRACTS[currency].send);
   if (domain.verifyingContract === zeroAddress) throw new RelayError("unavailable", "Euro links aren't available on this network.");
-  const deadline = now() + 15n * MINUTE;
-  const claim = await sign(linkAccount, buildClaim(domain, { to: recipient, deadline }));
-  return relayer.claim({ linkKey: linkAccount.address, claim, deadline, amount, senderName, currency });
+  return terminalAction('claim',currency,linkAccount.address,recipient,async(broadcast)=>{
+    const deadline = now() + 15n * MINUTE;
+    const claim = await sign(linkAccount, buildClaim(domain, { to: recipient, deadline }));
+    broadcast();
+    return relayer.claim({ linkKey: linkAccount.address, claim, deadline, amount, senderName, currency });
+  });
 }
 
 export async function cancelSendLink(account: LocalAccount, linkKey: Address, currency: Currency = "USD"): Promise<RelayReceipt> {
   const domain = await getDomain(SEND_CONTRACTS[currency].send);
-  const cancel = await sign(account, buildCancel(domain, { linkKey, deadline: now() + 15n * MINUTE }));
-  return relayer.cancelSend({ cancel, currency });
+  return terminalAction('cancel',currency,linkKey,account.address,async(broadcast)=>{
+    const cancel = await sign(account, buildCancel(domain, { linkKey, deadline: now() + 15n * MINUTE }));
+    broadcast();
+    return relayer.cancelSend({ cancel, currency });
+  });
 }
 
 /* ── Split the bill (PolarisSplit) ──────────────────────────────────────── */

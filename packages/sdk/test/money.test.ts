@@ -169,3 +169,11 @@ describe("Pay in 4 quote", () => {
     expect(() => quotePayIn4("10.00", { aprBps: -1 })).toThrow(/aprBps/);
   });
 });
+
+
+it("rejects malformed token precision consistently before bigint math", () => {
+  for (const decimals of [-1, 1.5, NaN, Infinity, 256]) {
+    expect(() => toBaseUnits("1", decimals)).toThrow(/decimals/);
+    expect(() => formatBaseUnits(1n, decimals)).toThrow(/decimals/);
+  }
+});

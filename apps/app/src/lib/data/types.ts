@@ -308,9 +308,11 @@ export type SendLinkStatus = {
   /** Known when the index has seen the link; the fragment carries it otherwise. */
   amount: Micros | null;
   senderName: string | null;
-  status: "open" | "claimed" | "cancelled" | "expired";
+  status: "open" | "claimed" | "cancelled" | "expired" | "settled" | "refunded";
   expiresAt: number | null;
   settledAt: number | null;
+  settlementHash?: Hex;
+  recipient?: Address;
 };
 
 /** One share of a split. */
@@ -364,7 +366,7 @@ export interface PolarisData {
   getContacts(owner: Address | null): Promise<Person[]>;
   getPaymentLink(id: string): Promise<PaymentLink | null>;
   /** A send link on the dollar PolarisSend, or (`EUR`) the euro one. */
-  getSendLink(linkKey: Address, currency?: Currency): Promise<SendLinkStatus | null>;
+  getSendLink(linkKey: Address, currency?: Currency, originHash?: Hex): Promise<SendLinkStatus | null>;
   /** A split by its id, or null when there is none. `viewer` is who is looking. */
   getSplit(id: Hex, viewer: Address | null): Promise<SplitStatus | null>;
   /** The splits this account organised, newest first. */

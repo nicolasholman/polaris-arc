@@ -6,6 +6,7 @@ import type { ReactNode } from "react";
 
 export type SuccessSheetProps = {
   open: boolean;
+  confirmed?: boolean;
   onOpenChange: (open: boolean) => void;
   /** "Paid.", "Sent.", "Arrived." */
   title: string;
@@ -24,6 +25,7 @@ export type SuccessSheetProps = {
 /** The receipt that slides up when money moved: a check that draws itself, and what happened. */
 export function SuccessSheet({
   open,
+  confirmed = true,
   onOpenChange,
   title,
   subtitle,
@@ -36,7 +38,7 @@ export function SuccessSheet({
   return (
     <AdaptiveSheet open={open} onOpenChange={onOpenChange} snapPoints={snapPoints} aria-label={title} maxWidth={440}>
       <Sheet.Body className="flex flex-col [&>*]:shrink-0 items-center gap-2 pt-3 text-center lg:pt-8">
-        {open ? <SuccessCheck label={title.replace(/\.$/, "")} size={80} /> : <span className="size-20" />}
+        {open && confirmed ? <SuccessCheck label={title.replace(/\.$/, "")} size={80} /> : <span className="size-20" />}
         <h2 className="mt-3 text-[34px] leading-none font-semibold tracking-[-0.035em]">{title}</h2>
         {subtitle ? (
           <p role="status" className="max-w-[34ch] text-[15px] leading-[1.45] text-ui-muted">

@@ -12,6 +12,8 @@ import { prefsName } from "../prefs";
 import { pairReceipts, type ReceiptIndexEntry } from "../receipts/pair";
 import { knownSplit, shareLabel } from "../split";
 import { dataGeneration, hasDataListeners, notifyDataChanged, onDataChanged } from "./changes";
+import { readLinkIntent } from "../send-link-journal";
+import { sentLinkProof, terminalLinkProof } from "../send-link-evidence";
 import { sendAbi, tokenAbi, vaultAbi } from "./reads";
 import { getRemotePaymentLink } from "./remote";
 import type {
@@ -567,7 +569,7 @@ export const liveData: PolarisData = {
     return ((await book(owner)).splits ?? []).map(toSplit);
   },
 
-  async getSendLink(linkKey, currency: Currency = "USD"): Promise<SendLinkStatus | null> {
+  async getSendLink(linkKey, currency: Currency = "USD", originHash?: Hex): Promise<SendLinkStatus | null> {
     const send = await resolveContract(currency === "EUR" ? "sendEurc" : "send");
     if (send === zeroAddress) return null;
     const client = publicClient();
@@ -578,7 +580,17 @@ export const liveData: PolarisData = {
     const key = getAddress(linkKey);
     if (link.sender === zeroAddress) {
       // Settled (claimed or cancelled: the chain keeps only that the key was used), or not sent yet.
-      return used ? { linkKey: key, currency, amount: null, senderName: null, status: "claimed", expiresAt: null, settledAt: null } : null;
+      if (used) {
+        try {
+          const token = await resolveContract(currency === "EUR" ? "eurc" : "usdc");
+          const pending=typeof localStorage==='undefined'?null:readLinkIntent(localStorage,env.chainId,send,key);
+          const proof=originHash?await sentLinkProof(client,{chainId:env.chainId,send,token,linkKey:key},originHash):pending&&pending.token.toLowerCase()===token.toLowerCase()?{...pending,amount:BigInt(pending.amount),expiresAt:BigInt(pending.expiresAt),fromBlock:BigInt(pending.fromBlock)}:null;
+          if(!proof)throw new Error('No original funding or action evidence is available.');
+          const outcome = await terminalLinkProof(client, proof,pending?.hash);
+          if (outcome) return { linkKey: key, currency, amount: outcome.amount, senderName: null, status: outcome.status, expiresAt: Number(proof.expiresAt)*1000, settledAt: outcome.at, settlementHash: outcome.hash, recipient: outcome.recipient };
+        } catch { /* Missing archive/provider evidence never becomes a claimed/refunded badge. */ }
+      }
+      return used ? { linkKey: key, currency, amount: null, senderName: null, status: "settled", expiresAt: null, settledAt: null } : null;
     }
     const expiresAt = Number(link.expiresAt) * 1000;
     return { linkKey: key, currency, amount: link.amount, senderName: null, status: expiresAt <= Date.now() ? "expired" : "open", expiresAt, settledAt: null };

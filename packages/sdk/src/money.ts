@@ -52,6 +52,7 @@ export function normaliseAmount(input: AmountInput, param = "amount"): string {
 
 /** Parse a decimal amount into base units of a token with `decimals` decimals. */
 export function toBaseUnits(input: AmountInput, decimals: number, param = "amount"): bigint {
+  assertDecimals(decimals);
   const text = normalise(input, param);
   if (!DECIMAL.test(text)) {
     throw invalidRequest("invalid_amount", `${param} must be a positive amount like "25.00", got ${JSON.stringify(input)}.`, param);
@@ -67,6 +68,7 @@ export function toBaseUnits(input: AmountInput, decimals: number, param = "amoun
 
 /** Base units back to a decimal string, trimming trailing zeros past the cents: 1534246n → "1.534246", 50000000n → "50.00". */
 export function formatBaseUnits(units: bigint, decimals: number): string {
+  assertDecimals(decimals);
   const negative = units < 0n;
   const abs = negative ? -units : units;
   const scale = 10n ** BigInt(decimals);
@@ -275,3 +277,10 @@ export function quotePayIn4(amount: AmountInput, options: PayIn4Options = {}): P
 
 /** Exposed for tests and callers who price in micro-dollars already. */
 export const UNITS = { MICROS_PER_DOLLAR, MICROS_PER_CENT } as const;
+
+/** ERC-20 decimals are uint8; invalid precision must never reach exponentiation. */
+function assertDecimals(decimals: number): void {
+  if (!Number.isInteger(decimals) || decimals < 0 || decimals > 255) {
+    throw invalidRequest("invalid_decimals", "decimals must be an integer between 0 and 255.", "decimals");
+  }
+}
