@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 import { AccountProviders } from "@/lib/account/privy-bridge";
 import { apiConfigured } from "@/lib/api";
+import { InstallPromptCapture } from "../install-hint";
 import { NotConfigured } from "../not-configured";
 import { EmailLoginSheet } from "../email-login-sheet";
 import { BuildBadges } from "./chrome";
@@ -25,6 +26,7 @@ export function Providers({ children, sheet }: { children: ReactNode; sheet: Rea
   if (!apiConfigured()) return <NotConfigured />;
   return (
     <IconProvider>
+      <InstallPromptCapture />
       <AccountProviders>
         <SheetStage className="h-dvh overflow-hidden">
           <SheetHost>

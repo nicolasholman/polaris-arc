@@ -28,6 +28,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 
+import { merchantSetup } from "@/lib/merchant-setup";
 import { MoneyWidget } from "@/components/dashboard/money-widget";
 import { MODE_COLOR, PaymentName, paymentPill } from "@/components/dashboard/payment-bits";
 import { LoadError, Panel, PanelEmpty, SeeAll, StaleNotice, useNow } from "@/components/dashboard/common";
@@ -52,6 +53,7 @@ export function OverviewView() {
   const plans = useQuery((d) => d.listPlans(), { refreshMs: LIVE_REFRESH_MS });
 
   const list = payments.data;
+  const needsSetup = list !== undefined && !list.some((payment) => payment.status === "succeeded");
   const empty = overview.data !== undefined && list !== undefined && list.length === 0 && overview.data.balanceCents === 0;
 
   return (
@@ -59,7 +61,7 @@ export function OverviewView() {
       <h1 className="sr-only">Overview, {merchant.businessName}</h1>
       <StaleNotice queries={[overview, payments, plans] as QueryState<unknown>[]} />
       {/* When nothing has sold, the chart and the checklist below say what to do. */}
-      <RegistrationNotice className="mb-6" />
+      {!needsSetup && <RegistrationNotice className="mb-6" />}
 
       {/* Ref E: the chart and the table on the left, the widget on the right. */}
       <div className="grid grid-cols-[minmax(0,1fr)] gap-x-10 gap-y-10 lg:grid-cols-[minmax(0,1fr)_356px] xl:grid-cols-[minmax(0,1fr)_404px] xl:gap-x-11">
@@ -68,9 +70,9 @@ export function OverviewView() {
         <RecentPayments payments={payments} className="lg:col-start-1 lg:row-start-2" />
       </div>
 
-      {empty ? (
+      {needsSetup ? (
         // Nothing has sold yet: one checklist instead of five empty cards.
-        <GettingStarted />
+        <GettingStarted payments={payments} />
       ) : (
         <>
           <h2 className="mt-14 text-[22px] leading-tight font-medium tracking-[-0.02em] sm:mt-16">Your business this month</h2>
@@ -336,63 +338,74 @@ const BAR_LABELS = 34;
 
 /* ── Getting started: until the first sale ──────────────────────────────── */
 
-function GettingStarted() {
-  const links = useQuery((d) => d.listLinks());
-  const hasLink = (links.data?.length ?? 0) > 0;
-  const steps = [
-    {
-      title: "Create a payment link",
-      body: "An amount and what it's for. Buyers choose Pay now, Pay in 4 or a subscription.",
-      done: hasLink,
-      action: (
-        <PrimaryButton asChild size="sm" icon={<Link2 />}>
-          <Link href="/dashboard/links?new=1">New payment link</Link>
-        </PrimaryButton>
-      ),
-    },
-    {
-      title: "Share it",
-      body: "Send the link, show its QR code, or put the checkout on your site with the SDK.",
-      done: false,
-      action: (
-        <SecondaryButton asChild size="sm" iconRight={<ArrowRight />}>
-          <Link href={hasLink ? "/dashboard/links" : "/dashboard/developers"}>{hasLink ? "Your links" : "The SDK"}</Link>
-        </SecondaryButton>
-      ),
-    },
-    {
-      title: "Your first payment",
-      body: "It lands in your balance within a second of the buyer confirming, in full, even on Pay in 4.",
-      done: false,
-      action: null,
-    },
-  ];
+function GettingStarted({ payments }: { payments: QueryState<Payment[]> }) {
+  const { merchant } = useMerchant();
+  const links = useQuery((d) => d.listLinks(), { refreshMs: LIVE_REFRESH_MS });
+  const setup = merchantSetup(merchant, links.data, payments.data);
+  const [chosen, setChosen] = useState<string | null>(null);
+  const [copied, setCopied] = useState<string | null>(null);
+  const [copyError, setCopyError] = useState(false);
+  const current = chosen ?? setup.current ?? "payment";
+  async function copyCheckout() {
+    if (!setup.usableLink) return;
+    try {
+      await navigator.clipboard.writeText(setup.usableLink.url);
+      setCopied(setup.usableLink.url); setCopyError(false);
+    } catch {
+      setCopied(null); setCopyError(true);
+    }
+  }
   return (
     <section aria-labelledby="getting-started" className="mt-14 sm:mt-16">
-      <h2 id="getting-started" className="text-[22px] leading-tight font-medium tracking-[-0.02em]">
-        Getting started
-      </h2>
-      <ol className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-3">
-        {steps.map((step, i) => (
-          <li key={step.title} className="flex flex-col rounded-ui-panel border border-ui-hairline-strong p-5 sm:p-6">
-            <span
-              aria-hidden
-              className={cn(
-                "grid size-9 place-items-center rounded-full text-[15px] font-semibold",
-                step.done ? "bg-ui-lime-button text-[#121418]" : "bg-ui-surface-1 text-ui-muted",
-              )}
-            >
-              {step.done ? <Check size={17} strokeWidth={2.5} /> : i + 1}
-            </span>
-            <h3 className="mt-4 text-[18px] leading-tight font-medium tracking-[-0.015em]">
-              {step.title}
-              {step.done ? <span className="sr-only"> (done)</span> : null}
-            </h3>
-            <p className="mt-2 text-[14px] leading-relaxed text-ui-muted">{step.body}</p>
-            {step.action && !step.done ? <div className="mt-auto pt-5">{step.action}</div> : null}
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <h2 id="getting-started" className="text-[22px] leading-tight font-medium tracking-[-0.02em]">Set up your first checkout</h2>
+        <span className="text-sm text-ui-muted">{setup.steps.filter((step) => step.done === true).length} of 3 complete</span>
+      </div>
+      <p className="mt-2 text-sm text-ui-muted">Your progress comes from your payout registration, payment links and confirmed payments. Come back any time to continue.</p>
+      <ol className="mt-5 grid grid-cols-1 gap-3 md:grid-cols-3">
+        {setup.steps.map((step, i) => (
+          <li key={step.id}>
+            <button type="button" onClick={() => setChosen(step.id)} aria-pressed={current === step.id} className={cn("flex w-full items-center gap-3 rounded-ui-panel border p-4 text-left", current === step.id ? "border-ui-lime-button" : "border-ui-hairline-strong")}>
+              <span className={cn("grid size-8 shrink-0 place-items-center rounded-full", step.done ? "bg-ui-lime-button text-[#121418]" : "bg-ui-surface-1")} aria-hidden>{step.done ? <Check size={17} /> : i + 1}</span>
+              <span className="text-sm font-medium">{step.title}<span className="block font-normal text-ui-muted">{step.done === null ? "Checking…" : step.done ? "Complete" : "To do"}</span></span>
+            </button>
           </li>
         ))}
       </ol>
+      <div className="mt-4 rounded-ui-panel border border-ui-hairline-strong p-5 sm:p-6">
+        {current === "registration" ? (
+          <>
+            <h3 className="text-lg font-medium">Keep your payout account ready</h3>
+            <p className="mt-2 text-sm text-ui-muted">Your business name is {merchant.businessName}. Registration ties it to your payout account, so buyers can pay your business.</p>
+            <div className="mt-4"><RegistrationNotice /></div>
+            {setup.steps[0]?.done && <p role="status" className="mt-4 text-sm">{merchant.registration?.state === "active" ? "Your payout account is registered and activated for Pay in 4." : "Your payout account is registered. Pay in 4 also needs activation."}</p>}
+            <SecondaryButton asChild size="sm" className="mt-4"><Link href="/dashboard/settings">Review business details</Link></SecondaryButton>
+          </>
+        ) : current === "link" ? (
+          <>
+            <h3 className="text-lg font-medium">Set an amount and tell buyers what it is for</h3>
+            <p className="mt-2 text-sm text-ui-muted">Choose Pay now, Pay in 4 or a subscription in the link editor. You can return here after saving.</p>
+            {links.error && <p role="alert" className="mt-3 text-sm">{links.error} <button type="button" onClick={links.reload} className="underline">Try again</button></p>}
+            <PrimaryButton asChild size="sm" className="mt-4" icon={<Link2 />}><Link href="/dashboard/links?new=1">Create payment link</Link></PrimaryButton>
+          </>
+        ) : (
+          <>
+            <h3 className="text-lg font-medium">Share your checkout and receive a payment</h3>
+            <p className="mt-2 text-sm text-ui-muted">Open your checkout to review what buyers see, or copy its link to share. A confirmed payment completes this step automatically.</p>
+            {links.error && <p role="alert" className="mt-3 text-sm">{links.error} <button type="button" onClick={links.reload} className="underline">Retry links</button></p>}
+            {setup.usableLink ? (
+              <div className="mt-4 flex flex-wrap gap-3">
+                <PrimaryButton asChild size="sm"><a href={setup.usableLink.url} target="_blank" rel="noreferrer">Preview checkout</a></PrimaryButton>
+                <SecondaryButton size="sm" onClick={() => void copyCheckout()}>{copied === setup.usableLink.url ? "Copied" : "Copy checkout link"}</SecondaryButton>
+              </div>
+            ) : <SecondaryButton asChild size="sm" className="mt-4"><Link href="/dashboard/links?new=1">Create an active link</Link></SecondaryButton>}
+            {copyError && <p role="alert" className="mt-3 text-sm">Copy did not work. Open Your links to select and copy the checkout URL.</p>}
+            {payments.error && <p role="alert" className="mt-3 text-sm">{payments.error}</p>}
+            <SecondaryButton size="sm" className="mt-4" onClick={() => { payments.reload(); links.reload(); }}>Check for payment</SecondaryButton>
+            <p className="mt-4 text-sm text-ui-muted">For checkout inside your own app, follow the SDK and signed webhook guide in <Link href="/dashboard/developers" className="underline">Developers</Link>.</p>
+          </>
+        )}
+      </div>
     </section>
   );
 }

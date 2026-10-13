@@ -197,6 +197,43 @@ describe("openCheckout", () => {
     expect(popup.close).toHaveBeenCalled();
   });
 
+  it("does not create a session or open a window for an already canceled click", async () => {
+    const { launcher, open, navigate } = setup();
+    const controller = new AbortController();
+    controller.abort();
+    const create = vi.fn(() => SESSION);
+    await expect(launcher.openCheckout(create, { signal: controller.signal })).resolves.toEqual({ status: "closed", sessionId: null });
+    expect(create).not.toHaveBeenCalled();
+    expect(open).not.toHaveBeenCalled();
+    expect(navigate).not.toHaveBeenCalled();
+  });
+
+  it.each(["redirect", "blocked"] as const)("cancels async session creation before %s navigation", async (mode) => {
+    const { launcher, navigate } = setup({ blocked: mode === "blocked" });
+    const controller = new AbortController();
+    let ready!: (session: string) => void;
+    const session = new Promise<string>((resolve) => { ready = resolve; });
+    const result = launcher.openCheckout(session, { display: mode === "redirect" ? "redirect" : "popup", signal: controller.signal });
+    controller.abort();
+    await expect(result).resolves.toEqual({ status: "closed", sessionId: null });
+    ready(SESSION);
+    await vi.advanceTimersByTimeAsync(0);
+    expect(navigate).not.toHaveBeenCalled();
+  });
+
+  it("consumes session creation failures after cancellation or a blocked popup", async () => {
+    const { launcher } = setup({ blocked: true });
+    await expect(launcher.openCheckout(Promise.reject(new Error("creation failed")), { onBlocked: "error" })).rejects.toMatchObject({ code: "popup_blocked" });
+    const controller = new AbortController();
+    let fail!: (error: Error) => void;
+    const session = new Promise<string>((_, reject) => { fail = reject; });
+    const result = launcher.openCheckout(session, { display: "redirect", signal: controller.signal });
+    controller.abort();
+    await expect(result).resolves.toMatchObject({ status: "closed" });
+    fail(new Error("late creation failure"));
+    await vi.advanceTimersByTimeAsync(0);
+  });
+
   it("falls back to a redirect when the popup is blocked", async () => {
     const { launcher, navigate } = setup({ blocked: true });
     await expect(launcher.openCheckout(SESSION)).resolves.toEqual({ status: "redirected", sessionId: SESSION });

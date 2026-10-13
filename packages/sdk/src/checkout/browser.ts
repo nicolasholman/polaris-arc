@@ -193,6 +193,12 @@ export function createCheckoutLauncher(config: { checkoutOrigin: string }, envFa
       return active.promise;
     }
 
+    // A canceled click must not create a new session or open a window.
+    if (options.signal?.aborted) {
+      if (isThenable(source)) void Promise.resolve(source).catch(() => {});
+      return Promise.resolve({ status: "closed", sessionId: null });
+    }
+
     let target: CheckoutTarget | Promise<CheckoutTarget>;
     try {
       target = evaluate(source);
@@ -200,13 +206,39 @@ export function createCheckoutLauncher(config: { checkoutOrigin: string }, envFa
       return Promise.reject(err);
     }
 
-    if (redirect) {
-      return Promise.resolve(target).then((t) => {
-        const { url, sessionId } = resolveCheckoutUrl(t, checkoutOrigin);
-        env.navigate(url.href);
-        return { status: "redirected", sessionId } as const;
+    function redirectWhenReady(): Promise<CheckoutResult> {
+      return new Promise((resolve, reject) => {
+        let done = false;
+        const cleanup = () => options.signal?.removeEventListener("abort", onAbort);
+        const onAbort = () => {
+          if (done) return;
+          done = true;
+          cleanup();
+          resolve({ status: "closed", sessionId: null });
+        };
+        options.signal?.addEventListener("abort", onAbort, { once: true });
+        if (options.signal?.aborted) onAbort();
+        Promise.resolve(target).then((t) => {
+          if (done) return;
+          done = true;
+          cleanup();
+          try {
+            const { url, sessionId } = resolveCheckoutUrl(t, checkoutOrigin);
+            env.navigate(url.href);
+            resolve({ status: "redirected", sessionId });
+          } catch (err) {
+            reject(err);
+          }
+        }, (err: unknown) => {
+          if (done) return;
+          done = true;
+          cleanup();
+          reject(err);
+        });
       });
     }
+
+    if (redirect) return redirectWhenReady();
 
     // A concrete target opens straight at the checkout. A pending one (a
     // session your server is still creating) opens a blank window now, while
@@ -227,6 +259,8 @@ export function createCheckoutLauncher(config: { checkoutOrigin: string }, envFa
 
     if (!opened) {
       if ((options.onBlocked ?? "redirect") === "error") {
+        // Session creation may already be running; consume a late rejection.
+        void Promise.resolve(target).catch(() => {});
         return Promise.reject(
           new PolarisError("The browser blocked the checkout window. Call openCheckout from a click handler, or use redirectToCheckout.", {
             type: "checkout_error",
@@ -234,11 +268,7 @@ export function createCheckoutLauncher(config: { checkoutOrigin: string }, envFa
           }),
         );
       }
-      return Promise.resolve(target).then((t) => {
-        const { url, sessionId } = resolveCheckoutUrl(t, checkoutOrigin);
-        env.navigate(url.href);
-        return { status: "redirected", sessionId } as const;
-      });
+      return redirectWhenReady();
     }
     const popup: Window = opened;
 
