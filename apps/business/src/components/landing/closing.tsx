@@ -72,7 +72,7 @@ export function Footer() {
       </Shell>
       <Shell className="mt-10 flex flex-wrap items-center justify-between gap-3 text-[13px] text-ui-muted">
         <p>© 2026 Polaris. Test mode: no real money moves.</p>
-        <p>Arc · Circle USDC · CCTP · EURC · Privy · Envio</p>
+        <p>Arc · Circle USDC · CCTP · EURC · Privy</p>
       </Shell>
     </footer>
   );

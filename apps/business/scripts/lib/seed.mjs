@@ -20,7 +20,7 @@ import { getAddress } from "viem";
 
 /**
  * @param {{ dbUrl: string; pepper: string | undefined; wallet: string; name: string;
- *           webhookUrl?: string; registration?: "none" | "registered" | "active" }} input
+ *           webhookUrl?: string; links?: { amountCents: number; description: string; modes?: string[]; usage?: string }[]; registration?: "none" | "registered" | "active" }} input
  */
 export async function seedMerchant(input) {
   if (process.env.NODE_ENV === "production") throw new Error("Local seeding is for development only.");
@@ -64,7 +64,27 @@ export async function seedMerchant(input) {
       };
       await db.webhookEndpoints.insert(webhook);
     }
-    return { merchant, secretKey: secret, publishableKey: key.publishableKey, webhookSecret: webhook?.secret ?? null, webhookId: webhook?.id ?? null };
+    // Payment links the dashboard would create (the dashboard needs a Privy login, which this run doesn't have).
+    const links = [];
+    for (const l of input.links ?? []) {
+      links.push(
+        await db.links.insert({
+          id: newId("pl", 14),
+          merchantId: merchant.id,
+          url: "",
+          amountCents: l.amountCents,
+          description: l.description,
+          modes: l.modes ?? ["now"],
+          usage: l.usage ?? "reusable",
+          expiresAt: null,
+          status: "active",
+          paymentsCount: 0,
+          collectedCents: 0,
+          createdAt: new Date().toISOString(),
+        }),
+      );
+    }
+    return { merchant, links, secretKey: secret, publishableKey: key.publishableKey, webhookSecret: webhook?.secret ?? null, webhookId: webhook?.id ?? null };
   } finally {
     store.close();
   }

@@ -890,5 +890,102 @@
         ]
       }
     }
+  },
+  "e2e": {
+    "ranAt": "2026-10-13T19:10:27.079Z",
+    "buyer": "0x0648aDF1967692A0c991d7715b0b588452321FBd",
+    "checks": [
+      "Polaris for Business and the keeper are up on Arc testnet",
+      "buyer 0x0648aDF1967692A0c991d7715b0b588452321FBd holds 25.595557 USDC (ERC-20) and no other token",
+      "Boost: $1.1 locked with one permit, credit line $1.1",
+      "Pay in 4 opened: plan #1 ($1), the merchant paid in full, 4 instalments 3600 s apart",
+      "plan.opened webhook arrived",
+      "1 webhooks verified"
+    ],
+    "txs": {
+      "fundBuyer": null,
+      "boost": "0x883d30a667a65de0b0dffd1ec9235599d63e9edb38f426eeb66530eff15ba5b4",
+      "openPlan": "0x21d2db716eea80e88e8bdcd51e6e55b3596c6910a51a715c0b9235727b90c174",
+      "loanId": "1",
+      "firstInstalmentDue": "2026-10-13T20:10:25.000Z",
+      "guardAfterPlan": {
+        "state": "open",
+        "paused": false,
+        "reasons": [],
+        "message": null,
+        "ageSeconds": null,
+        "override": "none",
+        "overrideUntil": null,
+        "guardian": "0x34C7a86a77fd25d817bb2cAD96bEF502aDc88d4D",
+        "mismatch": null,
+        "readAt": "2026-10-13T19:10:21.379Z",
+        "thresholds": {
+          "minFreeCashUnits": "5000000",
+          "maxBadDebtBps": 500,
+          "minOriginatedUnits": "1000000000"
+        },
+        "pool": {
+          "freeCashUnits": "5000000",
+          "totalOwedUnits": "0",
+          "badDebtUnits": "0",
+          "totalOriginatedUnits": "0",
+          "badDebtAcknowledgedUnits": "0"
+        },
+        "checks": [
+          {
+            "key": "cash",
+            "label": "Free pool cash",
+            "value": "$5.00",
+            "limit": "at least $5.00",
+            "ok": true,
+            "source": "pool"
+          },
+          {
+            "key": "bad_debt",
+            "label": "Bad debt",
+            "value": "0.00% of lent",
+            "limit": "at most 5%, from $1,000.00 lent",
+            "ok": true,
+            "source": "pool"
+          }
+        ],
+        "price": null
+      },
+      "fundKeeper": "0x33a05761f9a929f610c598e61bec47f972f709fc5085a01e6c6efe4903207f0f",
+      "fundRelayer": "0xce0603c9a0143ef80d5df4f23f13db2456807422ce7bf3dcdb39329427328c7d",
+      "sendUsd": "0x272f91d0834f0632236dfc00dc1f568aed5d222ff102d04ef4a076314e66eb00",
+      "claimUsd": "0x7477b45b14d624795e5a4591b9aa8b1809deba08a67b260597c4634ef1c1436e",
+      "payLink": "0x140cbb95a60a8a90d3b2965c6007b458dd3bcad386c7eb4ec094e2c9685a7d3b",
+      "subscribe": "0x2ad170830a24bc70562c40848b761d0a42927a4028fce830a0a3a00c739ef332",
+      "subscriptionPlanId": "3"
+    },
+    "throwawayBuyer": {
+      "address": "0x10d3aDAb956790c180C685A78bE9BFe130561001",
+      "fundTx": "0x1c65ddf88c5638630a8a73c24afeca99d4614ce101fa309a26ab110e0fff2394",
+      "boostTx": "0x897df75d5aedd4d53359f5df9fe44d988734c8ab021d057174799ad65c880225",
+      "note": "first run: send link, payment link, subscription and a $1 Boost succeeded; Pay in 4 was refused (over_limit: a $1 line does not cover $1 plus interest) and the run stopped without saving this buyer key, so its 1.3 USDC and the 1.0 locked are stranded. Fixed in e2e-testnet.mjs."
+    }
+  },
+  "verification": {
+    "explorer": "https://explorer.testnet.arc.io",
+    "at": "2026-10-13T19:35:40.397Z",
+    "method": "Blockscout v2 standard-input",
+    "results": {
+      "ScoreManager": "verified",
+      "PolarisLoanEngine": "verified",
+      "PolarisPayments": "verified",
+      "MerchantRegistry": "verified",
+      "CollateralVault": "verified",
+      "BatchSettlement": "verified",
+      "PolarisSend": "verified",
+      "PolarisSendEURC": "verified",
+      "PolarisSplit": "verified",
+      "PolarisCheckout": "verified",
+      "CollectionsReceiver": "verified",
+      "UnderwritingReceiver": "verified",
+      "CreditGuard": "verified",
+      "PolarisCCIPReceiver": "not verified (no Hardhat build info: Foundry build)",
+      "PolarisCctpHookReceiver": "not verified (no Hardhat build info: Foundry build)"
+    }
   }
 }

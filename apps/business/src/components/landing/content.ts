@@ -27,14 +27,13 @@ export const hero = {
 };
 
 export const sponsors = {
-  pill: "Built on Arc with Circle USDC, CCTP, EURC, Privy and Envio",
+  pill: "Built on Arc with Circle USDC, CCTP, EURC and Privy",
   items: [
     { name: "Arc" },
     { name: "Circle USDC" },
     { name: "CCTP" },
     { name: "EURC" },
     { name: "Privy" },
-    { name: "Envio" },
   ],
 } as const;
 

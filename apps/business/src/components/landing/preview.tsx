@@ -351,7 +351,7 @@ export function ProductPreview({ className }: { className?: string }) {
   const [extra, setExtra] = useState(0);
   return (
     <div
-      aria-label="A live preview of the Polaris for Business dashboard, with an invented studio"
+      aria-label="An interactive illustration of the Polaris for Business dashboard, with sample numbers from an invented studio"
       role="group"
       className={cn(
         "grid grid-cols-[minmax(0,1fr)] gap-x-11 gap-y-10 rounded-[32px] border border-ui-hairline-strong p-5 sm:p-8 lg:grid-cols-[minmax(0,1fr)_356px] xl:grid-cols-[minmax(0,1fr)_392px] xl:p-10",
@@ -360,6 +360,7 @@ export function ProductPreview({ className }: { className?: string }) {
     >
       <SalesPreview extra={extra} />
       <CheckoutWidgetPreview onPaid={(c) => setExtra((e) => (c ? e + c : 0))} />
+      <p className="text-[13px] text-ui-muted lg:col-span-2">Illustration: sample numbers from an invented studio. Nothing here moves money.</p>
     </div>
   );
 }

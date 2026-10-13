@@ -64,3 +64,4 @@ packages/contracts/deployments/.keys/
 # Foundry (the CCIP layer)
 packages/contracts/ccip/out/
 packages/contracts/ccip/cache/
+.data/

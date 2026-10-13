@@ -14,6 +14,7 @@
     "demo:e2e:split": "node scripts/demo-e2e-split.cjs",
     "e2e:local": "pnpm --filter @polaris/business e2e:local",
     "e2e:testnet": "node scripts/e2e-testnet.mjs",
+    "e2e:testnet:collect": "E2E_PHASE=collect node scripts/e2e-testnet.mjs",
     "contracts:compile": "pnpm --filter @polarispay/contracts compile",
     "contracts:test": "pnpm --filter @polarispay/contracts test",
     "deploy:testnet": "pnpm --filter @polarispay/contracts deploy:testnet",

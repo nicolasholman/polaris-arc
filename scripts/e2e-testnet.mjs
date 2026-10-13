@@ -73,7 +73,7 @@ const C = Object.fromEntries(Object.entries(record.contracts).map(([k, v]) => [k
 const RPC = process.env.ARC_TESTNET_RPC_URL || record.rpcUrl || "https://rpc.testnet.arc.io";
 const EXPLORER = record.explorerUrl || "https://explorer.testnet.arc.io";
 const chain = viem.defineChain({ ...arcTestnet, rpcUrls: { default: { http: [RPC] } } });
-const client = viem.createPublicClient({ chain, transport: viem.http(RPC), pollingInterval: 250 });
+const client = viem.createPublicClient({ chain, transport: viem.http(RPC, { retryCount: 8, retryDelay: 1500 }), pollingInterval: 1000 });
 
 const results = [];
 const proof = {};
@@ -166,7 +166,42 @@ const PERMIT = {
   ],
 };
 
+
+/** Phase 2 (E2E_PHASE=collect): the keeper collects the live plan's first instalment once it is due. */
+async function collectPhase() {
+  const keeperKey = local.POLARIS_KEEPER_PRIVATE_KEY;
+  assert(keeperKey, ".env.local needs POLARIS_KEEPER_PRIVATE_KEY");
+  const prior = record.e2e?.txs;
+  assert(prior?.loanId, "no plan recorded: run the first phase (pnpm e2e:testnet) first");
+  const loanId = BigInt(prior.loanId);
+  const getLoan = () => client.readContract({ address: C.PolarisLoanEngine, abi: abis.polarisLoanEngineAbi, functionName: "getLoan", args: [loanId] });
+  let loan = await getLoan();
+  const due = Number(loan.startedAt) + Number(loan.intervalSeconds) * (Number(loan.installmentsPaid) + 1);
+  const wait = due - Math.floor(Date.now() / 1000);
+  if (wait > 0) {
+    log(`Plan #${loanId}: instalment ${Number(loan.installmentsPaid) + 1} falls due in ${wait} s (${new Date(due * 1000).toISOString()}). Run this again after that.`);
+    return;
+  }
+  const paidBefore = loan.installmentsPaid;
+  const from = (await client.getBlockNumber()) - 50n;
+  log(`Plan #${loanId} is due: running the keeper once`);
+  background("keeper", process.execPath, ["--conditions=source", "--disable-warning=ExperimentalWarning", join(REPO, "services", "keeper", "src", "main.ts"), "--once"], {
+    cwd: join(REPO, "services", "keeper"),
+    env: { ...process.env, POLARIS_DEPLOYMENT_FILE: RECORD, KEEPER_RPC_URL: RPC, POLARIS_KEEPER_PRIVATE_KEY: keeperKey, KEEPER_BACKOFF: "off" },
+  });
+  await until("the keeper to collect", async () => (await getLoan()).installmentsPaid > paidBefore, { timeoutMs: 180_000, everyMs: 3000 });
+  loan = await getLoan();
+  const runs = await client.getContractEvents({ address: C.CollectionsReceiver, abi: abis.collectionsReceiverAbi, eventName: "TaskExecuted", fromBlock: from });
+  const run = runs.find((r) => r.args.id === loanId);
+  assert(run, "a TaskExecuted event for the plan");
+  pass(`the keeper collected instalment ${loan.installmentsPaid} of plan #${loanId} through CollectionsReceiver (${loan.installmentsPaid}/${loan.installmentCount} paid)`, tx(run.transactionHash));
+  const latest = JSON.parse(readFileSync(RECORD, "utf8"));
+  latest.e2e = { ...latest.e2e, collectedAt: new Date().toISOString(), txs: { ...latest.e2e.txs, collect: run.transactionHash } };
+  writeFileSync(RECORD, JSON.stringify(latest, null, 2) + "\n");
+}
+
 async function main() {
+  if (process.env.E2E_PHASE === "collect") return collectPhase();
   const relayerKey = local.POLARIS_RELAYER_PRIVATE_KEY;
   const keeperKey = local.POLARIS_KEEPER_PRIVATE_KEY;
   assert(relayerKey && keeperKey, ".env.local needs POLARIS_RELAYER_PRIVATE_KEY and POLARIS_KEEPER_PRIVATE_KEY");
@@ -201,7 +236,7 @@ async function main() {
   });
   await new Promise((r) => hooks.listen(HOOK_PORT, "127.0.0.1", r));
   const { seedMerchant } = await import(fileUrl(join(BUSINESS, "scripts", "lib", "seed.mjs")));
-  const seeded = await seedMerchant({ dbUrl, pepper, wallet: record.demo.merchant, name: record.demo.merchantName, webhookUrl: `http://127.0.0.1:${HOOK_PORT}/webhook`, registration: "active" });
+  const seeded = await seedMerchant({ dbUrl, pepper, wallet: record.demo.merchant, name: record.demo.merchantName, webhookUrl: `http://127.0.0.1:${HOOK_PORT}/webhook`, links: [{ amountCents: Number(process.env.E2E_LINK_CENTS || "50"), description: "Arc testnet payment link", modes: ["now"], usage: "reusable" }], registration: "active" });
   webhookSecret = seeded.webhookSecret;
 
   spawnSync(process.execPath, [join(BUSINESS, "scripts", "ensure-deps.mjs")], { cwd: BUSINESS, stdio: "ignore" });
@@ -256,27 +291,76 @@ async function main() {
   const waitFor = (type, match = () => true) => until(`the ${type} webhook`, () => received.find((r) => r.event?.type === type && match(r.event)), { timeoutMs: 180_000 });
 
   // ── 2. a buyer with a few USDC and no gas ────────────────────────────────
-  const buyer = privateKeyToAccount(generatePrivateKey());
+  // The throwaway buyer's key is kept in .data/ (git-ignored, mode 0600) so a run that stops half way never strands its USDC.
+  const keyFile = join(REPO, ".data", "e2e-buyer.key");
+  mkdirSync(join(REPO, ".data"), { recursive: true });
+  const reuse = process.env.E2E_REUSE_BUYER === "1" && existsSync(keyFile);
+  // E2E_BUYER=deployer: the deployer wallet itself is the buyer (its own USDC, nothing is funded or stranded; the
+  // pool and the treasury are the deployer's too, so a repaid instalment returns to the same owner).
+  const asDeployer = process.env.E2E_BUYER === "deployer";
+  const buyerKey = asDeployer ? envFile(DEPLOYER_ENV).DEPLOYER_PRIVATE_KEY : reuse ? readFileSync(keyFile, "utf8").trim() : generatePrivateKey();
+  if (!reuse && !asDeployer) writeFileSync(keyFile, buyerKey + "\n", { mode: 0o600 });
+  const buyer = privateKeyToAccount(buyerKey);
+  const steps = new Set((process.env.E2E_STEPS || "send,link,sub,plan,eur").split(","));
   const deployerKey = envFile(DEPLOYER_ENV).DEPLOYER_PRIVATE_KEY;
   assert(deployerKey, `no DEPLOYER_PRIVATE_KEY in ${DEPLOYER_ENV}`);
-  const deployer = viem.createWalletClient({ account: privateKeyToAccount(deployerKey), chain, transport: viem.http(RPC) });
-  const fundHash = await withDeployerLock(async () => {
+  const deployer = viem.createWalletClient({ account: privateKeyToAccount(deployerKey), chain, transport: viem.http(RPC, { retryCount: 8, retryDelay: 2000 }) });
+  const held = await client.readContract({ address: C.USDC, abi: abis.iusdcAbi, functionName: "balanceOf", args: [buyer.address] });
+  const fundHash = asDeployer || (reuse && held >= BUYER_USDC) ? null : await withDeployerLock(async () => {
     const h = await deployer.writeContract({ address: C.USDC, abi: abis.iusdcAbi, functionName: "transfer", args: [buyer.address, BUYER_USDC], ...(await fees()) });
     await client.waitForTransactionReceipt({ hash: h });
     return h;
   });
   proof.fundBuyer = fundHash;
-  pass(`buyer ${buyer.address} holds ${viem.formatUnits(BUYER_USDC, 6)} USDC (ERC-20) and no other token`, tx(fundHash));
+  pass(`buyer ${buyer.address} holds ${viem.formatUnits(await client.readContract({ address: C.USDC, abi: abis.iusdcAbi, functionName: "balanceOf", args: [buyer.address] }), 6)} USDC (ERC-20) and no other token`, fundHash ? tx(fundHash) : asDeployer ? "(the deployer is the buyer)" : "(reused buyer)");
 
-  // ── 3. Pay now, with an Arc memo ─────────────────────────────────────────
-  const orderNow = `arc-now-${Date.now()}`;
-  const s1 = await polaris.checkout.sessions.create({ amount: "1.00", description: "Arc testnet: Pay now", modes: ["now"], successUrl: "http://localhost:3000/thanks", orderId: orderNow }, { idempotencyKey: orderNow });
-  const pub1 = (await api(`/api/public/sessions/${s1.id}`)).body.data;
-  const domain = { ...pub1.chain.stablecoinDomain, chainId: pub1.chain.chainId, verifyingContract: pub1.chain.contracts.stablecoin };
+  // ── 3. a send link in USDC, created and claimed ──────────────────────────
+  const net = (await api("/api/public/network")).body.data;
+  const sendUsd = BigInt(Math.round(Number(process.env.E2E_SEND_USD || "0.2") * 1e6));
+  const claimTo = viem.getAddress(process.env.E2E_CLAIM_TO || deployer.account.address);
+  async function sendLink(currency) {
+    const eur = currency === "EUR";
+    const tokenDomain = eur ? net.domains.eurc : net.domains.stablecoin;
+    const sendDomain = eur ? net.domains.sendEurc : net.domains.send;
+    const sendAddr = eur ? C.PolarisSendEURC : C.PolarisSend;
+    const linkKey = privateKeyToAccount(generatePrivateKey());
+    const expiresAt = BigInt(Math.floor(Date.now() / 1000) + 86_400);
+    const vb = BigInt(Math.floor(Date.now() / 1000) + 1800);
+    const nonce = viem.keccak256(viem.encodeAbiParameters([{ type: "address" }, { type: "uint64" }], [linkKey.address, expiresAt]));
+    const sig = await buyer.signTypedData({ domain: tokenDomain, types: RWA, primaryType: "ReceiveWithAuthorization", message: { from: buyer.address, to: sendAddr, value: sendUsd, validAfter: 0n, validBefore: vb, nonce } });
+    const open = await linkKey.signTypedData({ domain: sendDomain, types: { Open: [{ name: "sender", type: "address" }, { name: "amount", type: "uint256" }, { name: "expiresAt", type: "uint64" }] }, primaryType: "Open", message: { sender: buyer.address, amount: sendUsd, expiresAt } });
+    const sent = await api("/api/relay", { method: "POST", body: JSON.stringify({ type: "send", currency: eur ? "EUR" : "USD", sender: buyer.address, linkKey: linkKey.address, amount: String(sendUsd), expiresAt: String(expiresAt), validAfter: "0", validBefore: String(vb), signature: sig, linkSignature: open }) });
+    assert(sent.status === 200 && sent.body.data.status === "confirmed", `relay send ${currency}: ${JSON.stringify(sent.body)}`);
+    const to = eur ? privateKeyToAccount(generatePrivateKey()).address : claimTo;
+    const dl = BigInt(Math.floor(Date.now() / 1000) + 900);
+    const claimSig = await linkKey.signTypedData({ domain: sendDomain, types: { Claim: [{ name: "to", type: "address" }, { name: "deadline", type: "uint256" }] }, primaryType: "Claim", message: { to, deadline: dl } });
+    const before = await client.readContract({ address: eur ? C.EURC : C.USDC, abi: abis.iusdcAbi, functionName: "balanceOf", args: [to] });
+    const claimed = await api("/api/relay", { method: "POST", body: JSON.stringify({ type: "claim", currency: eur ? "EUR" : "USD", linkKey: linkKey.address, to, deadline: String(dl), signature: claimSig }) });
+    assert(claimed.status === 200 && claimed.body.data.status === "confirmed", `relay claim ${currency}: ${JSON.stringify(claimed.body)}`);
+    const after = await client.readContract({ address: eur ? C.EURC : C.USDC, abi: abis.iusdcAbi, functionName: "balanceOf", args: [to] });
+    assert(after - before === sendUsd, `the claimer received exactly the link's amount (${after - before})`);
+    return { sent: sent.body.data.txHash, claimed: claimed.body.data.txHash, to };
+  }
+  if (steps.has("send")) {
+  const usdSend = await sendLink("USD");
+  Object.assign(proof, { sendUsd: usdSend.sent, claimUsd: usdSend.claimed });
+  pass(`USDC send link: $${viem.formatUnits(sendUsd, 6)} sent by the buyer, claimed by ${usdSend.to} (no gas on either side)`, `${tx(usdSend.sent)} ${tx(usdSend.claimed)}`);
+  }
+
+  const domain = net.domains.stablecoin;
+  if (steps.has("link")) {
+  // ── 4. a merchant payment link, paid in full ─────────────────────────────
+  const linkCents = Number(process.env.E2E_LINK_CENTS || "50");
+  const linkUnits = BigInt(linkCents) * 10_000n;
+  const opened1 = await api(`/api/public/links/${seeded.links[0].id}/checkout`, { method: "POST" });
+  assert(opened1.status === 201, `open payment link: ${JSON.stringify(opened1.body)}`);
+  const pub1 = opened1.body.data;
+  assert(BigInt(pub1.chain.amountUnits) === linkUnits, "the session carries the link's amount");
   assert(domain.name === "USDC" && domain.version === "2", "USDC's EIP-712 domain on Arc");
   const validBefore = BigInt(Math.floor(Date.now() / 1000) + 900);
-  const rwa = await buyer.signTypedData({ domain, types: RWA, primaryType: "ReceiveWithAuthorization", message: { from: buyer.address, to: pub1.chain.contracts.payments, value: 1_000_000n, validAfter: 0n, validBefore, nonce: pub1.chain.orderKey } });
-  const paid = await api("/api/relay", { method: "POST", body: JSON.stringify({ type: "pay", sessionId: s1.id, buyer: buyer.address, validAfter: "0", validBefore: String(validBefore), signature: rwa }) });
+  const rwa = await buyer.signTypedData({ domain, types: RWA, primaryType: "ReceiveWithAuthorization", message: { from: buyer.address, to: pub1.chain.contracts.payments, value: linkUnits, validAfter: 0n, validBefore, nonce: pub1.chain.orderKey } });
+  const merchantBefore = await client.readContract({ address: C.USDC, abi: abis.iusdcAbi, functionName: "balanceOf", args: [pub1.chain.merchant] });
+  const paid = await api("/api/relay", { method: "POST", body: JSON.stringify({ type: "pay", sessionId: pub1.id, buyer: buyer.address, validAfter: "0", validBefore: String(validBefore), signature: rwa }) });
   assert(paid.status === 200 && paid.body.data.status === "confirmed", `relay pay: ${JSON.stringify(paid.body)}`);
   const payTx = await client.getTransaction({ hash: paid.body.data.txHash });
   const payReceipt = await client.getTransactionReceipt({ hash: paid.body.data.txHash });
@@ -287,18 +371,60 @@ async function main() {
         logs: payReceipt.logs.filter((l) => viem.getAddress(l.address) === memo),
       })
     : [];
-  proof.payNow = paid.body.data.txHash;
+  proof.payLink = paid.body.data.txHash;
+  const merchantAfter = await client.readContract({ address: C.USDC, abi: abis.iusdcAbi, functionName: "balanceOf", args: [pub1.chain.merchant] });
+  log(`     merchant balance +${viem.formatUnits(merchantAfter - merchantBefore, 6)} USDC (fee ${record.config.feeBps} bps to the treasury if the payout isn't the merchant)`);
   if (memo && viem.getAddress(payTx.to) === memo) {
     assert(memoEvents[0]?.args.memoId === pub1.chain.orderKey, "the Memo event carries the order key");
-    pass("Pay now relayed through Arc's Memo contract: the payment carries its order key on chain", `(${viem.hexToString(memoEvents[0].args.memo)}) ${tx(paid.body.data.txHash)}`);
+    pass(`payment link paid in full ($${viem.formatUnits(linkUnits, 6)}), relayed through Arc's Memo contract: the payment carries its order key`, `(${viem.hexToString(memoEvents[0].args.memo)}) ${tx(paid.body.data.txHash)}`);
   } else {
-    pass("Pay now relayed (no Memo wrap on this chain)", tx(paid.body.data.txHash));
+    pass("payment link paid in full (no Memo wrap on this chain)", tx(paid.body.data.txHash));
   }
-  await waitFor("payment.succeeded", (e) => e.data.sessionId === s1.id);
+  await waitFor("payment.succeeded", (e) => e.data.sessionId === pub1.id);
   pass("payment.succeeded webhook arrived, verified by polarispay-sdk");
 
-  // ── 4. Boost: a secured line at face value ───────────────────────────────
-  const boost = 2_500_000n;
+  }
+  if (steps.has("sub")) {
+  // ── 5. a subscription ────────────────────────────────────────────────────
+  const subCents = Number(process.env.E2E_SUB_CENTS || "50");
+  const orderSub = `arc-sub-${Date.now()}`;
+  const sSub = await polaris.checkout.sessions.create({ amount: (subCents / 100).toFixed(2), description: "Arc testnet: subscription", modes: ["subscribe"], subscription: { interval: "day" }, successUrl: "http://localhost:3000/thanks", orderId: orderSub }, { idempotencyKey: orderSub });
+  const subId = sSub.id;
+  const pubSub = await until("the subscription plan to be published on chain", async () => {
+    const r = (await api(`/api/public/sessions/${subId}`)).body?.data;
+    return r?.subscription?.planId ? r : null;
+  }, { timeoutMs: 60_000, everyMs: 1500 });
+  const subPrice = BigInt(pubSub.subscription.pricePerPeriodUnits);
+  const subNonce = await client.readContract({ address: C.PolarisCheckout, abi: abis.polarisCheckoutAbi, functionName: "nonces", args: [buyer.address] });
+  const subTokenNonce = await client.readContract({ address: C.USDC, abi: abis.iusdcAbi, functionName: "nonces", args: [buyer.address] });
+  const subDeadline = BigInt(Math.floor(Date.now() / 1000) + 600);
+  const subIntent = { buyer: buyer.address, merchant: pubSub.chain.merchant, planId: BigInt(pubSub.subscription.planId), pricePerPeriod: subPrice, periodSeconds: BigInt(pubSub.subscription.periodSeconds), orderId: pubSub.chain.orderId, nonce: subNonce, deadline: subDeadline };
+  const subSig = await buyer.signTypedData({ domain: net.domains.checkout, types: record.eip712.PolarisCheckout.types, primaryType: "SubscribeIntent", message: subIntent });
+  const subPermitValue = subPrice * BigInt(pubSub.subscription.periodsAuthorised);
+  const subPermitDeadline = BigInt(Math.floor(Date.now() / 1000) + 1800);
+  const subPermit = await buyer.signTypedData({ domain, types: PERMIT, primaryType: "Permit", message: { owner: buyer.address, spender: pubSub.chain.contracts.payments, value: subPermitValue, nonce: subTokenNonce, deadline: subPermitDeadline } });
+  const subbed = await api("/api/relay", {
+    method: "POST",
+    body: JSON.stringify({
+      type: "subscribe",
+      sessionId: subId,
+      intent: { buyer: buyer.address, planId: String(subIntent.planId), pricePerPeriod: String(subPrice), periodSeconds: String(subIntent.periodSeconds), nonce: String(subNonce), deadline: String(subDeadline) },
+      signature: subSig,
+      permit: { value: String(subPermitValue), deadline: String(subPermitDeadline), signature: subPermit },
+    }),
+  });
+  assert(subbed.status === 200 && subbed.body.data.status === "confirmed", `relay subscribe: ${JSON.stringify(subbed.body)}`);
+  proof.subscribe = subbed.body.data.txHash;
+  proof.subscriptionPlanId = pubSub.subscription.planId;
+  pass(`subscribed to plan #${pubSub.subscription.planId} ($${viem.formatUnits(subPrice, 6)} per day): the first period charged at once, one permit covers ${pubSub.subscription.periodsAuthorised} periods`, tx(subbed.body.data.txHash));
+  await waitFor("subscription.charged", (e) => e.data.planId === pubSub.subscription.planId || e.data.sessionId === subId);
+  pass("subscription.charged webhook arrived");
+
+  }
+  if (steps.has("plan")) {
+  // ── 6. Boost: a secured line at face value, then Pay in 4 ────────────────
+  const planUnits = BigInt(Math.round(Number(process.env.E2E_PLAN_USD || "1") * 1e6));
+  const boost = (planUnits * 11n) / 10n; // the line must cover the principal plus its interest
   const vaultNonce = await client.readContract({ address: C.USDC, abi: abis.iusdcAbi, functionName: "nonces", args: [buyer.address] });
   const boostDeadline = BigInt(Math.floor(Date.now() / 1000) + 1800);
   const boostSig = await buyer.signTypedData({ domain, types: PERMIT, primaryType: "Permit", message: { owner: buyer.address, spender: C.CollateralVault, value: boost, nonce: vaultNonce, deadline: boostDeadline } });
@@ -312,17 +438,17 @@ async function main() {
   assert(limit >= boost, `the line is at least the boost (${limit})`);
   pass(`Boost: $${viem.formatUnits(boost, 6)} locked with one permit, credit line $${viem.formatUnits(limit, 6)}`, tx(locked.body.data.txHash));
 
-  // ── 5. Pay in 4 ──────────────────────────────────────────────────────────
   const orderPlan = `arc-plan-${Date.now()}`;
-  const s2 = await polaris.checkout.sessions.create({ amount: "2.00", description: "Arc testnet: Pay in 4", modes: ["later"], successUrl: "http://localhost:3000/thanks", orderId: orderPlan }, { idempotencyKey: orderPlan });
+  const s2 = await polaris.checkout.sessions.create({ amount: viem.formatUnits(planUnits, 6), description: "Arc testnet: Pay in 4", modes: ["later"], successUrl: "http://localhost:3000/thanks", orderId: orderPlan }, { idempotencyKey: orderPlan });
   const pub2 = (await api(`/api/public/sessions/${s2.id}`)).body.data;
-  assert(pub2.payIn4?.available, `Pay in 4 offered: ${JSON.stringify(pub2.payIn4)}`);
+  const guardBefore = (await api("/api/public/credit-guard")).body?.data;
+  assert(pub2.payIn4?.available, `Pay in 4 offered: ${JSON.stringify(pub2.payIn4)} guard ${JSON.stringify(guardBefore)}`);
   const interval = BigInt(pub2.payIn4.intervalSeconds);
-  const quote = await client.readContract({ address: C.PolarisCheckout, abi: abis.polarisCheckoutAbi, functionName: "quotePlan", args: [buyer.address, 2_000_000n, 4, interval] });
+  const quote = await client.readContract({ address: C.PolarisCheckout, abi: abis.polarisCheckoutAbi, functionName: "quotePlan", args: [buyer.address, planUnits, 4, interval] });
   const checkoutNonce = await client.readContract({ address: C.PolarisCheckout, abi: abis.polarisCheckoutAbi, functionName: "nonces", args: [buyer.address] });
   const tokenNonce = await client.readContract({ address: C.USDC, abi: abis.iusdcAbi, functionName: "nonces", args: [buyer.address] });
   const now = BigInt(Math.floor(Date.now() / 1000));
-  const intent = { buyer: buyer.address, merchant: pub2.chain.merchant, principal: 2_000_000n, installments: 4, interval, orderId: pub2.chain.orderId, nonce: checkoutNonce, deadline: now + 600n };
+  const intent = { buyer: buyer.address, merchant: pub2.chain.merchant, principal: planUnits, installments: 4, interval, orderId: pub2.chain.orderId, nonce: checkoutNonce, deadline: now + 600n };
   const intentSig = await buyer.signTypedData({
     domain: { name: "PolarisCheckout", version: "1", chainId: pub2.chain.chainId, verifyingContract: pub2.chain.contracts.checkout },
     types: {
@@ -346,7 +472,7 @@ async function main() {
     body: JSON.stringify({
       type: "openPlan",
       sessionId: s2.id,
-      intent: { buyer: buyer.address, principal: "2000000", installments: "4", interval: String(interval), nonce: String(checkoutNonce), deadline: String(intent.deadline) },
+      intent: { buyer: buyer.address, principal: String(planUnits), installments: "4", interval: String(interval), nonce: String(checkoutNonce), deadline: String(intent.deadline) },
       signature: intentSig,
       permit: { value: String(quote.permitValue), deadline: String(now + 1800n), signature: permitSig },
     }),
@@ -354,59 +480,61 @@ async function main() {
   assert(opened.status === 200 && opened.body.data.status === "confirmed" && opened.body.data.planId, `relay openPlan: ${JSON.stringify(opened.body)}`);
   const loanId = BigInt(opened.body.data.planId);
   proof.openPlan = opened.body.data.txHash;
-  pass(`Pay in 4 opened: plan #${loanId}, the merchant paid in full, 4 instalments ${interval} s apart`, tx(opened.body.data.txHash));
+  proof.loanId = String(loanId);
+  const loanAfterOpen = await client.readContract({ address: C.PolarisLoanEngine, abi: abis.polarisLoanEngineAbi, functionName: "getLoan", args: [loanId] });
+  const dueAt = Number(loanAfterOpen.startedAt) + Number(loanAfterOpen.intervalSeconds);
+  proof.firstInstalmentDue = new Date(dueAt * 1000).toISOString();
+  pass(`Pay in 4 opened: plan #${loanId} ($${viem.formatUnits(planUnits, 6)}), the merchant paid in full, 4 instalments ${interval} s apart`, tx(opened.body.data.txHash));
   await waitFor("plan.opened", (e) => e.data.sessionId === s2.id);
   pass("plan.opened webhook arrived");
+  const guardAfter = (await api("/api/public/credit-guard")).body?.data;
+  log(`     credit guard after the plan: ${JSON.stringify(guardAfter)}`);
+  proof.guardAfterPlan = guardAfter ?? null;
 
-  // ── 6. the keeper collects instalment 1 ──────────────────────────────────
-  log(`  …waiting for instalment 1 to fall due (${interval} s) and the keeper to collect it`);
-  const collected = await waitFor("installment.collected", (e) => e.data.planId === String(loanId));
-  const loan = await client.readContract({ address: C.PolarisLoanEngine, abi: abis.polarisLoanEngineAbi, functionName: "getLoan", args: [loanId] });
-  assert(loan.installmentsPaid >= 1, "the loan engine agrees");
-  const runs = await client.getContractEvents({ address: C.CollectionsReceiver, abi: abis.collectionsReceiverAbi, eventName: "TaskExecuted", fromBlock: (await client.getBlockNumber()) - 2000n });
-  const run = runs.find((r) => r.args.id === loanId);
-  proof.collect = run?.transactionHash ?? null;
-  pass(`the keeper collected instalment 1 ($${collected.event.data.amount}) through CollectionsReceiver`, run ? tx(run.transactionHash) : "");
+  // ── 7. the keeper collects instalment 1 (when it falls due) ──────────────
+  const collectWait = Number(process.env.E2E_COLLECT_WAIT_SECONDS || "0");
+  if (collectWait >= Number(interval)) {
+    log(`  …waiting for instalment 1 to fall due (${interval} s) and the keeper to collect it`);
+    const collected = await waitFor("installment.collected", (e) => e.data.planId === String(loanId));
+    const loan = await client.readContract({ address: C.PolarisLoanEngine, abi: abis.polarisLoanEngineAbi, functionName: "getLoan", args: [loanId] });
+    assert(loan.installmentsPaid >= 1, "the loan engine agrees");
+    const runs = await client.getContractEvents({ address: C.CollectionsReceiver, abi: abis.collectionsReceiverAbi, eventName: "TaskExecuted", fromBlock: (await client.getBlockNumber()) - 2000n });
+    const run = runs.find((r) => r.args.id === loanId);
+    proof.collect = run?.transactionHash ?? null;
+    pass(`the keeper collected instalment 1 ($${collected.event.data.amount}) through CollectionsReceiver`, run ? tx(run.transactionHash) : "");
+  } else {
+    log(`  (instalment 1 falls due ${proof.firstInstalmentDue}; collection is the second phase: E2E_PHASE=collect pnpm e2e:testnet)`);
+  }
 
-  // ── 7. euros by link, when the deployer holds EURC ───────────────────────
+  }
+  if (steps.has("eur")) {
+  // ── 8. euros by link, when the deployer holds EURC ───────────────────────
   if (C.EURC && C.PolarisSendEURC) {
     const eurHeld = await client.readContract({ address: C.EURC, abi: abis.iusdcAbi, functionName: "balanceOf", args: [deployer.account.address] });
-    if (eurHeld >= 1_000_000n) {
+    if (eurHeld >= sendUsd) {
       const eurFund = await withDeployerLock(async () => {
-        const h = await deployer.writeContract({ address: C.EURC, abi: abis.iusdcAbi, functionName: "transfer", args: [buyer.address, 1_000_000n], ...(await fees()) });
+        const h = await deployer.writeContract({ address: C.EURC, abi: abis.iusdcAbi, functionName: "transfer", args: [buyer.address, sendUsd], ...(await fees()) });
         await client.waitForTransactionReceipt({ hash: h });
         return h;
       });
-      const net = (await api("/api/public/network")).body.data;
-      const linkKey = privateKeyToAccount(generatePrivateKey());
-      const expiresAt = BigInt(Math.floor(Date.now() / 1000) + 86_400);
-      const vb = BigInt(Math.floor(Date.now() / 1000) + 1800);
-      const nonce = viem.keccak256(viem.encodeAbiParameters([{ type: "address" }, { type: "uint64" }], [linkKey.address, expiresAt]));
-      const sig = await buyer.signTypedData({ domain: net.domains.eurc, types: RWA, primaryType: "ReceiveWithAuthorization", message: { from: buyer.address, to: C.PolarisSendEURC, value: 1_000_000n, validAfter: 0n, validBefore: vb, nonce } });
-      const open = await linkKey.signTypedData({ domain: net.domains.sendEurc, types: { Open: [{ name: "sender", type: "address" }, { name: "amount", type: "uint256" }, { name: "expiresAt", type: "uint64" }] }, primaryType: "Open", message: { sender: buyer.address, amount: 1_000_000n, expiresAt } });
-      const sent = await api("/api/relay", { method: "POST", body: JSON.stringify({ type: "send", currency: "EUR", sender: buyer.address, linkKey: linkKey.address, amount: "1000000", expiresAt: String(expiresAt), validAfter: "0", validBefore: String(vb), signature: sig, linkSignature: open }) });
-      assert(sent.status === 200, `relay send EUR: ${JSON.stringify(sent.body)}`);
-      const friend = privateKeyToAccount(generatePrivateKey());
-      const dl = BigInt(Math.floor(Date.now() / 1000) + 900);
-      const claimSig = await linkKey.signTypedData({ domain: net.domains.sendEurc, types: { Claim: [{ name: "to", type: "address" }, { name: "deadline", type: "uint256" }] }, primaryType: "Claim", message: { to: friend.address, deadline: dl } });
-      const claimed = await api("/api/relay", { method: "POST", body: JSON.stringify({ type: "claim", currency: "EUR", linkKey: linkKey.address, to: friend.address, deadline: String(dl), signature: claimSig }) });
-      assert(claimed.status === 200, `relay claim EUR: ${JSON.stringify(claimed.body)}`);
-      Object.assign(proof, { fundBuyerEurc: eurFund, sendEur: sent.body.data.txHash, claimEur: claimed.body.data.txHash });
-      pass("euros by link: EUR 1.00 of EURC sent and claimed by a fresh key, both relayed", `${tx(sent.body.data.txHash)} ${tx(claimed.body.data.txHash)}`);
+      const eur = await sendLink("EUR");
+      Object.assign(proof, { fundBuyerEurc: eurFund, sendEur: eur.sent, claimEur: eur.claimed });
+      pass(`euros by link: EUR ${viem.formatUnits(sendUsd, 6)} of EURC sent and claimed, both relayed`, `${tx(eur.sent)} ${tx(eur.claimed)}`);
     } else {
-      log("  (skipped euros by link: the deployer holds no testnet EURC; faucet.circle.com gives it)");
+      log("  (skipped euros by link: the deployer holds no testnet EURC; faucet.circle.com gives it) NOT RUN LIVE");
     }
   }
 
+  }
   // ── checks ───────────────────────────────────────────────────────────────
   const [gas, sentTxs] = await Promise.all([client.getBalance({ address: buyer.address }), client.getTransactionCount({ address: buyer.address })]);
-  assert(sentTxs === 0, "the buyer sent no transaction");
+  if (!asDeployer) assert(sentTxs === 0, "the buyer sent no transaction");
   assert(received.every((r) => !r.error), "every webhook verified");
-  pass(`the buyer sent no transaction (every action was a signature the relayer carried); ${received.length} webhooks verified`, `(the buyer's 6-decimal USDC left: ${viem.formatUnits(gas / 10n ** 12n, 6)})`);
+  pass(`${asDeployer ? "" : "the buyer sent no transaction (every action was a signature the relayer carried); "}${received.length} webhooks verified`, `(the buyer's 6-decimal USDC left: ${viem.formatUnits(gas / 10n ** 12n, 6)})`);
   hooks.close();
 
   const latest = JSON.parse(readFileSync(RECORD, "utf8"));
-  latest.e2e = { ranAt: new Date().toISOString(), buyer: buyer.address, checks: results, txs: proof };
+  latest.e2e = { ...latest.e2e, ranAt: new Date().toISOString(), buyer: buyer.address, checks: [...(latest.e2e?.checks ?? []), ...results], txs: { ...latest.e2e?.txs, ...proof } };
   writeFileSync(RECORD, JSON.stringify(latest, null, 2) + "\n");
   log(`\nAll ${results.length} checks passed. Hashes in ${RECORD} (e2e).`);
 }

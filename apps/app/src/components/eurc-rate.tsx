@@ -18,7 +18,7 @@ export function EurcRate({ euros, className }: { euros?: Micros; className?: str
   if (!rate) return null;
   const updated = new Date(rate.updatedAt).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
   return (
-    <span className={cn("ui-figure text-ui-muted", className)} title={`Display only. Chainlink EURC / USD on Arc, updated ${updated}. Euros stay euros.`}>
+    <span className={cn("ui-figure text-ui-muted", className)} title={`Display only. Chainlink EURC / USD read from Arc mainnet (the testnet has no feeds), updated ${updated}. Euros stay euros.`}>
       {euros !== undefined && euros > 0n ? (
         <span className="whitespace-nowrap">
           <span aria-hidden>≈{" "}</span>
@@ -27,7 +27,7 @@ export function EurcRate({ euros, className }: { euros?: Micros; className?: str
         </span>
       ) : null}
       <span className="whitespace-nowrap">1 EURC = {rateText(rate)}</span>
-      <span className="whitespace-nowrap">, Chainlink Data Feed on Arc</span>
+      <span className="whitespace-nowrap">, Chainlink Data Feed, Arc mainnet</span>
     </span>
   );
 }

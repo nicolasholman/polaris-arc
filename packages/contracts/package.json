@@ -11,6 +11,7 @@
     "deploy:local": "NETWORK=local hardhat run scripts/deploy.js --network arcLocal",
     "deploy:testnet": "NETWORK=testnet hardhat run scripts/deploy.js --network arcTestnet",
     "deploy:mainnet": "NETWORK=mainnet hardhat run scripts/deploy.js --network arcMainnet",
+    "verify:blockscout:testnet": "NETWORK=testnet node scripts/verify-blockscout.js",
     "verify:testnet": "NETWORK=testnet hardhat run scripts/verify.js --network arcTestnet",
     "verify:mainnet": "NETWORK=mainnet hardhat run scripts/verify.js --network arcMainnet",
     "check:testnet": "NETWORK=testnet hardhat run scripts/check.js --network arcTestnet",

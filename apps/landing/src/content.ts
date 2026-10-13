@@ -16,7 +16,7 @@ import { APP_URL, BUSINESS_URL, REPO_URL, linkTo } from "./lib/links";
 export const site = {
   title: "Polaris: Stripe for every app on Arc",
   description:
-    "One link to get paid now, later or every month, in USDC. Buyers pay from any chain via CCTP, it's final on Arc in under a second, and Polaris pays the gas.",
+    "One link to get paid now, later or every month, in USDC. Buyers can bring USDC from other chains with CCTP, it's final on Arc in under a second, and Polaris pays the gas.",
   name: "Polaris",
 };
 
@@ -32,7 +32,7 @@ export const nav = {
 
 export const hero = {
   headline: ["Credit, built into", "the payment."],
-  sub: "One link to get paid now, later or every month, in USDC on Arc. From any chain, final in under a second.",
+  sub: "One link to get paid now, later or every month, in USDC on Arc. Final in under a second.",
   cta: { label: "Get started", href: "#product" },
   card: {
     title: "Payments",
@@ -75,8 +75,6 @@ export const logos = {
     { name: "CCTP", glyph: "cctp" },
     { name: "EURC", glyph: "eurc" },
     { name: "Privy", glyph: "privy" },
-    { name: "Nansen", glyph: "nansen" },
-    { name: "Zerion", glyph: "zerion" },
   ] as const,
 };
 
@@ -87,7 +85,7 @@ export const stripe = {
   paragraphs: [
     {
       lead: "Experience checkout without a wallet",
-      rest: "— buyers pay with Face ID from any chain via CCTP, merchants get USDC.",
+      rest: "— buyers pay with Face ID, can bring USDC from other chains with CCTP, and merchants get USDC.",
     },
     {
       lead: "The power of Stripe,",
