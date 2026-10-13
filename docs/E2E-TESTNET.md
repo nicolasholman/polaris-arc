@@ -70,3 +70,13 @@ pnpm e2e:testnet                                   # all steps, new funded buyer
 E2E_BUYER=deployer E2E_STEPS=plan pnpm e2e:testnet  # only Boost + Pay in 4, the deployer as buyer
 pnpm e2e:testnet:collect                           # the keeper collects the plan once it is due
 ```
+
+## Keeper collection (run after the instalment fell due)
+
+- **PASS**: the keeper collected instalment 1 of plan #1 through `CollectionsReceiver` (1/4 paid):
+  [0x1295d8ae…5845](https://explorer.testnet.arc.io/tx/0x1295d8aece999b30ec6bc38176c074dc8eb048a8352515064e64ba94a0735845)
+- The first keeper run skipped it with `InsufficientAllowance(0, 250012)`. The deployer had been reused as the e2e buyer
+  across runs and each new permit to the loan engine replaces the previous allowance; one `approve`
+  ([0x534b9c9e…3b3b](https://explorer.testnet.arc.io/tx/0x534b9c9e83653521b77ea12d5a21412ae42f3e17b11a2b9120a1f366c61f3b3b))
+  restored it. The keeper refusing to pull without an allowance is the intended behaviour; the app's sign-again sheet
+  handles a lost allowance for real buyers.
