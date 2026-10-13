@@ -3,10 +3,6 @@
 // The per-chain settings the handlers need that no event carries: the loan
 // engine's grace period (for liquidatableAt), the dunning ladder, and the
 // addresses that tell a payout from an internal transfer.
-//
-// PLACEHOLDER: Polaris is not deployed to Arc testnet yet. Every Polaris
-// address below is fake; USDC and EURC are Circle's. Run
-// `pnpm --filter @polarispay/contracts deploy:testnet`, then `pnpm generate`.
 
 export type ChainSettings = {
   readonly chainId: number;
@@ -47,27 +43,27 @@ export const DEPLOYMENTS: Readonly<Record<number, ChainSettings>> = {
   5042002: {
     "chainId": 5042002,
     "network": "testnet",
-    "placeholder": true,
-    "source": null,
-    "startBlock": 0,
+    "placeholder": false,
+    "source": "../contracts/deployments/arc-testnet.json",
+    "startBlock": 67017813,
     "explorer": "https://explorer.testnet.arc.io",
     "graceSeconds": 259200,
     "feeBps": 50,
     "requireUnderwriting": true,
     "dunningRetrySeconds": [21600, 86400, 259200, 604800],
     "addresses": {
-      "ScoreManager": "0x00000000000000000000000000000000cafe0001",
-      "PolarisLoanEngine": "0x00000000000000000000000000000000cafe0002",
-      "PolarisPayments": "0x00000000000000000000000000000000cafe0003",
-      "MerchantRegistry": "0x00000000000000000000000000000000cafe0004",
-      "CollateralVault": "0x00000000000000000000000000000000cafe0005",
-      "BatchSettlement": "0x00000000000000000000000000000000cafe0006",
-      "PolarisSend": "0x00000000000000000000000000000000cafe0007",
-      "PolarisSendEURC": "0x00000000000000000000000000000000cafe0008",
-      "PolarisCheckout": "0x00000000000000000000000000000000cafe0009",
-      "CollectionsReceiver": "0x00000000000000000000000000000000cafe0010",
-      "UnderwritingReceiver": "0x00000000000000000000000000000000cafe0011",
-      "CreditGuard": "0x00000000000000000000000000000000cafe0012",
+      "ScoreManager": "0x524874735655963a82f160cb741153f50cdebcf6",
+      "PolarisLoanEngine": "0x1509d0e6a630fee80b4909b5434f1f42959f079b",
+      "PolarisPayments": "0xebfd4d58972e5231fb816515198fc4e63593091b",
+      "MerchantRegistry": "0x5ae6d53f77b09808f7c28707b150e3952541661c",
+      "CollateralVault": "0x90948fda347bbf1fb6f2a6f7cd4765d6ffd7cfbe",
+      "BatchSettlement": "0x05ff7d5cfd43b714e4aba00493459a600320a406",
+      "PolarisSend": "0x5a2540d750bb5a566ffb258b24cfe7050e7265e0",
+      "PolarisSendEURC": "0x3a3e83dc9fcb454da905bf04b99333713ae146a7",
+      "PolarisCheckout": "0x3db37afcb07c6d15cc8a88ef49757336a46ae1fe",
+      "CollectionsReceiver": "0x6da7e27c913f73c081f837135ad7a79643b3b6f0",
+      "UnderwritingReceiver": "0xa0523ac857e548d3b4ba947f76a7d806028021cb",
+      "CreditGuard": "0x34c7a86a77fd25d817bb2cad96bef502adc88d4d",
       "USDC": "0x3600000000000000000000000000000000000000",
       "EURC": "0x89b50855aa3be2f677cd6303cec089b5f319d72a"
     }
