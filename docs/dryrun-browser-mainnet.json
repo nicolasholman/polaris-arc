@@ -1,0 +1,50 @@
+{
+  "at": "2026-10-14T17:25:26.530Z",
+  "scope": "Read-only first route per hosted surface; transaction checks are in dryrun-mainnet.json",
+  "results": [
+    {
+      "surface": "polaris",
+      "url": "https://polaris-arc-lemon.vercel.app/",
+      "readOnly": true,
+      "status": 200,
+      "bodyPresent": true,
+      "pageErrors": [],
+      "testnetWording": [],
+      "wrongExplorerLinks": [],
+      "ok": true
+    },
+    {
+      "surface": "polaris-business",
+      "url": "https://polaris-arc-business.vercel.app/",
+      "readOnly": true,
+      "status": 200,
+      "bodyPresent": true,
+      "pageErrors": [],
+      "testnetWording": [],
+      "wrongExplorerLinks": [],
+      "ok": true
+    },
+    {
+      "surface": "polaris-landing",
+      "url": "https://polaris-arc-landing.vercel.app/",
+      "readOnly": true,
+      "status": 200,
+      "bodyPresent": true,
+      "pageErrors": [],
+      "testnetWording": [],
+      "wrongExplorerLinks": [],
+      "ok": true
+    },
+    {
+      "surface": "polaris-shop",
+      "url": "https://polaris-arc-shop.vercel.app/",
+      "readOnly": true,
+      "status": 200,
+      "bodyPresent": true,
+      "pageErrors": [],
+      "testnetWording": [],
+      "wrongExplorerLinks": [],
+      "ok": true
+    }
+  ]
+}

@@ -1,0 +1,34 @@
+import * as c from './dryrun-common.mjs';
+await c.run('polaris', async () => {
+const n='polaris',d=c.load(n),C=Object.fromEntries(Object.entries(d.contracts).map(([k,v])=>[k,v.address]));
+const abi=k=>c.readJson('packages/contracts/abi/'+k+'.json');
+const write=(label,role,k,fn,args=[])=>c.write(n,label,role,C[k],abi(k),fn,args);
+const read=(k,fn,args=[])=>c.read(C[k],abi(k),fn,args);
+const signDigest=async(role,k,fn,args)=>(await c.accounts[role].sign({hash:await read(k,fn,args)}));
+const sigParts=s=>{const z=c.parseSignature(s);return [Number(z.v),z.r,z.s]};
+async function permit(spender,value){const deadline=(await c.pub.getBlock()).timestamp+1800n;const nonce=await c.read(c.USDC,c.parseAbi(['function nonces(address) view returns(uint256)']),'nonces',[c.roles.buyer]);
+const signature=await c.accounts.buyer.signTypedData({domain:{name:'USDC',version:'2',chainId:5042,verifyingContract:c.USDC},types:{Permit:[{name:'owner',type:'address'},{name:'spender',type:'address'},{name:'value',type:'uint256'},{name:'nonce',type:'uint256'},{name:'deadline',type:'uint256'}]},primaryType:'Permit',message:{owner:c.roles.buyer,spender,value,nonce,deadline}});const [v,r,s]=sigParts(signature);return {value,deadline,v,r,s};}
+c.roleKey('provider','polaris','POLARIS_DEMO_MERCHANT_KEY',d.demo.merchant);
+for(const [role,amount] of [['buyer','4'],['provider','0.1'],['relayer','0.2'],['keeper','0.1']])await c.fund(n,role,amount);
+let order='dryrun-'+c.roles.buyer;const key=await read('PolarisCheckout','orderKeyOf',[c.roles.provider,order]);
+await write('create payment link quote','provider','PolarisPayments','quoteOrder',[c.roles.provider,key,100000n]);
+const u=await c.auth('buyer',C.PolarisPayments,100000n,key,'ReceiveWithAuthorization',600n);
+await c.memoWrite(n,'payment link pay now 0.1 Memo','relayer',C.PolarisCheckout,abi('PolarisCheckout'),'pay',[c.roles.buyer,c.roles.provider,100000n,order,u.validAfter,u.validBefore,u.v,u.r,u.s]);
+const p=await permit(C.CollateralVault,1100000n);
+await write('Boost collateral 1.1 permit','relayer','CollateralVault','lockWithPermit',[c.roles.buyer,1100000n,p.deadline,p.v,p.r,p.s]);
+const q=await read('PolarisCheckout','quotePlan',[c.roles.buyer,1000000n,4,3600n]);
+c.note('creditQuote',{q,guard:await read('PolarisCheckout','creditPaused')});
+const intent={buyer:c.roles.buyer,merchant:c.roles.provider,principal:1000000n,installments:4,interval:3600n,orderId:'dryrun-plan-'+c.roles.buyer,nonce:await read('PolarisCheckout','nonces',[c.roles.buyer]),deadline:(await c.pub.getBlock()).timestamp+600n};
+const is=await signDigest('buyer','PolarisCheckout','planIntentDigest',[intent]),ip=await permit(C.PolarisLoanEngine,q.permitValue);
+await write('open pay-in-4 1 USDC','relayer','PolarisCheckout','openPlan',[intent,is,ip]);
+await write('merchant creates subscription plan','provider','PolarisPayments','createPlan',[100000n,3600n,'Fork subscription']);
+const si={buyer:c.roles.buyer,merchant:c.roles.provider,planId:await read('PolarisPayments','planCount'),pricePerPeriod:100000n,periodSeconds:3600n,orderId:'dryrun-sub-'+c.roles.buyer,nonce:await read('PolarisCheckout','nonces',[c.roles.buyer]),deadline:(await c.pub.getBlock()).timestamp+600n};
+const ss=await signDigest('buyer','PolarisCheckout','subscribeIntentDigest',[si]),sp=await permit(C.PolarisPayments,200000n);
+await write('subscribe first payment 0.1','relayer','PolarisCheckout','subscribe',[si,ss,sp]);
+const expires=(await c.pub.getBlock()).timestamp+86400n;
+const sn=await read('PolarisSend','sendNonce',[c.roles.issuer,expires]);const su=await c.auth('buyer',C.PolarisSend,100000n,sn,'ReceiveWithAuthorization',600n);
+const open=await signDigest('issuer','PolarisSend','openDigest',[c.roles.buyer,100000n,expires]);
+await write('send link escrow 0.1','relayer','PolarisSend','send',[c.roles.buyer,c.roles.issuer,100000n,expires,su.validAfter,su.validBefore,su.v,su.r,su.s,...sigParts(open)]);
+const cd=(await c.pub.getBlock()).timestamp+600n,cs=await signDigest('issuer','PolarisSend','claimDigest',[c.roles.auditor,cd]);
+await write('friend claims send link 0.1','relayer','PolarisSend','claim',[c.roles.issuer,c.roles.auditor,cd,...sigParts(cs)]);
+});

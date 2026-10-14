@@ -20,6 +20,7 @@
     "deploy:testnet": "pnpm --filter @polarispay/contracts deploy:testnet",
     "deploy:mainnet": "pnpm --filter @polarispay/contracts deploy:mainnet",
     "keeper": "pnpm --filter @polaris/keeper start",
-    "indexer:local": "bash packages/indexer/scripts/wsl.sh local"
+    "indexer:local": "bash packages/indexer/scripts/wsl.sh local",
+    "dryrun:mainnet": "node --import ./scripts/dryrun-loader.mjs scripts/dryrun-mainnet.mjs"
   }
 }
