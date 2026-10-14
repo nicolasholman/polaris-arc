@@ -40,32 +40,32 @@ export type ChainSettings = {
 };
 
 export const DEPLOYMENTS: Readonly<Record<number, ChainSettings>> = {
-  5042002: {
-    "chainId": 5042002,
-    "network": "testnet",
+  5042: {
+    "chainId": 5042,
+    "network": "mainnet",
     "placeholder": false,
-    "source": "../contracts/deployments/arc-testnet.json",
-    "startBlock": 67017813,
-    "explorer": "https://explorer.testnet.arc.io",
+    "source": "../contracts/deployments/arc-mainnet.json",
+    "startBlock": 25937315,
+    "explorer": "https://explorer.arc.io",
     "graceSeconds": 259200,
     "feeBps": 50,
     "requireUnderwriting": true,
     "dunningRetrySeconds": [21600, 86400, 259200, 604800],
     "addresses": {
-      "ScoreManager": "0x524874735655963a82f160cb741153f50cdebcf6",
-      "PolarisLoanEngine": "0x1509d0e6a630fee80b4909b5434f1f42959f079b",
-      "PolarisPayments": "0xebfd4d58972e5231fb816515198fc4e63593091b",
-      "MerchantRegistry": "0x5ae6d53f77b09808f7c28707b150e3952541661c",
-      "CollateralVault": "0x90948fda347bbf1fb6f2a6f7cd4765d6ffd7cfbe",
-      "BatchSettlement": "0x05ff7d5cfd43b714e4aba00493459a600320a406",
-      "PolarisSend": "0x5a2540d750bb5a566ffb258b24cfe7050e7265e0",
-      "PolarisSendEURC": "0x3a3e83dc9fcb454da905bf04b99333713ae146a7",
-      "PolarisCheckout": "0x3db37afcb07c6d15cc8a88ef49757336a46ae1fe",
-      "CollectionsReceiver": "0x6da7e27c913f73c081f837135ad7a79643b3b6f0",
-      "UnderwritingReceiver": "0xa0523ac857e548d3b4ba947f76a7d806028021cb",
-      "CreditGuard": "0x34c7a86a77fd25d817bb2cad96bef502adc88d4d",
+      "ScoreManager": "0x02b8f7938e7b3c7d68894b12717283315f782b9b",
+      "PolarisLoanEngine": "0xde99bf4827c7c7860de8e5b9e204b4f94dd1cffc",
+      "PolarisPayments": "0x9a110beee29e24c40cb993154286613d827f1a86",
+      "MerchantRegistry": "0xce806e4bf02ef60bd960d25a170e97bec9870141",
+      "CollateralVault": "0xd7bf04137472bc9bb6d76af795dc05c6696e1356",
+      "BatchSettlement": "0x79890ee43f520f232dccd567b6f021a44d3cf516",
+      "PolarisSend": "0x8aa2fd0f5f928d7b0ee8f32a616e968689212bc3",
+      "PolarisSendEURC": "0xc772b6569e160cc5ed5e697374d4dade6959a27c",
+      "PolarisCheckout": "0x804c0f6f302a71cf36346a2f6936e034ea95eaad",
+      "CollectionsReceiver": "0xe62aee7e282b3a248d82b80cb1e9d28021b23ade",
+      "UnderwritingReceiver": "0xe1d5e1089142fd8304971a820918634265734471",
+      "CreditGuard": "0xc79a4aa7396c3e67ee461c3a92ffc4258e49361b",
       "USDC": "0x3600000000000000000000000000000000000000",
-      "EURC": "0x89b50855aa3be2f677cd6303cec089b5f319d72a"
+      "EURC": "0xbef5f6d51cb62b58e6a8f77868681825c6fe21c1"
     }
   },
 };

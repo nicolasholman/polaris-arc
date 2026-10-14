@@ -1,0 +1,898 @@
+{
+  "network": "mainnet",
+  "chainId": 5042,
+  "chainName": "Arc",
+  "rpcUrl": "https://rpc.mainnet.arc.io",
+  "explorerUrl": "https://explorer.arc.io",
+  "deployer": "0x0648aDF1967692A0c991d7715b0b588452321FBd",
+  "deployedAt": "2026-10-14T14:50:14.105Z",
+  "sourceCommit": "4a820bf03e36e8faa8893b1c1c3ad492dc6b744f",
+  "circle": {
+    "usdc": "0x3600000000000000000000000000000000000000",
+    "eurc": "0xbEf5f6d51CB62b58e6A8f77868681825C6fe21c1",
+    "usyc": "0x8a5D989Bbb96929F689B0200f435f53dA42bF490",
+    "usycTeller": "0x51A8CE47dC08ba5CD19c7aa84EA6fD6664f60f9b",
+    "usycEntitlements": "0xb69ecb156Dc0028198028c501340d5367845ca72",
+    "cctpDomain": 26,
+    "tokenMessengerV2": "0x28b5a0e9C621a5BadaA536219b3a228C8168cf5d",
+    "messageTransmitterV2": "0x81D40F21F12A8F0E3252Bccb954D722d4c464B64",
+    "gatewayWallet": "0x77777777Dcc4d5A8B6E418Fd04D8997ef11000eE",
+    "gatewayMinter": "0x2222222d7164433c4C09B0b0D809a9b52C04C205",
+    "stableFxEscrow": "0xe2E5F173576B513d994073CCbDaCBE027d43DFe6",
+    "memo": "0x5294E9927c3306DcBaDb03fe70b92e01cCede505",
+    "multicall3From": "0x522fAf9A91c41c443c66765030741e4AaCe147D0",
+    "irisApiUrl": "https://iris-api.circle.com"
+  },
+  "contracts": {
+    "USDC": {
+      "address": "0x3600000000000000000000000000000000000000",
+      "kind": "Circle USDC on Arc",
+      "abi": "abi/IUSDC.json"
+    },
+    "EURC": {
+      "address": "0xbEf5f6d51CB62b58e6A8f77868681825C6fe21c1",
+      "kind": "Circle EURC on Arc",
+      "abi": "abi/IUSDC.json"
+    },
+    "ScoreManager": {
+      "address": "0x02B8F7938e7B3c7D68894b12717283315F782b9b",
+      "blockNumber": 25937315,
+      "txHash": "0x2e36106e67884958e3721e7f4e7021c8bcbb3412e6ca0897f9f623d55d1bacd5",
+      "gasUsed": "1522810",
+      "contract": "ScoreManager",
+      "abi": "abi/ScoreManager.json",
+      "args": [
+        "0x0648aDF1967692A0c991d7715b0b588452321FBd"
+      ]
+    },
+    "PolarisLoanEngine": {
+      "address": "0xDe99BF4827C7c7860DE8e5b9e204B4f94dD1cFFC",
+      "blockNumber": 25937319,
+      "txHash": "0x090981847f34ca449d44b33a240c65af70956661bed848f5ca1c730da210e3b2",
+      "gasUsed": "3175946",
+      "contract": "PolarisLoanEngine",
+      "abi": "abi/PolarisLoanEngine.json",
+      "args": [
+        "0x0648aDF1967692A0c991d7715b0b588452321FBd",
+        "0x3600000000000000000000000000000000000000",
+        "0x02B8F7938e7B3c7D68894b12717283315F782b9b",
+        "0x6D1fBe0C2D6D4CB6b3817d12904199b7cE17BDB9",
+        259200,
+        3600
+      ]
+    },
+    "PolarisPayments": {
+      "address": "0x9A110BeEe29e24C40CB993154286613D827f1a86",
+      "blockNumber": 25937324,
+      "txHash": "0x11c2353fb55734fc1319356b18beffd4126f6b56c55fc147dc6011837e92b845",
+      "gasUsed": "3080254",
+      "contract": "PolarisPayments",
+      "abi": "abi/PolarisPayments.json",
+      "args": [
+        "0x0648aDF1967692A0c991d7715b0b588452321FBd",
+        "0x3600000000000000000000000000000000000000",
+        "0x6D1fBe0C2D6D4CB6b3817d12904199b7cE17BDB9",
+        3600
+      ]
+    },
+    "MerchantRegistry": {
+      "address": "0xcE806E4bf02ef60bd960D25a170E97BEc9870141",
+      "blockNumber": 25937330,
+      "txHash": "0x8f90cb6b3eaf6a8f40df50cfa9ba9b591f62f44072b3aa3b8b9862c4e77a9efb",
+      "gasUsed": "1567286",
+      "contract": "MerchantRegistry",
+      "abi": "abi/MerchantRegistry.json",
+      "args": [
+        "0x0648aDF1967692A0c991d7715b0b588452321FBd"
+      ]
+    },
+    "CollateralVault": {
+      "address": "0xd7Bf04137472BC9Bb6D76af795DC05c6696E1356",
+      "blockNumber": 25937336,
+      "txHash": "0x2da0f801a0fd18afb90f9a6d921853bfbf82cfd3699c02efe3d25d02ddf52295",
+      "gasUsed": "1508886",
+      "contract": "CollateralVault",
+      "abi": "abi/CollateralVault.json",
+      "args": [
+        "0x0648aDF1967692A0c991d7715b0b588452321FBd",
+        "0x3600000000000000000000000000000000000000"
+      ]
+    },
+    "BatchSettlement": {
+      "address": "0x79890eE43F520F232dCcd567B6F021A44d3cf516",
+      "blockNumber": 25937342,
+      "txHash": "0x7a4c86517afbb387088920e8c8131ae0324d0cefbfcd8ff97de8c3f8f88cef4e",
+      "gasUsed": "852890",
+      "contract": "BatchSettlement",
+      "abi": "abi/BatchSettlement.json",
+      "args": [
+        "0x0648aDF1967692A0c991d7715b0b588452321FBd",
+        "0x3600000000000000000000000000000000000000"
+      ]
+    },
+    "PolarisSend": {
+      "address": "0x8aA2fD0F5f928D7b0ee8F32a616e968689212Bc3",
+      "blockNumber": 25937346,
+      "txHash": "0xe693a284aaf475cbbfffa299ff81cd0736fa5064609a7dfa7745f64bf63c372f",
+      "gasUsed": "1531807",
+      "contract": "PolarisSend",
+      "abi": "abi/PolarisSend.json",
+      "args": [
+        "0x3600000000000000000000000000000000000000"
+      ]
+    },
+    "PolarisSendEURC": {
+      "address": "0xC772b6569E160cC5ED5E697374D4DADE6959a27C",
+      "blockNumber": 25937352,
+      "txHash": "0x6ba426fcdcf66c77029d2cdc0a9fe5244d576b61fe4283bd76be1883967c0e89",
+      "gasUsed": "1532035",
+      "contract": "PolarisSend",
+      "abi": "abi/PolarisSend.json",
+      "args": [
+        "0xbEf5f6d51CB62b58e6A8f77868681825C6fe21c1"
+      ]
+    },
+    "PolarisSplit": {
+      "address": "0x5F368a741F490F365fB9b72a1707bee7a03AD851",
+      "blockNumber": 25937358,
+      "txHash": "0x5bd189b2aebea8c632fe09926df5487e360ab186a2e001d9abcf37cc587b394f",
+      "gasUsed": "1887378",
+      "contract": "PolarisSplit",
+      "abi": "abi/PolarisSplit.json",
+      "args": [
+        "0x3600000000000000000000000000000000000000"
+      ]
+    },
+    "PolarisCheckout": {
+      "address": "0x804C0f6F302a71cF36346a2F6936E034ea95EaAD",
+      "blockNumber": 25937362,
+      "txHash": "0x6ec55cb74c28ac385fb5d5dc21b949044260df2b9bbc44d70fa7c54f8fbd2594",
+      "gasUsed": "3204729",
+      "contract": "PolarisCheckout",
+      "abi": "abi/PolarisCheckout.json",
+      "args": [
+        "0x0648aDF1967692A0c991d7715b0b588452321FBd",
+        "0xDe99BF4827C7c7860DE8e5b9e204B4f94dD1cFFC",
+        "0x9A110BeEe29e24C40CB993154286613D827f1a86",
+        "0x02B8F7938e7B3c7D68894b12717283315F782b9b"
+      ]
+    },
+    "CollectionsReceiver": {
+      "address": "0xe62AEe7e282B3A248d82b80CB1e9d28021B23AdE",
+      "blockNumber": 25937369,
+      "txHash": "0xaf149d32c879bd1be0ce3f1e8d1ace907906d0608a16454f762db253f9ddbba1",
+      "gasUsed": "1123115",
+      "contract": "CollectionsReceiver",
+      "abi": "abi/CollectionsReceiver.json",
+      "args": [
+        "0x98d530053Ab7eB3F6646Ec8f71fD6e47F9708731",
+        "0xDe99BF4827C7c7860DE8e5b9e204B4f94dD1cFFC",
+        "0x9A110BeEe29e24C40CB993154286613D827f1a86"
+      ]
+    },
+    "UnderwritingReceiver": {
+      "address": "0xe1d5E1089142fD8304971A820918634265734471",
+      "blockNumber": 25937375,
+      "txHash": "0x7fa022f890d2285634ab5676fe6bf416c07be002014b3e6ac5ef1851ab10e77f",
+      "gasUsed": "904135",
+      "contract": "UnderwritingReceiver",
+      "abi": "abi/UnderwritingReceiver.json",
+      "args": [
+        "0x98d530053Ab7eB3F6646Ec8f71fD6e47F9708731",
+        "0x02B8F7938e7B3c7D68894b12717283315F782b9b"
+      ]
+    },
+    "CreditGuard": {
+      "address": "0xc79A4Aa7396c3e67ee461C3A92fFc4258e49361B",
+      "blockNumber": 25937381,
+      "txHash": "0xee202e3dd098f2cc728503341f92e42ddf0b5ea6c9a16d7d3a7eb6b7acc9ca2d",
+      "gasUsed": "1231689",
+      "contract": "CreditGuard",
+      "abi": "abi/CreditGuard.json",
+      "args": [
+        "0x0648aDF1967692A0c991d7715b0b588452321FBd",
+        "0xDe99BF4827C7c7860DE8e5b9e204B4f94dD1cFFC",
+        {
+          "minFreeCash": "5000000",
+          "maxBadDebtBps": 500,
+          "minOriginated": "10000000000"
+        }
+      ]
+    },
+    "PolarisCCIPReceiver": {
+      "address": "0x106364d30fBE8F05ca83b9c0F202EAE41b2C8a3e",
+      "blockNumber": 25937387,
+      "txHash": "0x2bf3dc8925f6242b1f7bd5a6f207e56d75c376a02a2c6cb47db19e1c95e0e354",
+      "gasUsed": "2112477",
+      "contract": "PolarisCCIPReceiver",
+      "abi": "abi/PolarisCCIPReceiver.json",
+      "args": [
+        "0xB79791184973589c38e114D43Eb8E4588C283A18",
+        "0x3600000000000000000000000000000000000000",
+        "0x9A110BeEe29e24C40CB993154286613D827f1a86",
+        "0xDe99BF4827C7c7860DE8e5b9e204B4f94dD1cFFC",
+        "0x0648aDF1967692A0c991d7715b0b588452321FBd"
+      ],
+      "build": "foundry (ccip/)"
+    },
+    "PolarisCctpHookReceiver": {
+      "address": "0x234384Adcbcbaf68145A42f13b0E666444961C0e",
+      "blockNumber": 25937391,
+      "txHash": "0x9ae80c69d3a54200916d8972a0b7ba687e29bb4fa2ffa129b005799262443347",
+      "gasUsed": "896258",
+      "contract": "PolarisCctpHookReceiver",
+      "abi": "abi/PolarisCctpHookReceiver.json",
+      "args": [
+        "0x3600000000000000000000000000000000000000",
+        "0x81D40F21F12A8F0E3252Bccb954D722d4c464B64",
+        "0x9A110BeEe29e24C40CB993154286613D827f1a86",
+        26
+      ],
+      "build": "foundry (ccip/)"
+    }
+  },
+  "config": {
+    "tokenMode": "arc",
+    "treasury": "0x6D1fBe0C2D6D4CB6b3817d12904199b7cE17BDB9",
+    "graceSeconds": 259200,
+    "minInterval": 3600,
+    "minPeriod": 3600,
+    "feeBps": 50,
+    "interestRateBps": 1000,
+    "requireUnderwriting": true,
+    "guard": {
+      "minFreeCash": "5000000",
+      "maxBadDebtBps": 500,
+      "minOriginated": "10000000000"
+    },
+    "caps": {
+      "sendMaxAmount": "10000000000",
+      "vaultMaxLockedPerUser": "10000000000",
+      "merchantMaxOrderValue": "1000000000",
+      "registryDefaultMaxOrderValue": "500000000",
+      "maxCreditLine": "1000000000"
+    }
+  },
+  "roles": {
+    "owner": "0x0648aDF1967692A0c991d7715b0b588452321FBd",
+    "keeper": "0x98d530053Ab7eB3F6646Ec8f71fD6e47F9708731",
+    "relayer": "0x46395Ea5cEbF97564C6c7Ae81bCd43755eb031FE",
+    "loanEngineOriginators": [
+      "0x804C0f6F302a71cF36346a2F6936E034ea95EaAD"
+    ],
+    "paymentsCheckout": "0x804C0f6F302a71cF36346a2F6936E034ea95EaAD",
+    "scoreWriters": [
+      "0xDe99BF4827C7c7860DE8e5b9e204B4f94dD1cFFC"
+    ],
+    "scoreUnderwriters": [
+      "0xe1d5E1089142fD8304971A820918634265734471"
+    ],
+    "vaultSeizers": [
+      "0xDe99BF4827C7c7860DE8e5b9e204B4f94dD1cFFC"
+    ],
+    "creditGuardian": "0xc79A4Aa7396c3e67ee461C3A92fFc4258e49361B"
+  },
+  "keeper": {
+    "address": "0x98d530053Ab7eB3F6646Ec8f71fD6e47F9708731",
+    "collections": {
+      "receiver": "0xe62AEe7e282B3A248d82b80CB1e9d28021B23AdE",
+      "report": "abi.encode(uint8 kind = 1, tuple(uint8 action,uint256 id)[] tasks)",
+      "actions": {
+        "COLLECT_INSTALLMENT": 1,
+        "CHARGE_SUBSCRIPTION": 2,
+        "LIQUIDATE": 3
+      },
+      "entry": "submitReport(bytes report)",
+      "view": "checkTasks((uint8 action,uint256 id)[]) returns (bool[])",
+      "retry": {
+        "event": "PolarisCheckout.Reauthorized(address indexed buyer,uint256 value,uint256 deadline)",
+        "view": "dueTasksFor(address)"
+      }
+    },
+    "underwriting": {
+      "receiver": "0xe1d5E1089142fD8304971A820918634265734471",
+      "report": "abi.encode(uint8 kind = 2, tuple(address user,address linkedWallet,tuple(uint32 walletAgeDays,uint32 txCount,uint64 stableBalance,uint32 defiTenureDays,uint16 priorLiquidations,uint16 relatedWallets,bool exchangeFunded,uint64 observedAt) facts)[] items)",
+      "entry": "submitReport(bytes report)"
+    },
+    "guard": {
+      "contract": "0xc79A4Aa7396c3e67ee461C3A92fFc4258e49361B",
+      "reasons": {
+        "DEPEG": 1,
+        "LOW_CASH": 2,
+        "BAD_DEBT": 4,
+        "STALE_PRICE": 8,
+        "OWNER_PAUSE": 128
+      },
+      "overrides": {
+        "NONE": 0,
+        "FORCE_RESUME": 1,
+        "FORCE_PAUSE": 2
+      },
+      "view": "creditStatus()",
+      "priceFeed": "0x84EA90AC252Dc437031461836DB5164219147905"
+    }
+  },
+  "demo": {
+    "merchant": "0xAFebfb6d161418268Ba09999079BE7A3B479b8bA",
+    "merchantName": "Halcyon Studio",
+    "subscriptionPlans": [
+      {
+        "planId": "1",
+        "name": "Studio Pro, monthly",
+        "pricePerPeriod": "9990000",
+        "periodSeconds": "2592000"
+      },
+      {
+        "planId": "2",
+        "name": "Demo, every period",
+        "pricePerPeriod": "1000000",
+        "periodSeconds": "3600"
+      }
+    ],
+    "poolSeeded": "6000000",
+    "poolTarget": "6000000"
+  },
+  "gas": {
+    "totalUsed": "27312907",
+    "totalCostUsdc": "0.5472164344",
+    "note": "Creation and resumed deploy transactions; additional post-deploy receipts are in deployments/mainnet-receipts.json."
+  },
+  "ccip": {
+    "chainSelector": "6370580034781731079",
+    "router": "0xB79791184973589c38e114D43Eb8E4588C283A18",
+    "rmn": "0x9A82E768C885DEF7C4b47451Fd4Db53d8B21ed07",
+    "tokenAdminRegistry": "0x51e2A24742Db77604B881d6781Ee16B5b8fcBE29",
+    "link": "0x76a443768A5e3B8d1AED0105FC250877841Deb40",
+    "feeTokens": [
+      "native USDC",
+      "LINK"
+    ],
+    "explorer": "https://ccip.chain.link",
+    "sources": [
+      {
+        "name": "Base",
+        "chainId": 8453,
+        "selector": "15971525489660198786",
+        "router": "0x881e3A65B4d4a04dD529061dd0071cf975F58bCD",
+        "usdc": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+        "tokenMessengerV2": "0x28b5a0e9C621a5BadaA536219b3a228C8168cf5d",
+        "cctpDomain": 6,
+        "rpcUrl": "https://mainnet.base.org"
+      },
+      {
+        "name": "Ethereum",
+        "chainId": 1,
+        "selector": "5009297550715157269",
+        "router": "0x80226fc0Ee2b096224EeAc085Bb9a8cba1146f7D",
+        "usdc": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+        "tokenMessengerV2": "0x28b5a0e9C621a5BadaA536219b3a228C8168cf5d",
+        "cctpDomain": 0,
+        "rpcUrl": "https://ethereum-rpc.publicnode.com"
+      }
+    ],
+    "receiver": "0x106364d30fBE8F05ca83b9c0F202EAE41b2C8a3e",
+    "senders": {},
+    "note": "Deploy PolarisCCIPSender on each source chain (scripts/ccip-deploy-sender.js), then allowlist it here (scripts/ccip-allow-sender.js)."
+  },
+  "feeds": {
+    "usdcUsd": "0x84EA90AC252Dc437031461836DB5164219147905",
+    "eurcUsd": "0x361b95c10b76Ca3f35C686d423e43A951755Bf23",
+    "eurUsd": "0xDd5B15443cd733D3966a50a3E48cB7DF9Fb5DE0D"
+  },
+  "eip712": {
+    "PolarisCheckout": {
+      "domain": {
+        "name": "PolarisCheckout",
+        "version": "1",
+        "chainId": 5042,
+        "verifyingContract": "0x804C0f6F302a71cF36346a2F6936E034ea95EaAD"
+      },
+      "types": {
+        "PlanIntent": [
+          {
+            "name": "buyer",
+            "type": "address"
+          },
+          {
+            "name": "merchant",
+            "type": "address"
+          },
+          {
+            "name": "principal",
+            "type": "uint256"
+          },
+          {
+            "name": "installments",
+            "type": "uint32"
+          },
+          {
+            "name": "interval",
+            "type": "uint64"
+          },
+          {
+            "name": "orderId",
+            "type": "string"
+          },
+          {
+            "name": "nonce",
+            "type": "uint256"
+          },
+          {
+            "name": "deadline",
+            "type": "uint256"
+          }
+        ],
+        "SubscribeIntent": [
+          {
+            "name": "buyer",
+            "type": "address"
+          },
+          {
+            "name": "merchant",
+            "type": "address"
+          },
+          {
+            "name": "planId",
+            "type": "uint256"
+          },
+          {
+            "name": "pricePerPeriod",
+            "type": "uint256"
+          },
+          {
+            "name": "periodSeconds",
+            "type": "uint64"
+          },
+          {
+            "name": "orderId",
+            "type": "string"
+          },
+          {
+            "name": "nonce",
+            "type": "uint256"
+          },
+          {
+            "name": "deadline",
+            "type": "uint256"
+          }
+        ]
+      }
+    },
+    "PolarisLoanEngine": {
+      "domain": {
+        "name": "PolarisLoanEngine",
+        "version": "1",
+        "chainId": 5042,
+        "verifyingContract": "0xDe99BF4827C7c7860DE8e5b9e204B4f94dD1cFFC"
+      },
+      "types": {
+        "RepayIntent": [
+          {
+            "name": "loanId",
+            "type": "uint256"
+          },
+          {
+            "name": "amount",
+            "type": "uint256"
+          },
+          {
+            "name": "expectedRepaid",
+            "type": "uint256"
+          },
+          {
+            "name": "nonce",
+            "type": "uint256"
+          },
+          {
+            "name": "deadline",
+            "type": "uint256"
+          }
+        ]
+      }
+    },
+    "PolarisPayments": {
+      "domain": {
+        "name": "PolarisPayments",
+        "version": "1",
+        "chainId": 5042,
+        "verifyingContract": "0x9A110BeEe29e24C40CB993154286613D827f1a86"
+      },
+      "types": {
+        "CancelSubscription": [
+          {
+            "name": "subId",
+            "type": "uint256"
+          },
+          {
+            "name": "deadline",
+            "type": "uint256"
+          }
+        ]
+      }
+    },
+    "PolarisSend": {
+      "domain": {
+        "name": "PolarisSend",
+        "version": "1",
+        "chainId": 5042,
+        "verifyingContract": "0x8aA2fD0F5f928D7b0ee8F32a616e968689212Bc3"
+      },
+      "types": {
+        "Open": [
+          {
+            "name": "sender",
+            "type": "address"
+          },
+          {
+            "name": "amount",
+            "type": "uint256"
+          },
+          {
+            "name": "expiresAt",
+            "type": "uint64"
+          }
+        ],
+        "Claim": [
+          {
+            "name": "to",
+            "type": "address"
+          },
+          {
+            "name": "deadline",
+            "type": "uint256"
+          }
+        ],
+        "Cancel": [
+          {
+            "name": "linkKey",
+            "type": "address"
+          },
+          {
+            "name": "deadline",
+            "type": "uint256"
+          }
+        ]
+      }
+    },
+    "PolarisSplit": {
+      "domain": {
+        "name": "PolarisSplit",
+        "version": "1",
+        "chainId": 5042,
+        "verifyingContract": "0x5F368a741F490F365fB9b72a1707bee7a03AD851"
+      },
+      "types": {
+        "CreateSplit": [
+          {
+            "name": "organiser",
+            "type": "address"
+          },
+          {
+            "name": "salt",
+            "type": "bytes32"
+          },
+          {
+            "name": "amounts",
+            "type": "uint128[]"
+          },
+          {
+            "name": "memoHash",
+            "type": "bytes32"
+          },
+          {
+            "name": "expiresAt",
+            "type": "uint64"
+          },
+          {
+            "name": "deadline",
+            "type": "uint256"
+          }
+        ],
+        "CloseSplit": [
+          {
+            "name": "splitId",
+            "type": "bytes32"
+          },
+          {
+            "name": "deadline",
+            "type": "uint256"
+          }
+        ]
+      }
+    },
+    "MerchantRegistry": {
+      "domain": {
+        "name": "MerchantRegistry",
+        "version": "1",
+        "chainId": 5042,
+        "verifyingContract": "0xcE806E4bf02ef60bd960D25a170E97BEc9870141"
+      },
+      "types": {
+        "Registration": [
+          {
+            "name": "merchant",
+            "type": "address"
+          },
+          {
+            "name": "name",
+            "type": "string"
+          },
+          {
+            "name": "payoutAddress",
+            "type": "address"
+          },
+          {
+            "name": "metadataURI",
+            "type": "string"
+          },
+          {
+            "name": "nonce",
+            "type": "uint256"
+          },
+          {
+            "name": "deadline",
+            "type": "uint256"
+          }
+        ],
+        "PayoutUpdate": [
+          {
+            "name": "merchant",
+            "type": "address"
+          },
+          {
+            "name": "payoutAddress",
+            "type": "address"
+          },
+          {
+            "name": "nonce",
+            "type": "uint256"
+          },
+          {
+            "name": "deadline",
+            "type": "uint256"
+          }
+        ]
+      }
+    },
+    "CollateralVault": {
+      "domain": {
+        "name": "CollateralVault",
+        "version": "1",
+        "chainId": 5042,
+        "verifyingContract": "0xd7Bf04137472BC9Bb6D76af795DC05c6696E1356"
+      },
+      "types": {
+        "Withdraw": [
+          {
+            "name": "borrower",
+            "type": "address"
+          },
+          {
+            "name": "amount",
+            "type": "uint256"
+          },
+          {
+            "name": "nonce",
+            "type": "uint256"
+          },
+          {
+            "name": "deadline",
+            "type": "uint256"
+          }
+        ]
+      }
+    },
+    "USDC": {
+      "domain": {
+        "name": "USDC",
+        "version": "2",
+        "chainId": 5042,
+        "verifyingContract": "0x3600000000000000000000000000000000000000"
+      },
+      "types": {
+        "ReceiveWithAuthorization": [
+          {
+            "name": "from",
+            "type": "address"
+          },
+          {
+            "name": "to",
+            "type": "address"
+          },
+          {
+            "name": "value",
+            "type": "uint256"
+          },
+          {
+            "name": "validAfter",
+            "type": "uint256"
+          },
+          {
+            "name": "validBefore",
+            "type": "uint256"
+          },
+          {
+            "name": "nonce",
+            "type": "bytes32"
+          }
+        ],
+        "TransferWithAuthorization": [
+          {
+            "name": "from",
+            "type": "address"
+          },
+          {
+            "name": "to",
+            "type": "address"
+          },
+          {
+            "name": "value",
+            "type": "uint256"
+          },
+          {
+            "name": "validAfter",
+            "type": "uint256"
+          },
+          {
+            "name": "validBefore",
+            "type": "uint256"
+          },
+          {
+            "name": "nonce",
+            "type": "bytes32"
+          }
+        ],
+        "Permit": [
+          {
+            "name": "owner",
+            "type": "address"
+          },
+          {
+            "name": "spender",
+            "type": "address"
+          },
+          {
+            "name": "value",
+            "type": "uint256"
+          },
+          {
+            "name": "nonce",
+            "type": "uint256"
+          },
+          {
+            "name": "deadline",
+            "type": "uint256"
+          }
+        ]
+      }
+    },
+    "EURC": {
+      "domain": {
+        "name": "EURC",
+        "version": "2",
+        "chainId": 5042,
+        "verifyingContract": "0xbEf5f6d51CB62b58e6A8f77868681825C6fe21c1"
+      },
+      "types": {
+        "ReceiveWithAuthorization": [
+          {
+            "name": "from",
+            "type": "address"
+          },
+          {
+            "name": "to",
+            "type": "address"
+          },
+          {
+            "name": "value",
+            "type": "uint256"
+          },
+          {
+            "name": "validAfter",
+            "type": "uint256"
+          },
+          {
+            "name": "validBefore",
+            "type": "uint256"
+          },
+          {
+            "name": "nonce",
+            "type": "bytes32"
+          }
+        ],
+        "TransferWithAuthorization": [
+          {
+            "name": "from",
+            "type": "address"
+          },
+          {
+            "name": "to",
+            "type": "address"
+          },
+          {
+            "name": "value",
+            "type": "uint256"
+          },
+          {
+            "name": "validAfter",
+            "type": "uint256"
+          },
+          {
+            "name": "validBefore",
+            "type": "uint256"
+          },
+          {
+            "name": "nonce",
+            "type": "bytes32"
+          }
+        ],
+        "Permit": [
+          {
+            "name": "owner",
+            "type": "address"
+          },
+          {
+            "name": "spender",
+            "type": "address"
+          },
+          {
+            "name": "value",
+            "type": "uint256"
+          },
+          {
+            "name": "nonce",
+            "type": "uint256"
+          },
+          {
+            "name": "deadline",
+            "type": "uint256"
+          }
+        ]
+      }
+    },
+    "PolarisSendEURC": {
+      "domain": {
+        "name": "PolarisSend",
+        "version": "1",
+        "chainId": 5042,
+        "verifyingContract": "0xC772b6569E160cC5ED5E697374D4DADE6959a27C"
+      },
+      "types": {
+        "Open": [
+          {
+            "name": "sender",
+            "type": "address"
+          },
+          {
+            "name": "amount",
+            "type": "uint256"
+          },
+          {
+            "name": "expiresAt",
+            "type": "uint64"
+          }
+        ],
+        "Claim": [
+          {
+            "name": "to",
+            "type": "address"
+          },
+          {
+            "name": "deadline",
+            "type": "uint256"
+          }
+        ],
+        "Cancel": [
+          {
+            "name": "linkKey",
+            "type": "address"
+          },
+          {
+            "name": "deadline",
+            "type": "uint256"
+          }
+        ]
+      }
+    }
+  }
+}

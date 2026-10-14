@@ -1,0 +1,368 @@
+{
+  "chainId": 5042,
+  "network": "mainnet",
+  "status": "recovered \u2014 completed without redeployment",
+  "failure": "Historical RPC failure; remaining configuration resumed with locally signed transactions. See arc-mainnet.json.",
+  "deployer": "0x0648aDF1967692A0c991d7715b0b588452321FBd",
+  "contracts": {
+    "ScoreManager": {
+      "address": "0x02B8F7938e7B3c7D68894b12717283315F782b9b",
+      "balanceWei": "0",
+      "hasCode": true
+    },
+    "PolarisLoanEngine": {
+      "address": "0xDe99BF4827C7c7860DE8e5b9e204B4f94dD1cFFC",
+      "balanceWei": "0",
+      "hasCode": true
+    },
+    "PolarisPayments": {
+      "address": "0x9A110BeEe29e24C40CB993154286613D827f1a86",
+      "balanceWei": "0",
+      "hasCode": true
+    },
+    "MerchantRegistry": {
+      "address": "0xcE806E4bf02ef60bd960D25a170E97BEc9870141",
+      "balanceWei": "0",
+      "hasCode": true
+    },
+    "CollateralVault": {
+      "address": "0xd7Bf04137472BC9Bb6D76af795DC05c6696E1356",
+      "balanceWei": "0",
+      "hasCode": true
+    },
+    "BatchSettlement": {
+      "address": "0x79890eE43F520F232dCcd567B6F021A44d3cf516",
+      "balanceWei": "0",
+      "hasCode": true
+    },
+    "PolarisSend": {
+      "address": "0x8aA2fD0F5f928D7b0ee8F32a616e968689212Bc3",
+      "balanceWei": "0",
+      "hasCode": true
+    },
+    "PolarisSendEURC": {
+      "address": "0xC772b6569E160cC5ED5E697374D4DADE6959a27C",
+      "balanceWei": "0",
+      "hasCode": true
+    },
+    "PolarisSplit": {
+      "address": "0x5F368a741F490F365fB9b72a1707bee7a03AD851",
+      "balanceWei": "0",
+      "hasCode": true
+    },
+    "PolarisCheckout": {
+      "address": "0x804C0f6F302a71cF36346a2F6936E034ea95EaAD",
+      "balanceWei": "0",
+      "hasCode": true
+    },
+    "CollectionsReceiver": {
+      "address": "0xe62AEe7e282B3A248d82b80CB1e9d28021B23AdE",
+      "balanceWei": "0",
+      "hasCode": true
+    },
+    "UnderwritingReceiver": {
+      "address": "0xe1d5E1089142fD8304971A820918634265734471",
+      "balanceWei": "0",
+      "hasCode": true
+    },
+    "CreditGuard": {
+      "address": "0xc79A4Aa7396c3e67ee461C3A92fFc4258e49361B",
+      "balanceWei": "0",
+      "hasCode": true
+    },
+    "PolarisCCIPReceiver": {
+      "address": "0x106364d30fBE8F05ca83b9c0F202EAE41b2C8a3e",
+      "balanceWei": "0",
+      "hasCode": true
+    },
+    "PolarisCctpHookReceiver": {
+      "address": "0x234384Adcbcbaf68145A42f13b0E666444961C0e",
+      "balanceWei": "0",
+      "hasCode": true
+    }
+  },
+  "seedUSDC": 6,
+  "serviceFloatsUSDC": 2,
+  "transactions": [
+    {
+      "project": "polaris",
+      "purpose": "deploy/configure (reconciled from chain)",
+      "category": "deploy",
+      "hash": "0x2e36106e67884958e3721e7f4e7021c8bcbb3412e6ca0897f9f623d55d1bacd5",
+      "status": 1,
+      "gas": 1522810,
+      "costWei": "30456201755799930",
+      "fromAddress": "0x0648adf1967692a0c991d7715b0b588452321fbd",
+      "to": null,
+      "contract": "0x02b8f7938e7b3c7d68894b12717283315f782b9b",
+      "block": 25937315,
+      "valueWei": "0"
+    },
+    {
+      "project": "polaris",
+      "purpose": "deploy/configure (reconciled from chain)",
+      "category": "deploy",
+      "hash": "0x090981847f34ca449d44b33a240c65af70956661bed848f5ca1c730da210e3b2",
+      "status": 1,
+      "gas": 3175946,
+      "costWei": "63518923661865738",
+      "fromAddress": "0x0648adf1967692a0c991d7715b0b588452321fbd",
+      "to": null,
+      "contract": "0xde99bf4827c7c7860de8e5b9e204b4f94dd1cffc",
+      "block": 25937319,
+      "valueWei": "0"
+    },
+    {
+      "project": "polaris",
+      "purpose": "deploy/configure (reconciled from chain)",
+      "category": "deploy",
+      "hash": "0x11c2353fb55734fc1319356b18beffd4126f6b56c55fc147dc6011837e92b845",
+      "status": 1,
+      "gas": 3080254,
+      "costWei": "61605083551532862",
+      "fromAddress": "0x0648adf1967692a0c991d7715b0b588452321fbd",
+      "to": null,
+      "contract": "0x9a110beee29e24c40cb993154286613d827f1a86",
+      "block": 25937324,
+      "valueWei": "0"
+    },
+    {
+      "project": "polaris",
+      "purpose": "deploy/configure (reconciled from chain)",
+      "category": "deploy",
+      "hash": "0x8f90cb6b3eaf6a8f40df50cfa9ba9b591f62f44072b3aa3b8b9862c4e77a9efb",
+      "status": 1,
+      "gas": 1567286,
+      "costWei": "31345721807080758",
+      "fromAddress": "0x0648adf1967692a0c991d7715b0b588452321fbd",
+      "to": null,
+      "contract": "0xce806e4bf02ef60bd960d25a170e97bec9870141",
+      "block": 25937330,
+      "valueWei": "0"
+    },
+    {
+      "project": "polaris",
+      "purpose": "deploy/configure (reconciled from chain)",
+      "category": "deploy",
+      "hash": "0x2da0f801a0fd18afb90f9a6d921853bfbf82cfd3699c02efe3d25d02ddf52295",
+      "status": 1,
+      "gas": 1508886,
+      "costWei": "30177721739745558",
+      "fromAddress": "0x0648adf1967692a0c991d7715b0b588452321fbd",
+      "to": null,
+      "contract": "0xd7bf04137472bc9bb6d76af795dc05c6696e1356",
+      "block": 25937336,
+      "valueWei": "0"
+    },
+    {
+      "project": "polaris",
+      "purpose": "deploy/configure (reconciled from chain)",
+      "category": "deploy",
+      "hash": "0x7a4c86517afbb387088920e8c8131ae0324d0cefbfcd8ff97de8c3f8f88cef4e",
+      "status": 1,
+      "gas": 852890,
+      "costWei": "17057800983382170",
+      "fromAddress": "0x0648adf1967692a0c991d7715b0b588452321fbd",
+      "to": null,
+      "contract": "0x79890ee43f520f232dccd567b6f021a44d3cf516",
+      "block": 25937342,
+      "valueWei": "0"
+    },
+    {
+      "project": "polaris",
+      "purpose": "deploy/configure (reconciled from chain)",
+      "category": "deploy",
+      "hash": "0xe693a284aaf475cbbfffa299ff81cd0736fa5064609a7dfa7745f64bf63c372f",
+      "status": 1,
+      "gas": 1531807,
+      "costWei": "30636141766173471",
+      "fromAddress": "0x0648adf1967692a0c991d7715b0b588452321fbd",
+      "to": null,
+      "contract": "0x8aa2fd0f5f928d7b0ee8f32a616e968689212bc3",
+      "block": 25937346,
+      "valueWei": "0"
+    },
+    {
+      "project": "polaris",
+      "purpose": "deploy/configure (reconciled from chain)",
+      "category": "deploy",
+      "hash": "0x6ba426fcdcf66c77029d2cdc0a9fe5244d576b61fe4283bd76be1883967c0e89",
+      "status": 1,
+      "gas": 1532035,
+      "costWei": "30640701766436355",
+      "fromAddress": "0x0648adf1967692a0c991d7715b0b588452321fbd",
+      "to": null,
+      "contract": "0xc772b6569e160cc5ed5e697374d4dade6959a27c",
+      "block": 25937352,
+      "valueWei": "0"
+    },
+    {
+      "project": "polaris",
+      "purpose": "deploy/configure (reconciled from chain)",
+      "category": "deploy",
+      "hash": "0x5bd189b2aebea8c632fe09926df5487e360ab186a2e001d9abcf37cc587b394f",
+      "status": 1,
+      "gas": 1887378,
+      "costWei": "37747562176146834",
+      "fromAddress": "0x0648adf1967692a0c991d7715b0b588452321fbd",
+      "to": null,
+      "contract": "0x5f368a741f490f365fb9b72a1707bee7a03ad851",
+      "block": 25937358,
+      "valueWei": "0"
+    },
+    {
+      "project": "polaris",
+      "purpose": "deploy/configure (reconciled from chain)",
+      "category": "deploy",
+      "hash": "0x6ec55cb74c28ac385fb5d5dc21b949044260df2b9bbc44d70fa7c54f8fbd2594",
+      "status": 1,
+      "gas": 3204729,
+      "costWei": "64094583695052537",
+      "fromAddress": "0x0648adf1967692a0c991d7715b0b588452321fbd",
+      "to": null,
+      "contract": "0x804c0f6f302a71cf36346a2f6936e034ea95eaad",
+      "block": 25937362,
+      "valueWei": "0"
+    },
+    {
+      "project": "polaris",
+      "purpose": "deploy/configure (reconciled from chain)",
+      "category": "deploy",
+      "hash": "0xaf149d32c879bd1be0ce3f1e8d1ace907906d0608a16454f762db253f9ddbba1",
+      "status": 1,
+      "gas": 1123115,
+      "costWei": "22462301294951595",
+      "fromAddress": "0x0648adf1967692a0c991d7715b0b588452321fbd",
+      "to": null,
+      "contract": "0xe62aee7e282b3a248d82b80cb1e9d28021b23ade",
+      "block": 25937369,
+      "valueWei": "0"
+    },
+    {
+      "project": "polaris",
+      "purpose": "deploy/configure (reconciled from chain)",
+      "category": "deploy",
+      "hash": "0x7fa022f890d2285634ab5676fe6bf416c07be002014b3e6ac5ef1851ab10e77f",
+      "status": 1,
+      "gas": 904135,
+      "costWei": "18082701042467655",
+      "fromAddress": "0x0648adf1967692a0c991d7715b0b588452321fbd",
+      "to": null,
+      "contract": "0xe1d5e1089142fd8304971a820918634265734471",
+      "block": 25937375,
+      "valueWei": "0"
+    },
+    {
+      "project": "polaris",
+      "purpose": "deploy/configure (reconciled from chain)",
+      "category": "deploy",
+      "hash": "0xee202e3dd098f2cc728503341f92e42ddf0b5ea6c9a16d7d3a7eb6b7acc9ca2d",
+      "status": 1,
+      "gas": 1231689,
+      "costWei": "24633781420137417",
+      "fromAddress": "0x0648adf1967692a0c991d7715b0b588452321fbd",
+      "to": null,
+      "contract": "0xc79a4aa7396c3e67ee461c3a92ffc4258e49361b",
+      "block": 25937381,
+      "valueWei": "0"
+    },
+    {
+      "project": "polaris",
+      "purpose": "deploy/configure (reconciled from chain)",
+      "category": "deploy",
+      "hash": "0x2bf3dc8925f6242b1f7bd5a6f207e56d75c376a02a2c6cb47db19e1c95e0e354",
+      "status": 1,
+      "gas": 2112477,
+      "costWei": "42249542435685981",
+      "fromAddress": "0x0648adf1967692a0c991d7715b0b588452321fbd",
+      "to": null,
+      "contract": "0x106364d30fbe8f05ca83b9c0f202eae41b2c8a3e",
+      "block": 25937387,
+      "valueWei": "0"
+    },
+    {
+      "project": "polaris",
+      "purpose": "deploy/configure (reconciled from chain)",
+      "category": "deploy",
+      "hash": "0x9ae80c69d3a54200916d8972a0b7ba687e29bb4fa2ffa129b005799262443347",
+      "status": 1,
+      "gas": 896258,
+      "costWei": "17925161033385474",
+      "fromAddress": "0x0648adf1967692a0c991d7715b0b588452321fbd",
+      "to": null,
+      "contract": "0x234384adcbcbaf68145a42f13b0e666444961c0e",
+      "block": 25937391,
+      "valueWei": "0"
+    },
+    {
+      "project": "polaris",
+      "purpose": "deploy/configure (reconciled from chain)",
+      "category": "deploy",
+      "hash": "0x49e4111fe7f83770a473ef9652805ef21965201b404e6266344ec93a3ff00f31",
+      "status": 1,
+      "gas": 47892,
+      "costWei": "957840055219476",
+      "fromAddress": "0x0648adf1967692a0c991d7715b0b588452321fbd",
+      "to": "0x02b8f7938e7b3c7d68894b12717283315f782b9b",
+      "contract": null,
+      "block": 25937397,
+      "valueWei": "0"
+    },
+    {
+      "project": "polaris",
+      "purpose": "deploy/configure (reconciled from chain)",
+      "category": "deploy",
+      "hash": "0x553b7c0b4074c29e1d9eec15ca007548fdc2da58c9362a1bde7325cba40b22d7",
+      "status": 1,
+      "gas": 47869,
+      "costWei": "957380055192957",
+      "fromAddress": "0x0648adf1967692a0c991d7715b0b588452321fbd",
+      "to": "0x02b8f7938e7b3c7d68894b12717283315f782b9b",
+      "contract": null,
+      "block": 25937401,
+      "valueWei": "0"
+    },
+    {
+      "project": "polaris",
+      "purpose": "deploy/configure (reconciled from chain)",
+      "category": "deploy",
+      "hash": "0xfa6e9eaf99b5ea5160aab869d7069895de2d55bc4949770d4bd0d4aefa76f863",
+      "status": 1,
+      "gas": 50019,
+      "costWei": "1000380057671907",
+      "fromAddress": "0x0648adf1967692a0c991d7715b0b588452321fbd",
+      "to": "0x02b8f7938e7b3c7d68894b12717283315f782b9b",
+      "contract": null,
+      "block": 25937405,
+      "valueWei": "0"
+    },
+    {
+      "project": "polaris",
+      "purpose": "deploy/configure (reconciled from chain)",
+      "category": "deploy",
+      "hash": "0x06011bea6d5b47b2b740251f81b0f80a9cd10c5281e5671d1898d14cfee769c4",
+      "status": 1,
+      "gas": 29904,
+      "costWei": "598080034479312",
+      "fromAddress": "0x0648adf1967692a0c991d7715b0b588452321fbd",
+      "to": "0x02b8f7938e7b3c7d68894b12717283315f782b9b",
+      "contract": null,
+      "block": 25937409,
+      "valueWei": "0"
+    },
+    {
+      "project": "polaris",
+      "purpose": "deploy/configure (reconciled from chain)",
+      "category": "deploy",
+      "hash": "0x1b5b9946ac1af3f9ecba9f35dc1855976ad551662e86d5f083fa46361a52b768",
+      "status": 1,
+      "gas": 47264,
+      "costWei": "945280054495392",
+      "fromAddress": "0x0648adf1967692a0c991d7715b0b588452321fbd",
+      "to": "0xd7bf04137472bc9bb6d76af795dc05c6696e1356",
+      "contract": null,
+      "block": 25937415,
+      "valueWei": "0"
+    }
+  ]
+}

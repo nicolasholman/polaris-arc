@@ -76,3 +76,30 @@ Idle pool cash can be parked in USYC (tested on a fork). Merchants get a dashboa
 Contracts and hashes: `packages/contracts/deployments/arc-testnet.json`.
 Status of every claim (Live / Fork / Not run): README "Arc stack" and
 docs/JUDGE-REPORT.md.
+
+<!-- MAINNET-ADDRESSES -->
+## Addresses — live mainnet and testnet
+
+Mainnet **5042: Live**, deployed 2026-10-14. [All mainnet addresses and transaction receipts](docs/MAINNET-DEPLOYMENT.md).
+Testnet **5042002: Live**; [testnet deployment](packages/contracts/deployments/arc-testnet.json) and [testnet evidence](docs/E2E-TESTNET.md).
+
+- USDC: [0x3600000000000000000000000000000000000000](https://explorer.arc.io/address/0x3600000000000000000000000000000000000000).
+- EURC: [0xbEf5f6d51CB62b58e6A8f77868681825C6fe21c1](https://explorer.arc.io/address/0xbEf5f6d51CB62b58e6A8f77868681825C6fe21c1).
+- ScoreManager: [0x02B8F7938e7B3c7D68894b12717283315F782b9b](https://explorer.arc.io/address/0x02B8F7938e7B3c7D68894b12717283315F782b9b).
+- PolarisLoanEngine: [0xDe99BF4827C7c7860DE8e5b9e204B4f94dD1cFFC](https://explorer.arc.io/address/0xDe99BF4827C7c7860DE8e5b9e204B4f94dD1cFFC).
+- PolarisPayments: [0x9A110BeEe29e24C40CB993154286613D827f1a86](https://explorer.arc.io/address/0x9A110BeEe29e24C40CB993154286613D827f1a86).
+- MerchantRegistry: [0xcE806E4bf02ef60bd960D25a170E97BEc9870141](https://explorer.arc.io/address/0xcE806E4bf02ef60bd960D25a170E97BEc9870141).
+- CollateralVault: [0xd7Bf04137472BC9Bb6D76af795DC05c6696E1356](https://explorer.arc.io/address/0xd7Bf04137472BC9Bb6D76af795DC05c6696E1356).
+- BatchSettlement: [0x79890eE43F520F232dCcd567B6F021A44d3cf516](https://explorer.arc.io/address/0x79890eE43F520F232dCcd567B6F021A44d3cf516).
+- PolarisSend: [0x8aA2fD0F5f928D7b0ee8F32a616e968689212Bc3](https://explorer.arc.io/address/0x8aA2fD0F5f928D7b0ee8F32a616e968689212Bc3).
+- PolarisSendEURC: [0xC772b6569E160cC5ED5E697374D4DADE6959a27C](https://explorer.arc.io/address/0xC772b6569E160cC5ED5E697374D4DADE6959a27C).
+- PolarisSplit: [0x5F368a741F490F365fB9b72a1707bee7a03AD851](https://explorer.arc.io/address/0x5F368a741F490F365fB9b72a1707bee7a03AD851).
+- PolarisCheckout: [0x804C0f6F302a71cF36346a2F6936E034ea95EaAD](https://explorer.arc.io/address/0x804C0f6F302a71cF36346a2F6936E034ea95EaAD).
+- CollectionsReceiver: [0xe62AEe7e282B3A248d82b80CB1e9d28021B23AdE](https://explorer.arc.io/address/0xe62AEe7e282B3A248d82b80CB1e9d28021B23AdE).
+- UnderwritingReceiver: [0xe1d5E1089142fD8304971A820918634265734471](https://explorer.arc.io/address/0xe1d5E1089142fD8304971A820918634265734471).
+- CreditGuard: [0xc79A4Aa7396c3e67ee461C3A92fFc4258e49361B](https://explorer.arc.io/address/0xc79A4Aa7396c3e67ee461C3A92fFc4258e49361B).
+- PolarisCCIPReceiver: [0x106364d30fBE8F05ca83b9c0F202EAE41b2C8a3e](https://explorer.arc.io/address/0x106364d30fBE8F05ca83b9c0F202EAE41b2C8a3e).
+- PolarisCctpHookReceiver: [0x234384Adcbcbaf68145A42f13b0E666444961C0e](https://explorer.arc.io/address/0x234384Adcbcbaf68145A42f13b0E666444961C0e).
+
+Mainnet smoke: [Smoke: Pay now 0.1 USDC signed checkout](https://explorer.arc.io/tx/0xa37dd595cf0f8e4ed74878f29ee88a8c5d68d640db3173ffec1449469c6ec0fe).
+<!-- /MAINNET-ADDRESSES -->
