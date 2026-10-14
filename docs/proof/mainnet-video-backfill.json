@@ -1,0 +1,13 @@
+{
+  "at": "2026-10-14T20:27:50.195Z",
+  "chainId": 5042,
+  "verifiedReceipts": 19,
+  "collections": {
+    "merchants": 1,
+    "payments": 5,
+    "plans": 2,
+    "subscriptions": 1,
+    "subscription_plans": 1,
+    "wallet_moves": 13
+  }
+}

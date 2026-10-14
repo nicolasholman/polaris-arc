@@ -1,0 +1,26 @@
+{
+  "at": "2026-10-14T20:32:32.683Z",
+  "results": [
+    {
+      "merchant": true,
+      "payments": 4,
+      "plans": 2,
+      "subscriptions": 1,
+      "moves": 13
+    },
+    {
+      "appEmailModal": true,
+      "originErrors": [],
+      "failedPrivyRequests": []
+    },
+    {
+      "businessPrivyModal": true,
+      "originErrors": [],
+      "failedPrivyRequests": []
+    },
+    {
+      "consoleErrors": [],
+      "ok": true
+    }
+  ]
+}
