@@ -548,10 +548,10 @@ const loanAbi = parseAbi([
 ]);
 
 /**
- * Pay the rest of a plan early. The intent pins the plan's current state
+ * Pay the amount shown in the confirmation. The intent pins the plan's current state
  * (`expectedRepaid`), so it can't be replayed after a collection moved it.
  */
-export async function payEarly(account: LocalAccount, plan: Plan): Promise<RelayReceipt> {
+export async function payEarly(account: LocalAccount, plan: Plan, amount: bigint): Promise<RelayReceipt> {
   let outstanding = plan.instalments.filter((i) => i.paidAt === null).reduce((sum, i) => sum + i.amount, 0n);
   let repaid = plan.instalments.filter((i) => i.paidAt !== null).reduce((sum, i) => sum + i.amount, 0n);
   if (isConfigured("loanEngine")) {
@@ -567,10 +567,11 @@ export async function payEarly(account: LocalAccount, plan: Plan): Promise<Relay
       // keep the plan's own figures; the relayer refuses a stale intent anyway
     }
   }
+  if (amount <= 0n || amount > outstanding) throw new Error("This plan changed. Refresh it before paying early.");
   const [domain, nonce] = await Promise.all([getDomain("loanEngine"), readNonce("loanEngine", account.address)]);
   const repay = await sign(
     account,
-    buildRepayIntent(domain, { loanId: plan.loanId, amount: outstanding, expectedRepaid: repaid, nonce, deadline: now() + 15n * MINUTE }),
+    buildRepayIntent(domain, { loanId: plan.loanId, amount, expectedRepaid: repaid, nonce, deadline: now() + 15n * MINUTE }),
   );
   return relayer.payEarly({ planId: plan.id, loanId: plan.loanId, borrower: account.address, repay });
 }

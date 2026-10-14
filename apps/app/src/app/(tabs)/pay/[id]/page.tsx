@@ -1,24 +1,13 @@
 import type { Metadata } from "next";
-import { lookupPaymentLink } from "@/lib/data";
-import { Home } from "@/screens/home";
-import { CheckoutRoute } from "@/sheets/checkout";
+import { PayLinkClient } from "./pay-link-client";
 
 type Props = { params: Promise<{ id: string }> };
 
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { id } = await params;
-  const { link } = await lookupPaymentLink(id);
-  return { title: link ? `Pay ${link.merchant.name}` : "Payment link" };
-}
+// Metadata must not open a buyer's checkout session on the server. The
+// browser owns the session and can retry a temporary API outage in place.
+export const metadata: Metadata = { title: "Pay with Polaris" };
 
-/** A merchant's payment link, opened cold: checkout over a blurred Home. */
 export default async function PayLinkPage({ params }: Props) {
   const { id } = await params;
-  const { link, gone } = await lookupPaymentLink(id);
-  return (
-    <>
-      <Home />
-      <CheckoutRoute link={link} gone={gone} cold />
-    </>
-  );
+  return <PayLinkClient id={id} />;
 }

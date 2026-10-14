@@ -1,5 +1,6 @@
 import "server-only";
 
+import { MIN_PAY_IN_4_CENTS } from "@/lib/data/format";
 import { existsSync, readFileSync } from "node:fs";
 import { isAbsolute, join, resolve } from "node:path";
 
@@ -527,7 +528,7 @@ function build(): ServerConfig {
     payIn4: {
       installments: 4,
       intervalSeconds: chain ? Math.max(payIn4Interval, chain.minIntervalSeconds) : payIn4Interval,
-      minCents: int("PAY_IN_4_MIN_CENTS", 20_00),
+      minCents: int("PAY_IN_4_MIN_CENTS", MIN_PAY_IN_4_CENTS),
       maxCents: int("PAY_IN_4_MAX_CENTS", 1_000_00),
     },
     receiptTimeoutMs: int("RELAYER_RECEIPT_TIMEOUT_MS", 15_000),
@@ -554,8 +555,15 @@ function localSessionFrom(production: boolean, chain: ChainConfig | null): Serve
   const token = env("POLARIS_LOCAL_SESSION_TOKEN");
   const wallet = env("POLARIS_LOCAL_SESSION_WALLET");
   if (!token && !wallet) return null;
-  if (production || !chain?.local || !flag("POLARIS_DISABLE_PRIVY")) {
-    throw new Error("POLARIS_LOCAL_SESSION_* is for `pnpm demo:local` only: a local chain, never in production (NODE_ENV=production), and POLARIS_DISABLE_PRIVY=1.");
+  // An explicit on-demand recording may use real mainnet with local persistence.
+  // It must run in development, publish only a loopback URL, and retain Privy's
+  // mainnet relayer. No merchant signing key is sent to the browser.
+  const recording = process.env.NODE_ENV === "development" && chain?.mainnet &&
+    flag("POLARIS_LOCAL_MAINNET_RECORDING") &&
+    /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(env("POLARIS_PUBLIC_URL") ?? "") &&
+    env("RELAYER_MODE") === "privy" && !env("NEXT_PUBLIC_POLARIS_LOCAL_SESSION_KEY");
+  if (production || (!recording && (!chain?.local || !flag("POLARIS_DISABLE_PRIVY")))) {
+    throw new Error("POLARIS_LOCAL_SESSION_* is for `pnpm demo:local` only, or explicit loopback mainnet recording in development with the Privy relayer; never in production.");
   }
   if (!token || token.length < 32 || !/^[A-Za-z0-9_-]+$/.test(token)) {
     throw new Error("POLARIS_LOCAL_SESSION_TOKEN must be at least 32 random letters, digits, - or _.");

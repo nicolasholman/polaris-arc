@@ -1,5 +1,6 @@
 import "server-only";
 
+import { MIN_PAY_IN_4_CENTS } from "@/lib/data/format";
 import { getAddress, isAddress, zeroAddress } from "viem";
 
 import { money } from "@/lib/data/format";
@@ -92,7 +93,7 @@ export function parseCreateLink(body: Record<string, unknown>): CreateLinkInput 
   const modes = [...new Set(rawModes)] as PayMode[];
   if (!modes.every((m) => MODES.includes(m))) invalid("Choose Pay now, Pay in 4 or Subscribe.", "modes");
   // Pay in 4 has a floor: below $20 the instalments round to nothing useful.
-  if (modes.includes("later") && amountCents < 20_00) invalid(`Pay in 4 needs an amount of at least ${money(20_00)}.`, "modes");
+  if (modes.includes("later") && amountCents < MIN_PAY_IN_4_CENTS) invalid(`Pay in 4 needs an amount of at least ${money(MIN_PAY_IN_4_CENTS)}.`, "modes");
 
   const usage = body.usage as LinkUsage;
   if (!USAGES.includes(usage)) invalid("Choose single use or reusable.", "usage");

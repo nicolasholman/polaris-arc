@@ -1,5 +1,6 @@
 "use client";
 
+import { MIN_PAY_IN_4_CENTS } from "@/lib/data/format";
 import {
   Button,
   Chip,
@@ -329,7 +330,7 @@ function NewLinkDialog({
   const [busy, setBusy] = useState(false);
 
   const cents = parseAmount(amount);
-  const quote = cents && cents >= 20_00 ? payInFourQuote(cents) : null;
+  const quote = cents && cents >= MIN_PAY_IN_4_CENTS ? payInFourQuote(cents) : null;
 
   const reset = () => {
     setDescription("");
@@ -353,7 +354,7 @@ function NewLinkDialog({
     if (!description.trim()) next.description = "Say what the buyer is paying for.";
     if (cents === null) next.amountCents = "Enter an amount, like 200 or 49.50.";
     if (!modes.length) next.modes = "Choose at least one way to pay.";
-    if (modes.includes("later") && cents !== null && cents < 20_00) next.modes = "Pay in 4 needs at least $20.00.";
+    if (modes.includes("later") && cents !== null && cents < MIN_PAY_IN_4_CENTS) next.modes = `Pay in 4 needs at least ${money(MIN_PAY_IN_4_CENTS)}.`;
     setErrors(next);
     if (Object.keys(next).length) return;
     setBusy(true);

@@ -61,6 +61,11 @@ export function describeDuration(seconds: number): string {
     const weeks = seconds / WEEK;
     return weeks === 1 ? "a week" : `${weeks} weeks`;
   }
+  if (seconds < DAY) {
+    if (seconds % 3600 === 0) return seconds === 3600 ? "an hour" : `${seconds / 3600} hours`;
+    const minutes = Math.max(1, Math.round(seconds / 60));
+    return minutes === 1 ? "a minute" : `${minutes} minutes`;
+  }
   const days = Math.max(1, Math.round(seconds / DAY));
   return days === 1 ? "a day" : `${days} days`;
 }

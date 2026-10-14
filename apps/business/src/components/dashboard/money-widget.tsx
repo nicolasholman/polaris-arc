@@ -1,5 +1,6 @@
 "use client";
 
+import { MIN_PAY_IN_4_CENTS } from "@/lib/data/format";
 import {
   BalanceSummaryCard,
   Button,
@@ -548,7 +549,7 @@ function RequestPanel({ onCreated, onSwitch, secondary }: { onCreated?: (link: P
   const [link, setLink] = useState<PaymentLink | null>(null);
 
   const cents = parseAmount(amount);
-  const quote = cents && cents >= 20_00 && modes.includes("later") ? payInFourQuote(cents) : null;
+  const quote = cents && cents >= MIN_PAY_IN_4_CENTS && modes.includes("later") ? payInFourQuote(cents) : null;
   const fee = cents ? Math.round((cents * FEE_BPS) / 10_000) : 0;
   const toggle = (m: PayMode) => {
     setModes((cur) => (cur.includes(m) ? cur.filter((x) => x !== m) : [...cur, m]));
@@ -560,7 +561,7 @@ function RequestPanel({ onCreated, onSwitch, secondary }: { onCreated?: (link: P
     if (cents === null) next.amount = "Enter an amount, like 200 or 49.50.";
     if (!description.trim()) next.description = "Say what the buyer is paying for.";
     if (!modes.length) next.modes = "Choose at least one way to pay.";
-    if (modes.includes("later") && cents !== null && cents < 20_00) next.modes = "Pay in 4 needs at least $20.00.";
+    if (modes.includes("later") && cents !== null && cents < MIN_PAY_IN_4_CENTS) next.modes = `Pay in 4 needs at least ${money(MIN_PAY_IN_4_CENTS)}.`;
     setErrors(next);
     if (Object.keys(next).length) return;
     setBusy(true);
@@ -641,7 +642,7 @@ function RequestPanel({ onCreated, onSwitch, secondary }: { onCreated?: (link: P
                   ))}
                 </div>
                 <p className="ui-figure mt-3 text-[14px] text-ui-muted">
-                  {quote ? `In 4: 4 × ${money(quote.each)} at 10% APR, paid by the buyer` : modes.includes("later") ? "Pay in 4 from $20.00" : "Paid in full, in dollars"}
+                  {quote ? `In 4: 4 × ${money(quote.each)} at 10% APR, paid by the buyer` : modes.includes("later") ? `Pay in 4 from ${money(MIN_PAY_IN_4_CENTS)}` : "Paid in full, in dollars"}
                 </p>
               </SwapCard>
             }

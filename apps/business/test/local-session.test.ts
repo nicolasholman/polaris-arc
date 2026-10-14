@@ -1,9 +1,12 @@
+import { readFileSync, writeFileSync, mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { GET as me } from "@/app/api/me/route";
 import { getConfig, resetConfig } from "@/server/env";
 
-import { json, params, request, setupServer } from "./helpers/env";
+import { DEPLOYMENT, json, params, request, setupServer } from "./helpers/env";
 
 /**
  * `pnpm demo:local`'s signed-in dashboard: the demo merchant for one random
@@ -57,5 +60,35 @@ describe("the local demo session", () => {
     expect(() => getConfig()).toThrow(/demo:local/);
     setEnv({ NODE_ENV: "test", POLARIS_LOCAL_SESSION_TOKEN: "short" });
     expect(() => getConfig()).toThrow(/at least 32/);
+  });
+});
+
+
+describe("loopback mainnet recording session", () => {
+  it("requires development, explicit opt-in, loopback and no public signing key", () => {
+    const dir = mkdtempSync(join(tmpdir(), "polaris-recording-"));
+    try {
+      const deployment = JSON.parse(readFileSync(DEPLOYMENT, "utf8"));
+      deployment.chainId = 5042;
+      const file = join(dir, "mainnet.json");
+      writeFileSync(file, JSON.stringify(deployment));
+      setEnv({ NODE_ENV: "development", POLARIS_DEPLOYMENT_FILE: file,
+        RELAYER_MODE: "privy", PRIVY_RELAYER_WALLET_ID: "test-wallet",
+        PRIVY_RELAYER_ADDRESS: WALLET, PRIVY_RELAYER_AUTH_KEY: "test-auth-key",
+        POLARIS_DISABLE_PRIVY: "0", POLARIS_LOCAL_MAINNET_RECORDING: "1",
+        POLARIS_PUBLIC_URL: "http://127.0.0.1:9601" });
+      expect(getConfig().localSession?.wallet).toBe(WALLET);
+      for (const changes of [
+        { POLARIS_LOCAL_MAINNET_RECORDING: "0" },
+        { POLARIS_PUBLIC_URL: "https://example.com" },
+        { NEXT_PUBLIC_POLARIS_LOCAL_SESSION_KEY: "present" },
+        { NODE_ENV: "production" },
+      ] as Record<string, string>[]) {
+        const before = Object.fromEntries(Object.keys(changes).map(k => [k, process.env[k] ?? ""]));
+        setEnv(changes);
+        expect(() => getConfig()).toThrow(/demo:local/);
+        setEnv(before);
+      }
+    } finally { rmSync(dir, { recursive: true }); }
   });
 });

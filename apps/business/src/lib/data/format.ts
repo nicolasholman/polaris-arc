@@ -157,3 +157,8 @@ export function isToday(iso: string, now = Date.now()): boolean {
   const b = new Date(now);
   return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
 }
+
+/** Configurable product minimum; contracts still enforce credit and liquidity limits. */
+const configuredMinimum = Number(process.env.NEXT_PUBLIC_PAY_IN_4_MIN_CENTS || "2000");
+export const MIN_PAY_IN_4_CENTS = Number.isSafeInteger(configuredMinimum) && configuredMinimum >= 100
+  ? configuredMinimum : 2000;

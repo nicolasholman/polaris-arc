@@ -199,6 +199,12 @@ export function setMerchantVerifierForTests(verifier: MerchantVerifier | null): 
 function localSession(req: Request): AuthedMerchant | null {
   const local = getConfig().localSession;
   if (!local) return null;
+  if (getConfig().chain?.mainnet) {
+    const host = new URL(req.url).hostname;
+    const origin = req.headers.get("origin");
+    if (!["localhost", "127.0.0.1"].includes(host) ||
+        (origin && !["localhost", "127.0.0.1"].includes(new URL(origin).hostname))) return null;
+  }
   const presented = bearer(req);
   if (!presented) return null;
   const a = Buffer.from(presented);

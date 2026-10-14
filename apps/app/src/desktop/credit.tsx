@@ -435,7 +435,7 @@ export function ScoreDesktop() {
           summary={`Your next payment to ${nextPlan.merchant.name}, due ${relativeDay(next.dueAt)}. Paying early costs nothing extra.`}
           busyLabel="Paying…"
           onAccount={async (signer) => {
-            const receipt = await payEarly(signer, nextPlan);
+            const receipt = await payEarly(signer, nextPlan, next.amount);
             setPaid({ receipt, amount: next.amount, merchant: nextPlan.merchant.name });
           }}
         />

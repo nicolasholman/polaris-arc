@@ -443,7 +443,7 @@ export function CheckoutRoute({ link, gone, cold }: { cold?: boolean; gone?: Lin
 const noSubscribe = () => () => undefined;
 
 /** A session that was already paid, or has expired: nothing to pay, and the way back. */
-function CheckoutClosed({ link, framed }: { link: PaymentLink; framed?: boolean }) {
+export function CheckoutClosed({ link, framed }: { link: PaymentLink; framed?: boolean }) {
   const paid = link.status === "paid";
   // Read after hydration: the merchant's page, or none when the link came back to Polaris itself.
   const backTo = useSyncExternalStore(

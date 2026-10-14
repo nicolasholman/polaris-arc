@@ -404,7 +404,7 @@ export function PlanDrawerContent({ id }: { id: string }) {
           busyLabel="Paying…"
           onAccount={async (signer) => {
             const amount = p.next!.amount;
-            const receipt = await payEarly(signer, plan);
+            const receipt = await payEarly(signer, plan, amount);
             setPaid({ receipt, amount });
           }}
         />
