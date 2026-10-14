@@ -1,0 +1,32 @@
+{
+  "at": "2026-10-14T16:03:18.125Z",
+  "base": "https://polaris-arc-landing.vercel.app",
+  "readOnly": true,
+  "consoleErrors": [],
+  "results": [
+    {
+      "route": "/",
+      "status": 200,
+      "bodyPresent": true,
+      "testnetWording": [],
+      "wrongExplorerLinks": [],
+      "pageErrors": [],
+      "ok": true
+    },
+    {
+      "rpc": "https://rpc.mainnet.arc.io",
+      "chainId": 5042,
+      "codeBytes": null,
+      "ok": true
+    },
+    {
+      "mainnetVisible": true,
+      "explorerLinks": 0,
+      "ok": true
+    },
+    {
+      "mobileOverflow": false,
+      "ok": true
+    }
+  ]
+}

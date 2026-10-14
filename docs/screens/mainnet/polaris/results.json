@@ -1,0 +1,174 @@
+{
+  "at": "2026-10-14T15:46:45.519Z",
+  "base": "https://polaris-arc-lemon.vercel.app",
+  "readOnly": true,
+  "consoleErrors": [],
+  "results": [
+    {
+      "route": "/",
+      "status": 200,
+      "bodyPresent": true,
+      "testnetWording": [],
+      "wrongExplorerLinks": [],
+      "pageErrors": [],
+      "ok": true
+    },
+    {
+      "route": "/onboard",
+      "status": 200,
+      "bodyPresent": true,
+      "testnetWording": [],
+      "wrongExplorerLinks": [],
+      "pageErrors": [],
+      "ok": true
+    },
+    {
+      "route": "/activity",
+      "status": 200,
+      "bodyPresent": true,
+      "testnetWording": [],
+      "wrongExplorerLinks": [],
+      "pageErrors": [],
+      "ok": true
+    },
+    {
+      "route": "/cards",
+      "status": 200,
+      "bodyPresent": true,
+      "testnetWording": [],
+      "wrongExplorerLinks": [],
+      "pageErrors": [],
+      "ok": true
+    },
+    {
+      "route": "/plans",
+      "status": 200,
+      "bodyPresent": true,
+      "testnetWording": [],
+      "wrongExplorerLinks": [],
+      "pageErrors": [],
+      "ok": true
+    },
+    {
+      "route": "/insights",
+      "status": 200,
+      "bodyPresent": true,
+      "testnetWording": [],
+      "wrongExplorerLinks": [],
+      "pageErrors": [],
+      "ok": true
+    },
+    {
+      "route": "/credit",
+      "status": 200,
+      "bodyPresent": true,
+      "testnetWording": [],
+      "wrongExplorerLinks": [],
+      "pageErrors": [],
+      "ok": true
+    },
+    {
+      "route": "/settings",
+      "status": 200,
+      "bodyPresent": true,
+      "testnetWording": [],
+      "wrongExplorerLinks": [],
+      "pageErrors": [],
+      "ok": true
+    },
+    {
+      "route": "/profile",
+      "status": 200,
+      "bodyPresent": true,
+      "testnetWording": [],
+      "wrongExplorerLinks": [],
+      "pageErrors": [],
+      "ok": true
+    },
+    {
+      "route": "/send",
+      "status": 200,
+      "bodyPresent": true,
+      "testnetWording": [],
+      "wrongExplorerLinks": [],
+      "pageErrors": [],
+      "ok": true
+    },
+    {
+      "route": "/receive",
+      "status": 200,
+      "bodyPresent": true,
+      "testnetWording": [],
+      "wrongExplorerLinks": [],
+      "pageErrors": [],
+      "ok": true
+    },
+    {
+      "route": "/add",
+      "status": 200,
+      "bodyPresent": true,
+      "testnetWording": [],
+      "wrongExplorerLinks": [],
+      "pageErrors": [],
+      "ok": true
+    },
+    {
+      "route": "/accounts",
+      "status": 200,
+      "bodyPresent": true,
+      "testnetWording": [],
+      "wrongExplorerLinks": [],
+      "pageErrors": [],
+      "ok": true
+    },
+    {
+      "route": "/notifications",
+      "status": 200,
+      "bodyPresent": true,
+      "testnetWording": [],
+      "wrongExplorerLinks": [],
+      "pageErrors": [],
+      "ok": true
+    },
+    {
+      "route": "/pay",
+      "status": 200,
+      "bodyPresent": true,
+      "testnetWording": [],
+      "wrongExplorerLinks": [],
+      "pageErrors": [],
+      "ok": true
+    },
+    {
+      "route": "/split/new",
+      "status": 200,
+      "bodyPresent": true,
+      "testnetWording": [],
+      "wrongExplorerLinks": [],
+      "pageErrors": [],
+      "ok": true
+    },
+    {
+      "networkApi": "https://polaris-arc-business.vercel.app/api/public/network",
+      "status": 200,
+      "chainId": 5042,
+      "ok": true
+    },
+    {
+      "rpc": "https://rpc.mainnet.arc.io",
+      "chainId": 5042,
+      "contract": "0x9A110BeEe29e24C40CB993154286613D827f1a86",
+      "codeBytes": 13487,
+      "ok": true
+    },
+    {
+      "mainnetVisible": true,
+      "explorerLinks": 0,
+      "ok": true
+    },
+    {
+      "mobileOverflow": false,
+      "ok": true
+    }
+  ]
+}

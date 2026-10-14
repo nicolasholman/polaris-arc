@@ -61,7 +61,7 @@ export function SettingsView() {
             value="Test mode"
             badge={
               <StatusPill tone="lime" size="sm">
-                {capabilities?.chain ? capabilities.chain.name : "Arc testnet"}
+                {capabilities?.chain ? capabilities.chain.name : (process.env.NEXT_PUBLIC_CHAIN_ID === "5042" ? "Arc mainnet" : "Arc testnet")}
               </StatusPill>
             }
             stats={[

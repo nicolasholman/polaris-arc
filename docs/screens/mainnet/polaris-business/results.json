@@ -1,0 +1,120 @@
+{
+  "at": "2026-10-14T16:03:10.618Z",
+  "base": "https://polaris-arc-business.vercel.app",
+  "readOnly": true,
+  "consoleErrors": [],
+  "results": [
+    {
+      "route": "/",
+      "status": 200,
+      "bodyPresent": true,
+      "testnetWording": [],
+      "wrongExplorerLinks": [],
+      "pageErrors": [],
+      "ok": true
+    },
+    {
+      "route": "/login",
+      "status": 200,
+      "bodyPresent": true,
+      "testnetWording": [],
+      "wrongExplorerLinks": [],
+      "pageErrors": [],
+      "ok": true
+    },
+    {
+      "route": "/dashboard",
+      "status": 200,
+      "bodyPresent": true,
+      "testnetWording": [],
+      "wrongExplorerLinks": [],
+      "pageErrors": [],
+      "ok": true
+    },
+    {
+      "route": "/dashboard/payments",
+      "status": 200,
+      "bodyPresent": true,
+      "testnetWording": [],
+      "wrongExplorerLinks": [],
+      "pageErrors": [],
+      "ok": true
+    },
+    {
+      "route": "/dashboard/links",
+      "status": 200,
+      "bodyPresent": true,
+      "testnetWording": [],
+      "wrongExplorerLinks": [],
+      "pageErrors": [],
+      "ok": true
+    },
+    {
+      "route": "/dashboard/plans",
+      "status": 200,
+      "bodyPresent": true,
+      "testnetWording": [],
+      "wrongExplorerLinks": [],
+      "pageErrors": [],
+      "ok": true
+    },
+    {
+      "route": "/dashboard/payouts",
+      "status": 200,
+      "bodyPresent": true,
+      "testnetWording": [],
+      "wrongExplorerLinks": [],
+      "pageErrors": [],
+      "ok": true
+    },
+    {
+      "route": "/dashboard/automation",
+      "status": 200,
+      "bodyPresent": true,
+      "testnetWording": [],
+      "wrongExplorerLinks": [],
+      "pageErrors": [],
+      "ok": true
+    },
+    {
+      "route": "/dashboard/developers",
+      "status": 200,
+      "bodyPresent": true,
+      "testnetWording": [],
+      "wrongExplorerLinks": [],
+      "pageErrors": [],
+      "ok": true
+    },
+    {
+      "route": "/dashboard/settings",
+      "status": 200,
+      "bodyPresent": true,
+      "testnetWording": [],
+      "wrongExplorerLinks": [],
+      "pageErrors": [],
+      "ok": true
+    },
+    {
+      "networkApi": "https://polaris-arc-business.vercel.app/api/public/network",
+      "status": 200,
+      "chainId": 5042,
+      "ok": true
+    },
+    {
+      "rpc": "https://rpc.mainnet.arc.io",
+      "chainId": 5042,
+      "contract": "0x9A110BeEe29e24C40CB993154286613D827f1a86",
+      "codeBytes": 13487,
+      "ok": true
+    },
+    {
+      "mainnetVisible": true,
+      "explorerLinks": 0,
+      "ok": true
+    },
+    {
+      "mobileOverflow": false,
+      "ok": true
+    }
+  ]
+}

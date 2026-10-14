@@ -57,7 +57,7 @@ export function LoginFrame({ children }: { children: ReactNode }) {
           <div className="flex flex-1 flex-col justify-center py-6 lg:py-10">
             <div className="w-full max-w-[460px]">{children}</div>
           </div>
-          <p className="text-[13px] text-ui-muted">Arc testnet. Test USDC only.</p>
+          <p className="text-[13px] text-ui-muted">{process.env.NEXT_PUBLIC_CHAIN_ID === "5042" ? "Arc mainnet. Payments use real USDC." : "Arc testnet. Test USDC only."}</p>
         </div>
         <Showcase />
       </main>

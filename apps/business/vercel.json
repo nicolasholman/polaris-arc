@@ -2,15 +2,5 @@
   "framework": "nextjs",
   "installCommand": "cd ../.. && pnpm install --frozen-lockfile --filter @polaris/business...",
   "buildCommand": "pnpm build",
-  "outputDirectory": ".next",
-  "crons": [
-    {
-      "path": "/api/cron/tick",
-      "schedule": "0 4 * * *"
-    },
-    {
-      "path": "/api/cron/collections",
-      "schedule": "10 4 * * *"
-    }
-  ]
+  "outputDirectory": ".next"
 }

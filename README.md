@@ -1,8 +1,8 @@
 # Polaris on Arc
 
-Live: https://polaris-arc-lemon.vercel.app (Arc testnet)
+Live: https://polaris-arc-lemon.vercel.app (Arc mainnet, chain 5042)
 
-Hosting and checks: [docs/HOSTED.md](docs/HOSTED.md). Vercel runs collections daily; the standalone keeper supports a faster cadence. Atlas access from Vercel is pending, so merchant persistence is not yet healthy.
+Hosting and checks: [docs/HOSTED.md](docs/HOSTED.md). Scheduled writes are disabled in this migration; the standalone keeper remains on-demand. Atlas access from Vercel is pending, so merchant persistence is not yet healthy.
 
 
 **Stripe for every app on Arc.** One payment link to get paid now, in four
@@ -263,3 +263,7 @@ Testnet **5042002: Live**; [testnet deployment](packages/contracts/deployments/a
 
 Mainnet smoke: [Smoke: Pay now 0.1 USDC signed checkout](https://explorer.arc.io/tx/0xa37dd595cf0f8e4ed74878f29ee88a8c5d68d640db3173ffec1449469c6ec0fe).
 <!-- /MAINNET-ADDRESSES -->
+
+## Production network
+
+Live: https://polaris-arc-lemon.vercel.app (Arc mainnet, chain 5042). [Hosted mainnet checks](docs/HOSTED-MAINNET.md). The prepared Privy relayer is configured. Scheduled collection/payout jobs are not enabled by this migration; merchant and shop storage readiness remains separate. No mainnet transactions were sent during the hosting migration. Historical **Live (testnet)** and **Fork** results below are separate evidence, not production smoke results.

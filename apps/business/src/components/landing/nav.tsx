@@ -47,7 +47,7 @@ export function useNetworkName(): string | null | undefined {
 /** "Local Hardhat", "Arc testnet", or where it is headed when nothing is deployed yet. */
 export function networkLabel(name: string | null | undefined): string {
   if (name === undefined) return "USDC on Arc";
-  if (name === null) return "Arc testnet launch in October";
+  if (name === null) return process.env.NEXT_PUBLIC_CHAIN_ID === "5042" ? "Arc mainnet" : "Arc testnet";
   return name === "Arc Testnet" ? "Arc testnet" : name;
 }
 

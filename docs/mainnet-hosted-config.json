@@ -1,0 +1,72 @@
+[
+  {
+    "base": "https://polaris-arc-lemon.vercel.app",
+    "routes": [
+      "/",
+      "/onboard",
+      "/activity",
+      "/cards",
+      "/plans",
+      "/insights",
+      "/credit",
+      "/settings",
+      "/profile",
+      "/send",
+      "/receive",
+      "/add",
+      "/accounts",
+      "/notifications",
+      "/pay",
+      "/split/new"
+    ],
+    "waitMs": 3000,
+    "name": "polaris",
+    "contract": "0x9A110BeEe29e24C40CB993154286613D827f1a86",
+    "networkApi": "https://polaris-arc-business.vercel.app/api/public/network",
+    "requireVisible": false,
+    "requireExplorer": false,
+    "chainPath": [
+      "data",
+      "chainId"
+    ]
+  },
+  {
+    "name": "polaris-business",
+    "base": "https://polaris-arc-business.vercel.app",
+    "routes": [
+      "/",
+      "/login",
+      "/dashboard",
+      "/dashboard/payments",
+      "/dashboard/links",
+      "/dashboard/plans",
+      "/dashboard/payouts",
+      "/dashboard/automation",
+      "/dashboard/developers",
+      "/dashboard/settings"
+    ],
+    "networkApi": "https://polaris-arc-business.vercel.app/api/public/network",
+    "chainPath": [
+      "data",
+      "chainId"
+    ],
+    "contract": "0x9A110BeEe29e24C40CB993154286613D827f1a86"
+  },
+  {
+    "name": "polaris-landing",
+    "base": "https://polaris-arc-landing.vercel.app",
+    "routes": [
+      "/"
+    ]
+  },
+  {
+    "name": "polaris-shop",
+    "base": "https://polaris-arc-shop.vercel.app",
+    "routes": [
+      "/",
+      "/shop",
+      "/cart",
+      "/checkout"
+    ]
+  }
+]

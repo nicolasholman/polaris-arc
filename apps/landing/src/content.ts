@@ -173,7 +173,7 @@ export const faq = {
     },
     {
       q: "Is it live?",
-      a: "On Arc testnet today. Payment links, pay-in-4, subscriptions and send-by-link run end to end there. Credit stays on testnet while we're in beta; mainnet starts with Pay now and Send, capped.",
+      a: "Contracts and production frontends are deployed on Arc mainnet. Earlier live-flow and fork verification is documented separately. Merchant onboarding and payment availability depend on service readiness.",
     },
   ],
 };
@@ -186,7 +186,7 @@ export const testimonials = {
   intervalMs: 6000,
   items: [
     {
-      name: "Halcyon, the demo shop on Arc testnet",
+      name: "Halcyon, the demonstration shop on Arc",
       quote:
         "“One link, and the order was paid in dollars before the buyer closed the tab. Pay in 4 at checkout, with the credit risk never ours to carry.”",
     },
@@ -236,7 +236,7 @@ export const footer = {
   },
   location: {
     title: "Location",
-    lines: ["Remote-first, on Arc.", "Live on Arc testnet"],
+    lines: ["Remote-first, on Arc.", process.env.NEXT_PUBLIC_CHAIN_ID === "5042" ? "Deployed on Arc mainnet" : "Deployed on Arc testnet"],
   },
   socials: [
     { label: "GitHub", icon: "github", href: REPO_URL },

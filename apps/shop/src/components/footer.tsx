@@ -56,7 +56,7 @@ export function Footer() {
             <span className="display text-[1.25rem]">Halcyon</span>
           </div>
           <p className="max-w-xl sm:text-right">
-            Halcyon is a demonstration store. Orders are paid in test mode on Arc testnet, and nothing is ever shipped.
+            Halcyon is a demonstration store. Nothing is ever shipped. Checkout is available only when a merchant is configured; review the network and amount before paying.
           </p>
         </div>
       </div>
