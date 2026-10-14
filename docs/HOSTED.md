@@ -1,43 +1,49 @@
-# Hosted Arc testnet build
+# Vercel — Arc testnet
 
-Railway project: `polaris-arc-testnet` (`205ff9b0-43d3-403c-bbef-2a79339f252a`).
+LEAD: RUN THESE
+```sh
+node scripts/e2e-browser-polaris.mjs
+node scripts/check-hosted-storage.mjs
+node scripts/check-shop-storage.mjs
+```
 
-| Service | URL | Storage |
+| Surface | URL | Service class |
 |---|---|---|
-| app | https://app-production-5010.up.railway.app | Stateless buyer app; passkeys |
-| business | https://business-production-9696.up.railway.app | SQLite volume at `/data`; API, relayer, chain sync |
-| keeper | https://keeper-production-24ff.up.railway.app/health | Collections and signed underwriting requests |
+| Buyer | https://polaris-arc-lemon.vercel.app | Next.js frontend and FX API |
+| Business | https://polaris-arc-business.vercel.app | Merchant UI and request/response API |
+| Landing | https://polaris-arc-landing.vercel.app | Static marketing frontend |
+| Shop | https://polaris-arc-shop.vercel.app | Demo store frontend and serverless order API; merchant credentials pending |
 
-All three read Arc testnet (5042002). Contract addresses come from
-`packages/contracts/deployments/arc-testnet.json`; the buyer reads `/api/public/network`.
-The API allows the buyer origin. Only the business API holds the relayer key; only the
-keeper holds the keeper key. Secrets are Railway runtime variables, excluded from uploads.
+The hosted testnet backend does not read Arc mainnet price feeds; those rates are unavailable without a local mainnet fork.
 
-Redeploy from this repo root with `railway up --service business|app|keeper --detach`.
-Each service sets `RAILWAY_DOCKERFILE_PATH` to its Dockerfile. Wait for the matching
-release to reach SUCCESS, then check `/api/health/ready`, `/api/health`, and keeper `/health`.
+The buyer's deployment name is `polaris-arc`; Vercel assigned the `-lemon` domain because the unsuffixed domain belongs to someone else.
+Contracts are read from `packages/contracts/deployments/arc-testnet.json` (explicitly traced into the business function).
+Existing Atlas is isolated as `arc_polaris_testnet` (merchant records) and `arc_polaris_shop_testnet` (demo orders).
+No Railway, new database service, VM or paid resource was created.
 
-The merchant dashboard requires Privy credentials (`PRIVY_APP_ID`, `PRIVY_APP_SECRET`,
-`NEXT_PUBLIC_PRIVY_APP_ID`) and both hosted origins allowed in the Privy dashboard.
-Those credentials were not present in this port's env file. Passkeys and the testnet
-local-key relayer do not depend on Privy. Automatic payouts and merchant activation remain off.
-Optional landing, demo shop, and Envio indexer are not hosted. Cross-chain flows remain
-Not run live; prior fork evidence is unchanged.
+**Workers:** Vercel cron calls authenticated `/api/cron/tick` daily at 04:00 UTC and `/api/cron/collections` at 04:10 UTC.
+The latter is hard-restricted to Arc testnet. Both require `CRON_SECRET`; long-running loops are disabled on Vercel.
+This is daily processing, not the former per-block cadence. For immediate demo collections use `pnpm --filter @polaris/keeper once` locally.
+The optional signed underwriting provider/CCIP watcher is not hosted; use the existing keeper on demand for those demos.
+No always-on service is needed for the basic buyer frontend or HTTP payment relay. No hosted payment or scheduled collection was sent in this pass.
 
-Checks and screenshots: `docs/screens/hosted/`. The hosted action script sends 0.10 USDC
-and claims it back through the public relayer; it requires the deployer key in the process
-environment and must run under the shared deployer lock. No mainnet broadcasts.
+**Verification:** database and business typechecks pass; existing storage/webhook tests 32/32, shop tests 96/96.
+Real Atlas tests preserve eight simultaneous updates in both merchant and shop storage; merchant tests also check duplicates, null/range semantics and immutable IDs.
+Business UI: 10/10 routes HTTP 200 with zero console errors. Public network endpoint returns chain 5042002.
+Runtime readiness remains false: Atlas accepts this machine but Vercel gets TLS alert 80. Atlas Network Access must allow the intended Vercel deployment.
+Buyer: 16/16 routes HTTP 200 with zero console errors, no mobile overflow, payment contract bytecode verified on live testnet.
+The wallet-free first step created a browser account with a virtual WebAuthn authenticator (no hardware Face ID or transaction claimed).
+Shop: 4/4 routes HTTP 200 with zero console errors and no mobile overflow. Landing evidence is also saved under `docs/screens/hosted/`.
+Privy allowed origins must include the buyer and business URLs; real Privy authentication was not completed.
+The shop clearly refuses checkout until an Arc merchant API key and webhook secret are configured; its product catalogue is demo merchandise.
 
-Known runtime weakness: the optional CCIP history scanner can hit the public RPC's
-rate limit. The keeper health check and ordinary collections scan remain healthy;
-no live cross-chain lane is configured or claimed as verified.
+**Env:** buyer `NEXT_PUBLIC_POLARIS_API_URL`, `NEXT_PUBLIC_CHAIN_ID=5042002`, `NEXT_PUBLIC_RPC_URL`, `NEXT_PUBLIC_RP_ID`, `NEXT_PUBLIC_PRIVY_APP_ID`.
+Business `POLARIS_DEPLOYMENT=arc-testnet`, `POLARIS_RPC_URL`, `POLARIS_DB_URL`, `POLARIS_MONGO_DB`, `POLARIS_WORKERS=0`, `POLARIS_KEY_PEPPER`, `CRON_SECRET`,
+`POLARIS_CHECKOUT_ORIGIN`, `POLARIS_PUBLIC_URL`, `POLARIS_APP_ORIGINS`, `RELAYER_MODE=local`, `RELAYER_LOCAL_ALLOW_TESTNET=1`, `RELAYER_PRIVATE_KEY`,
+`POLARIS_KEEPER_PRIVATE_KEY`, `REGISTRY_ACTIVATOR=off`, `PRIVY_APP_ID`, `PRIVY_APP_SECRET`, `NEXT_PUBLIC_PRIVY_APP_ID`, `NEXT_PUBLIC_CHAIN_ID`, `NEXT_PUBLIC_USDC_ADDRESS`.
+Landing: `NEXT_PUBLIC_APP_URL`, `NEXT_PUBLIC_BUSINESS_URL`, `NEXT_PUBLIC_REPO_URL`.
+Shop: `POLARIS_API_BASE`, `NEXT_PUBLIC_POLARIS_CHECKOUT_ORIGIN`, `SHOP_URL`, `MONGODB_URI`, `SHOP_MONGO_DB`, `SHOP_ORDER_STORE=mongodb`.
+Missing shop payment variables: `POLARIS_SECRET_KEY`, `NEXT_PUBLIC_POLARIS_PUBLISHABLE_KEY`, `POLARIS_WEBHOOK_SECRET`, `POLARIS_MERCHANT_ADDRESS`.
+Set values from gitignored files using `vercel env add NAME production` on stdin; never put secrets in a command argument.
 
-Verified 2026-10-14: all three Railway releases reached SUCCESS; 17 buyer routes,
-10 business routes, and all checked health/network/credit-guard endpoints returned 200.
-Connected-browser Playwright checks captured no console errors. Dashboard routes show
-an honest sign-in-unavailable state. CORS returns the exact buyer origin.
-The initial action attempt returned a transient 503; a subsequent attempt confirmed:
-- Send 0.10 USDC: `0x5f87f9bf1813d2da0c2249b047eaedf4c3939e35d8a1d3c153274af0521b7951`
-- Claim back: `0x673ffaa0973bd99d9569316a7b98c090b43d6975d320f1d3cfaf52b890523f6d`
-The general health response is `ok: true`; `productionReady: false` records the missing
-Privy setup. Readiness separately confirms writable persistent SQLite and running workers.
+Deploy from the repository root after linking the desired project. Set Vercel Root Directory to `apps/app`, `apps/business`, `apps/landing` or `apps/shop` respectively, then `vercel deploy --prod --yes`.

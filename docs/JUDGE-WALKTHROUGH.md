@@ -1,6 +1,6 @@
 # Judge walkthrough (5 minutes, no setup)
 
-Live: https://app-production-5010.up.railway.app (Arc testnet)
+Live: https://polaris-arc-lemon.vercel.app (Arc testnet)
 
 
 1. **See it on chain.** [docs/E2E-TESTNET.md](E2E-TESTNET.md) lists the live Arc testnet

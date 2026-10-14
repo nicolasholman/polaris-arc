@@ -1,0 +1,380 @@
+{
+  "at": "2026-10-14T14:16:59.239Z",
+  "base": "https://polaris-arc-business.vercel.app",
+  "results": [
+    {
+      "route": "/",
+      "status": 200,
+      "consoleErrors": [],
+      "badImages": [],
+      "bodyPresent": true,
+      "ok": true
+    },
+    {
+      "route": "/login",
+      "status": 200,
+      "consoleErrors": [],
+      "badImages": [],
+      "bodyPresent": true,
+      "ok": true
+    },
+    {
+      "route": "/dashboard",
+      "status": 200,
+      "consoleErrors": [],
+      "badImages": [],
+      "bodyPresent": true,
+      "ok": true
+    },
+    {
+      "route": "/dashboard/payments",
+      "status": 200,
+      "consoleErrors": [],
+      "badImages": [],
+      "bodyPresent": true,
+      "ok": true
+    },
+    {
+      "route": "/dashboard/links",
+      "status": 200,
+      "consoleErrors": [],
+      "badImages": [],
+      "bodyPresent": true,
+      "ok": true
+    },
+    {
+      "route": "/dashboard/plans",
+      "status": 200,
+      "consoleErrors": [],
+      "badImages": [],
+      "bodyPresent": true,
+      "ok": true
+    },
+    {
+      "route": "/dashboard/payouts",
+      "status": 200,
+      "consoleErrors": [],
+      "badImages": [],
+      "bodyPresent": true,
+      "ok": true
+    },
+    {
+      "route": "/dashboard/automation",
+      "status": 200,
+      "consoleErrors": [],
+      "badImages": [],
+      "bodyPresent": true,
+      "ok": true
+    },
+    {
+      "route": "/dashboard/developers",
+      "status": 200,
+      "consoleErrors": [],
+      "badImages": [],
+      "bodyPresent": true,
+      "ok": true
+    },
+    {
+      "route": "/dashboard/settings",
+      "status": 200,
+      "consoleErrors": [],
+      "badImages": [],
+      "bodyPresent": true,
+      "ok": true
+    },
+    {
+      "api": "/api/health",
+      "status": 200,
+      "ok": true,
+      "data": {
+        "data": {
+          "ok": true,
+          "chain": {
+            "id": 5042002,
+            "name": "Arc Testnet",
+            "contracts": {
+              "stablecoin": "0x3600000000000000000000000000000000000000",
+              "eurc": "0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a",
+              "checkout": "0x3Db37AfcB07C6d15cC8a88eF49757336a46aE1fE",
+              "payments": "0xeBFD4d58972e5231FB816515198fC4E63593091b",
+              "send": "0x5A2540D750bB5a566fFB258B24CFe7050e7265E0",
+              "sendEurc": "0x3a3E83Dc9fcB454Da905bf04b99333713AE146a7",
+              "split": "0x1479e28e5d10aA19325E227243E8af2DE14924A5",
+              "loanEngine": "0x1509d0E6a630feE80B4909B5434F1F42959F079b",
+              "registry": "0x5Ae6D53f77B09808F7c28707B150E3952541661c",
+              "scoreManager": "0x524874735655963a82F160Cb741153F50CdebcF6",
+              "collections": "0x6da7E27C913f73c081F837135Ad7A79643b3b6f0",
+              "underwriting": "0xA0523Ac857e548d3b4Ba947F76A7D806028021cb",
+              "guardian": "0x34C7a86a77fd25d817bb2cAD96bEF502aDc88d4D",
+              "vault": "0x90948fda347bBF1fb6f2A6F7Cd4765D6ffD7cfBe"
+            }
+          },
+          "chainProblem": null,
+          "relayer": {
+            "mode": "local",
+            "address": "0x07BE4896a486d46BaACBF14E7cFf11Fde3524365"
+          },
+          "activator": "off",
+          "automaticPayouts": false,
+          "checkoutOrigin": "https://polaris-arc-lemon.vercel.app",
+          "publicUrl": "https://polaris-arc-business.vercel.app",
+          "appOrigins": [
+            "https://polaris-arc-lemon.vercel.app"
+          ],
+          "productionReady": false,
+          "webhooks": {
+            "source": "chain-sync",
+            "indexer": null
+          },
+          "build": {
+            "production": true,
+            "localSession": false,
+            "privy": true,
+            "privyAppId": "cmuilo290015k0dlafq3pj9x1",
+            "privyServerAppId": "cmuilo290015k0dlafq3pj9x1",
+            "demoShopUrl": null,
+            "workers": false
+          }
+        }
+      }
+    },
+    {
+      "api": "/api/public/network",
+      "status": 200,
+      "ok": true,
+      "data": {
+        "data": {
+          "chainId": 5042002,
+          "name": "Arc Testnet",
+          "explorerUrl": "https://explorer.testnet.arc.io",
+          "nativeCurrency": {
+            "symbol": "USDC",
+            "decimals": 18
+          },
+          "contracts": {
+            "stablecoin": "0x3600000000000000000000000000000000000000",
+            "eurc": "0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a",
+            "payments": "0xeBFD4d58972e5231FB816515198fC4E63593091b",
+            "checkout": "0x3Db37AfcB07C6d15cC8a88eF49757336a46aE1fE",
+            "send": "0x5A2540D750bB5a566fFB258B24CFe7050e7265E0",
+            "sendEurc": "0x3a3E83Dc9fcB454Da905bf04b99333713AE146a7",
+            "split": "0x1479e28e5d10aA19325E227243E8af2DE14924A5",
+            "loanEngine": "0x1509d0E6a630feE80B4909B5434F1F42959F079b",
+            "registry": "0x5Ae6D53f77B09808F7c28707B150E3952541661c",
+            "vault": "0x90948fda347bBF1fb6f2A6F7Cd4765D6ffD7cfBe",
+            "creditGuard": "0x34C7a86a77fd25d817bb2cAD96bEF502aDc88d4D"
+          },
+          "domains": {
+            "stablecoin": {
+              "name": "USDC",
+              "version": "2",
+              "chainId": 5042002,
+              "verifyingContract": "0x3600000000000000000000000000000000000000"
+            },
+            "eurc": {
+              "name": "EURC",
+              "version": "2",
+              "chainId": 5042002,
+              "verifyingContract": "0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a"
+            },
+            "checkout": {
+              "name": "PolarisCheckout",
+              "version": "1",
+              "chainId": 5042002,
+              "verifyingContract": "0x3Db37AfcB07C6d15cC8a88eF49757336a46aE1fE"
+            },
+            "payments": {
+              "name": "PolarisPayments",
+              "version": "1",
+              "chainId": 5042002,
+              "verifyingContract": "0xeBFD4d58972e5231FB816515198fC4E63593091b"
+            },
+            "send": {
+              "name": "PolarisSend",
+              "version": "1",
+              "chainId": 5042002,
+              "verifyingContract": "0x5A2540D750bB5a566fFB258B24CFe7050e7265E0"
+            },
+            "sendEurc": {
+              "name": "PolarisSend",
+              "version": "1",
+              "chainId": 5042002,
+              "verifyingContract": "0x3a3E83Dc9fcB454Da905bf04b99333713AE146a7"
+            },
+            "split": {
+              "name": "PolarisSplit",
+              "version": "1",
+              "chainId": 5042002,
+              "verifyingContract": "0x1479e28e5d10aA19325E227243E8af2DE14924A5"
+            },
+            "loanEngine": {
+              "name": "PolarisLoanEngine",
+              "version": "1",
+              "chainId": 5042002,
+              "verifyingContract": "0x1509d0E6a630feE80B4909B5434F1F42959F079b"
+            }
+          },
+          "circle": {
+            "cctpDomain": 26,
+            "tokenMessengerV2": "0x8FE6B999Dc680CcFDD5Bf7EB0974218be2542DAA",
+            "messageTransmitterV2": "0xE737e5cEBEEBa77EFE34D4aa090756590b1CE275",
+            "memo": "0x5294E9927c3306DcBaDb03fe70b92e01cCede505",
+            "usyc": "0xe9185F0c5F296Ed1797AaE4238D26CCaBEadb86C",
+            "gatewayWallet": "0x0077777d7EBA4688BDeF3E311b846F25870A19B9",
+            "gatewayMinter": "0x0022222ABE238Cc2C7Bb1f21003F0a260052475B"
+          },
+          "cctp": {
+            "sources": [
+              {
+                "chainId": 11155111,
+                "name": "Ethereum Sepolia",
+                "domain": 0,
+                "usdc": "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238",
+                "tokenMessengerV2": "0x8FE6B999Dc680CcFDD5Bf7EB0974218be2542DAA",
+                "rpcUrl": "https://ethereum-sepolia-rpc.publicnode.com",
+                "explorerUrl": "https://sepolia.etherscan.io"
+              },
+              {
+                "chainId": 43113,
+                "name": "Avalanche Fuji",
+                "domain": 1,
+                "usdc": "0x5425890298aed601595a70AB815c96711a31Bc65",
+                "tokenMessengerV2": "0x8FE6B999Dc680CcFDD5Bf7EB0974218be2542DAA",
+                "rpcUrl": "https://api.avax-test.network/ext/bc/C/rpc",
+                "explorerUrl": "https://testnet.snowtrace.io"
+              },
+              {
+                "chainId": 11155420,
+                "name": "OP Sepolia",
+                "domain": 2,
+                "usdc": "0x5fd84259d66Cd46123540766Be93DFE6D43130D7",
+                "tokenMessengerV2": "0x8FE6B999Dc680CcFDD5Bf7EB0974218be2542DAA",
+                "rpcUrl": "https://sepolia.optimism.io",
+                "explorerUrl": "https://sepolia-optimism.etherscan.io"
+              },
+              {
+                "chainId": 421614,
+                "name": "Arbitrum Sepolia",
+                "domain": 3,
+                "usdc": "0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d",
+                "tokenMessengerV2": "0x8FE6B999Dc680CcFDD5Bf7EB0974218be2542DAA",
+                "rpcUrl": "https://sepolia-rollup.arbitrum.io/rpc",
+                "explorerUrl": "https://sepolia.arbiscan.io"
+              },
+              {
+                "chainId": 84532,
+                "name": "Base Sepolia",
+                "domain": 6,
+                "usdc": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+                "tokenMessengerV2": "0x8FE6B999Dc680CcFDD5Bf7EB0974218be2542DAA",
+                "rpcUrl": "https://sepolia.base.org",
+                "explorerUrl": "https://sepolia.basescan.org"
+              },
+              {
+                "chainId": 80002,
+                "name": "Polygon Amoy",
+                "domain": 7,
+                "usdc": "0x41E94Eb019C0762f9Bfcf9Fb1E58725BfB0e7582",
+                "tokenMessengerV2": "0x8FE6B999Dc680CcFDD5Bf7EB0974218be2542DAA",
+                "rpcUrl": "https://rpc-amoy.polygon.technology",
+                "explorerUrl": "https://amoy.polygonscan.com"
+              }
+            ],
+            "fastTransfer": true,
+            "mintPath": "/api/public/cctp/mint",
+            "hookReceiver": "0x665B5DbED9229B1cd6021654f8742bF42ea0599A"
+          },
+          "gateway": {
+            "wallet": "0x0077777d7EBA4688BDeF3E311b846F25870A19B9",
+            "minter": "0x0022222ABE238Cc2C7Bb1f21003F0a260052475B",
+            "sources": [
+              {
+                "domain": 6,
+                "name": "Base Sepolia",
+                "usdc": "0x036CbD53842c5426634e7929541eC2318f3dCF7e"
+              },
+              {
+                "domain": 0,
+                "name": "Ethereum Sepolia",
+                "usdc": "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238"
+              },
+              {
+                "domain": 3,
+                "name": "Arbitrum Sepolia",
+                "usdc": "0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d"
+              },
+              {
+                "domain": 1,
+                "name": "Avalanche Fuji",
+                "usdc": "0x5425890298aed601595a70AB815c96711a31Bc65"
+              },
+              {
+                "domain": 2,
+                "name": "OP Sepolia",
+                "usdc": "0x5fd84259d66Cd46123540766Be93DFE6D43130D7"
+              },
+              {
+                "domain": 7,
+                "name": "Polygon Amoy",
+                "usdc": "0x41E94Eb019C0762f9Bfcf9Fb1E58725BfB0e7582"
+              },
+              {
+                "domain": 26,
+                "name": "Arc Testnet",
+                "usdc": "0x3600000000000000000000000000000000000000"
+              }
+            ],
+            "intentPath": "/api/public/gateway/intent",
+            "mintPath": "/api/public/gateway/mint",
+            "balancesPath": "/api/public/gateway"
+          },
+          "ccip": {
+            "chainSelector": "3034092155422581607",
+            "router": "0xdE4E7FED43FAC37EB21aA0643d9852f75332eab8",
+            "receiver": "0x89282475eCAd4cb5dbb7912dA4dA19eA3069A621",
+            "explorer": "https://ccip.chain.link",
+            "sources": []
+          },
+          "rates": {
+            "source": "Chainlink Data Feeds on Arc mainnet",
+            "eurcUsd": {
+              "pair": "EURC / USD",
+              "feed": "0x361b95c10b76Ca3f35C686d423e43A951755Bf23",
+              "price": "1.114557",
+              "updatedAt": "2026-10-14T12:41:21.000Z",
+              "stale": false
+            },
+            "eurUsd": {
+              "pair": "EUR / USD",
+              "feed": "0xDd5B15443cd733D3966a50a3E48cB7DF9Fb5DE0D",
+              "price": "1.114570",
+              "updatedAt": "2026-10-14T12:35:50.000Z",
+              "stale": false
+            },
+            "usdcUsd": {
+              "pair": "USDC / USD",
+              "feed": "0x84EA90AC252Dc437031461836DB5164219147905",
+              "price": "0.999860",
+              "updatedAt": "2026-10-13T15:24:12.000Z",
+              "stale": false
+            }
+          },
+          "payIn4": {
+            "installments": 4,
+            "intervalSeconds": 604800,
+            "minCents": 2000,
+            "maxCents": 100000,
+            "aprBps": 1000
+          },
+          "relayer": {
+            "available": true
+          }
+        }
+      }
+    },
+    {
+      "mobileOverflow": false,
+      "ok": true
+    }
+  ]
+}

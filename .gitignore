@@ -65,3 +65,4 @@ packages/contracts/deployments/.keys/
 packages/contracts/ccip/out/
 packages/contracts/ccip/cache/
 .data/
+.vercel

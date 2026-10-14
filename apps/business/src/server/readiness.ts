@@ -32,18 +32,19 @@ export type Readiness = {
   checks: {
     config: ReadinessCheck;
     chain: ReadinessCheck & { id: number | null };
-    store: ReadinessCheck & { kind: "sqlite" | "memory" | "unknown"; persistent: boolean; path: string | null };
+    store: ReadinessCheck & { kind: "sqlite" | "mongodb" | "memory" | "unknown"; persistent: boolean; path: string | null };
     workers: ReadinessCheck & { enabled: boolean; running: boolean };
   };
   relayer: { mode: "off" | "local" | "privy" | "unknown" };
   sync: { block: number | null; updatedAt: string | null; ageSeconds: number | null };
 };
 
-export type StoreLocation = { kind: "sqlite" | "memory" | "unknown"; path: string | null };
+export type StoreLocation = { kind: "sqlite" | "mongodb" | "memory" | "unknown"; path: string | null };
 
 /** What a POLARIS_DB_URL names, by the same rules as @polaris/db's openStore. */
 export function storeLocation(url: string, cwd = process.cwd()): StoreLocation {
   const trimmed = url.trim();
+  if (/^mongodb(?:\+srv)?:/.test(trimmed)) return { kind: "mongodb", path: null };
   if (trimmed === "memory:" || trimmed === "memory") return { kind: "memory", path: null };
   let file: string | null = null;
   if (trimmed.startsWith("sqlite:")) file = trimmed.slice("sqlite:".length);
@@ -105,15 +106,15 @@ export async function readiness(now = Date.now()): Promise<Readiness> {
     store = {
       ok: disk ? disk.ok : location.kind !== "unknown",
       kind: location.kind,
-      persistent: location.kind === "sqlite",
+      persistent: location.kind === "sqlite" || location.kind === "mongodb",
       path: location.path,
-      detail: disk ? disk.detail : location.kind === "memory" ? "In memory: everything is lost on restart." : "Unrecognised POLARIS_DB_URL.",
+      detail: location.kind === "mongodb" ? "Durable Atlas document store." : disk ? disk.detail : location.kind === "memory" ? "In memory: everything is lost on restart." : "Unrecognised POLARIS_DB_URL.",
     };
   } catch (error) {
     store = {
       ok: false,
       kind: location.kind,
-      persistent: location.kind === "sqlite",
+      persistent: location.kind === "sqlite" || location.kind === "mongodb",
       path: location.path,
       detail: `The store can't be read: ${(error as Error).message}`,
     };

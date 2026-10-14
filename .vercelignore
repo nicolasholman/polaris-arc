@@ -1,0 +1,14 @@
+**/node_modules
+**/.next*
+**/.env*
+**/.data
+**/.vercel
+.git
+.fork
+.demo
+docs/screens
+packages/contracts/artifacts
+packages/contracts/cache
+packages/contracts/ccip/lib
+packages/contracts/ccip/out
+packages/contracts/ccip/cache

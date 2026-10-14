@@ -29,6 +29,7 @@ const config: NextConfig = {
   serverExternalPackages: ["@privy-io/node"],
   ...(standalone ? { output: "standalone" as const } : {}),
   outputFileTracingRoot: root,
+  outputFileTracingIncludes: { "/*": ["../../packages/contracts/deployments/arc-*.json", "../../packages/contracts/abi/*.json"] },
   turbopack: { root },
   env: {
     // `pnpm demo:local`'s signed-in dashboard on a local chain; never in a production build.

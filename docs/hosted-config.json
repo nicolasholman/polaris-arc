@@ -1,0 +1,32 @@
+{
+  "base": "https://polaris-arc-lemon.vercel.app",
+  "routes": [
+    "/",
+    "/onboard",
+    "/activity",
+    "/cards",
+    "/plans",
+    "/insights",
+    "/credit",
+    "/settings",
+    "/profile",
+    "/send",
+    "/receive",
+    "/add",
+    "/accounts",
+    "/notifications",
+    "/pay",
+    "/split/new"
+  ],
+  "webauthn": true,
+  "firstStep": {
+    "route": "/onboard",
+    "name": "Create account with Face ID",
+    "expect": "Send"
+  },
+  "api": [
+    "https://polaris-arc-business.vercel.app/api/public/network"
+  ],
+  "contract": "0xeBFD4d58972e5231FB816515198fC4E63593091b",
+  "waitMs": 3000
+}

@@ -6,8 +6,8 @@ import { createPublicClient, http, parseAbi, type Address } from "viem";
  * Chainlink Data Feeds on Arc mainnet, read for what they mean to Polaris:
  * EURC / USD (what a euro send link is worth in dollars), EUR / USD (the
  * reference rate it tracks) and USDC / USD (the peg CreditGuard watches).
- * Read from Arc mainnet whatever network this server runs on (testnet has no
- * feeds): reads only, cached five minutes, never used to price or settle.
+ * Testnet has no deployed feeds: rates remain unavailable unless a local
+ * mainnet fork is explicitly configured. Cached five minutes; display only.
  */
 
 const FEEDS: Record<"eurcUsd" | "eurUsd" | "usdcUsd", Address> = {
@@ -26,7 +26,13 @@ export type ArcRates = { source: "Chainlink Data Feeds on Arc mainnet"; eurcUsd:
 let cache: { at: number; value: Promise<ArcRates> } | null = null;
 
 async function read(): Promise<ArcRates> {
-  const client = createPublicClient({ transport: http(process.env.ARC_MAINNET_RPC_URL || "https://rpc.mainnet.arc.io", { timeout: 8_000 }) });
+  const rpc = process.env.ARC_MAINNET_RPC_URL;
+  const localFork = rpc && ["localhost", "127.0.0.1", "[::1]"].includes(new URL(rpc).hostname);
+  // Testnet hosting must never reach Arc mainnet directly. No invented FX fallback.
+  if (process.env.POLARIS_DEPLOYMENT !== "arc-mainnet" && !localFork) {
+    return { source: "Chainlink Data Feeds on Arc mainnet", eurcUsd: null, eurUsd: null, usdcUsd: null };
+  }
+  const client = createPublicClient({ transport: http(rpc || "https://rpc.mainnet.arc.io", { timeout: 8_000 }) });
   const now = Math.floor(Date.now() / 1000);
   const one = async (key: keyof typeof FEEDS, pair: string): Promise<ArcRate | null> => {
     try {

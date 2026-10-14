@@ -1,0 +1,10 @@
+{
+  "base": "https://polaris-arc-shop.vercel.app",
+  "routes": [
+    "/",
+    "/shop",
+    "/cart",
+    "/checkout"
+  ],
+  "screenshotDir": "docs/screens/hosted/shop"
+}

@@ -1,0 +1,20 @@
+{
+  "base": "https://polaris-arc-business.vercel.app",
+  "routes": [
+    "/",
+    "/login",
+    "/dashboard",
+    "/dashboard/payments",
+    "/dashboard/links",
+    "/dashboard/plans",
+    "/dashboard/payouts",
+    "/dashboard/automation",
+    "/dashboard/developers",
+    "/dashboard/settings"
+  ],
+  "api": [
+    "/api/health",
+    "/api/public/network"
+  ],
+  "screenshotDir": "docs/screens/hosted/business"
+}

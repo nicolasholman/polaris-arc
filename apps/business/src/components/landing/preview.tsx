@@ -132,6 +132,7 @@ export function SalesPreview({
 
   return (
     <div className={cn("min-w-0", className)}>
+      <p className="mb-3 text-xs text-ui-muted">Illustration · sample dashboard numbers</p>
       <PairHeader
         as="p"
         // Smaller coins and title on phones, and no chart type toggle, so the title never truncates.

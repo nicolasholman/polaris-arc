@@ -1,0 +1,7 @@
+{
+  "base": "https://polaris-arc-landing.vercel.app",
+  "routes": [
+    "/"
+  ],
+  "screenshotDir": "docs/screens/hosted/landing"
+}

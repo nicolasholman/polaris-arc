@@ -97,10 +97,10 @@ USDC**. The testnet deploy's measured cost is in
 
 | Service | Where | Notes |
 |---|---|---|
-| Polaris for Business | Railway/Fly (Dockerfile in `apps/business`) | long-running: background workers (chain sync, webhooks, payouts, reviews queue) and a SQLite volume at `/data` |
-| Polaris keeper | Railway/Fly worker, or any VM | `pnpm --filter @polaris/keeper start`; must stay up for collections (anyone can collect if it stops) |
+| Polaris for Business | Vercel (`apps/business`) | HTTP API and merchant UI; existing Atlas via `POLARIS_DB_URL`, `POLARIS_MONGO_DB=arc_polaris_mainnet`; `POLARIS_WORKERS=0`, authenticated `/api/cron/tick` |
+| Polaris keeper | Vercel scheduled function for testnet; on demand locally otherwise | `/api/cron/collections` runs a bounded pass, testnet only; daily schedule. `pnpm --filter @polaris/keeper once` for a prompt demo pass. Mainnet cron is not enabled. |
 | Polaris app | Vercel | static + `/api/fx`; `NEXT_PUBLIC_*` at build time |
-| Landing, demo shop | Vercel | optional |
+| Landing, demo shop | Vercel | `apps/landing` and `apps/shop`; shop uses existing Atlas (`MONGODB_URI`, `SHOP_MONGO_DB=arc_polaris_shop_mainnet`) or existing Redis, never function-local files |
 | Envio indexer | Envio Cloud | optional (`ENVIO_API_TOKEN`); the business server's chain sync works without it |
 
 **Polaris for Business** (full list in `apps/business/.env.example`):
@@ -145,7 +145,7 @@ NEXT_PUBLIC_PRIVY_APP_ID (optional, email login)
 Circle Gateway switches to `gateway-api.circle.com` and the mainnet
 GatewayWallet / GatewayMinter from the record; `ARC_MAINNET_RPC_URL` (default
 `https://rpc.mainnet.arc.io`) is where the Chainlink EURC / USD and USDC / USD
-rates are read for display on any network.
+rates are read for display on mainnet. Testnet hosting leaves these rates unavailable unless a local Arc mainnet fork is configured.
 
 The app's CCTP sources switch to mainnet automatically (`/api/public/network`
 serves Ethereum, Avalanche, OP, Arbitrum, Base and Polygon with Circle's

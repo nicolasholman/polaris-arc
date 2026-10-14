@@ -1,0 +1,42 @@
+{
+  "at": "2026-10-14T14:20:17.187Z",
+  "base": "https://polaris-arc-shop.vercel.app",
+  "results": [
+    {
+      "route": "/",
+      "status": 200,
+      "consoleErrors": [],
+      "badImages": [],
+      "bodyPresent": true,
+      "ok": true
+    },
+    {
+      "route": "/shop",
+      "status": 200,
+      "consoleErrors": [],
+      "badImages": [],
+      "bodyPresent": true,
+      "ok": true
+    },
+    {
+      "route": "/cart",
+      "status": 200,
+      "consoleErrors": [],
+      "badImages": [],
+      "bodyPresent": true,
+      "ok": true
+    },
+    {
+      "route": "/checkout",
+      "status": 200,
+      "consoleErrors": [],
+      "badImages": [],
+      "bodyPresent": true,
+      "ok": true
+    },
+    {
+      "mobileOverflow": false,
+      "ok": true
+    }
+  ]
+}

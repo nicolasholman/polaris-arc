@@ -13,7 +13,7 @@ export async function register(): Promise<void> {
   } catch (error) {
     console.error("[config] can't be read:", (error as Error).message);
   }
-  if (process.env.POLARIS_WORKERS === "0") return;
+  if (process.env.VERCEL || process.env.POLARIS_WORKERS === "0") return;
   try {
     const { startWorkers } = await import("./server/workers");
     startWorkers();

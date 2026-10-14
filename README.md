@@ -1,6 +1,8 @@
 # Polaris on Arc
 
-Live: https://app-production-5010.up.railway.app (Arc testnet)
+Live: https://polaris-arc-lemon.vercel.app (Arc testnet)
+
+Hosting and checks: [docs/HOSTED.md](docs/HOSTED.md). Vercel runs collections daily; the standalone keeper supports a faster cadence. Atlas access from Vercel is pending, so merchant persistence is not yet healthy.
 
 
 **Stripe for every app on Arc.** One payment link to get paid now, in four
@@ -18,7 +20,7 @@ Polaris pays it.
   API and SDK (`polarispay-sdk`), a dashboard, signed webhooks, payouts. Every
   checkout lands on Arc with the merchant's order reference in an **Arc Memo**.
 - **The credit engine**: a USDC credit pool, credit scores, Boost (USDC
-  collateral), and the **Polaris keeper**, which collects instalments on time
+  collateral), and the **Polaris keeper**, which collects due instalments
   and writes credit reviews on chain. A **credit guard** pauses new Pay in 4
   plans the moment the pool runs short, read live from the pool.
 
@@ -221,7 +223,7 @@ pnpm --filter @polarispay/underwriting test
 One switch: `NETWORK=mainnet` (`pnpm deploy:mainnet`, with
 `POLARIS_CONFIRM_MAINNET=yes`). Every app picks the chain from the record and
 `NEXT_PUBLIC_CHAIN_ID`. Exact commands, the USDC it costs, the environment for
-Vercel/Railway and the services to run: [MAINNET.md](MAINNET.md).
+Vercel and the services to run: [MAINNET.md](MAINNET.md).
 
 ## Security notes
 

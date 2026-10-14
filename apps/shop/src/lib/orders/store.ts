@@ -1,5 +1,6 @@
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { createMongoOrderStore } from "./mongo-store";
 
 import { createRedisStore, redisRestFromEnv } from "./redis-store";
 import type { Order } from "./types";
@@ -98,7 +99,7 @@ export function createFileStore(file: string): OrderStore {
 
 const globalStore = globalThis as unknown as { __halcyonOrderStore?: OrderStore };
 
-export type OrderStoreKind = "memory" | "file" | "redis";
+export type OrderStoreKind = "memory" | "file" | "redis" | "mongodb";
 
 /**
  * Which store this process uses: SHOP_ORDER_STORE (memory, file or redis),
@@ -107,8 +108,8 @@ export type OrderStoreKind = "memory" | "file" | "redis";
  */
 export function orderStoreKind(env: Record<string, string | undefined> = process.env): OrderStoreKind {
   const chosen = env.SHOP_ORDER_STORE?.trim().toLowerCase();
-  if (chosen === "memory" || chosen === "file" || chosen === "redis") return chosen;
-  return redisRestFromEnv(env) ? "redis" : "file";
+  if (chosen === "memory" || chosen === "file" || chosen === "redis" || chosen === "mongodb") return chosen;
+  return env.MONGODB_URI ? "mongodb" : redisRestFromEnv(env) ? "redis" : "file";
 }
 
 /**
@@ -123,7 +124,9 @@ export function redisKey(env: Record<string, string | undefined> = process.env):
 export function orderStore(): OrderStore {
   if (!globalStore.__halcyonOrderStore) {
     const kind = orderStoreKind();
-    if (kind === "memory") {
+    if (kind === "mongodb") {
+      globalStore.__halcyonOrderStore = createMongoOrderStore();
+    } else if (kind === "memory") {
       globalStore.__halcyonOrderStore = createMemoryStore();
     } else if (kind === "redis") {
       const rest = redisRestFromEnv(process.env);
@@ -131,9 +134,7 @@ export function orderStore(): OrderStore {
       globalStore.__halcyonOrderStore = createRedisStore({ ...rest, key: redisKey() });
     } else {
       if (process.env.VERCEL === "1") {
-        console.warn(
-          "[orders] The file store on Vercel keeps orders in each function's memory: a webhook can land where the order isn't. Connect Upstash Redis (KV_REST_API_URL, KV_REST_API_TOKEN).",
-        );
+        throw new Error("Persistent shop storage is not configured. Set an existing Redis REST URL/token before accepting orders on Vercel.");
       }
       const dir = process.env.SHOP_DATA_DIR ?? path.join(process.cwd(), ".data");
       globalStore.__halcyonOrderStore = createFileStore(path.join(dir, "orders.json"));

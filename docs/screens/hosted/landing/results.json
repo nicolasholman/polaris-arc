@@ -1,0 +1,18 @@
+{
+  "at": "2026-10-14T14:25:12.640Z",
+  "base": "https://polaris-arc-landing.vercel.app",
+  "results": [
+    {
+      "route": "/",
+      "status": 200,
+      "consoleErrors": [],
+      "badImages": [],
+      "bodyPresent": true,
+      "ok": true
+    },
+    {
+      "mobileOverflow": false,
+      "ok": true
+    }
+  ]
+}

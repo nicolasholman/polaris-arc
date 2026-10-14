@@ -77,16 +77,18 @@ function int(name: string, fallback: number): number {
 
 export function deploymentPath(): string {
   const file = env("POLARIS_DEPLOYMENT_FILE");
-  if (file) return isAbsolute(file) ? file : resolve(process.cwd(), file);
+  if (file) return isAbsolute(file) ? file : resolve(/*turbopackIgnore: true*/ process.cwd(), file);
   const name = env("POLARIS_DEPLOYMENT") ?? "arc-testnet";
   const path = join(here, "..", "..", "..", "packages", "contracts", "deployments", `${name}.json`);
-  if (!existsSync(path)) throw new Error(`No deployment record at ${path}: deploy the contracts or set POLARIS_DEPLOYMENT_FILE.`);
-  return path;
+  const candidates = [path, resolve(/*turbopackIgnore: true*/ process.cwd(), "../../packages/contracts/deployments", `${name}.json`), resolve(/*turbopackIgnore: true*/ process.cwd(), "packages/contracts/deployments", `${name}.json`)];
+  const found = candidates.find(p => existsSync(/*turbopackIgnore: true*/ p));
+  if (!found) throw new Error("No deployment record found: set POLARIS_DEPLOYMENT_FILE.");
+  return found;
 }
 
 export function loadConfig(): KeeperConfig {
   const path = deploymentPath();
-  const deployment = JSON.parse(readFileSync(path, "utf8")) as Deployment;
+  const deployment = JSON.parse(readFileSync(/*turbopackIgnore: true*/ path, "utf8")) as Deployment;
   const need = (label: string): Address => {
     const a = deployment.contracts[label]?.address;
     if (!a || !isAddress(a)) throw new Error(`The deployment record has no ${label}`);
