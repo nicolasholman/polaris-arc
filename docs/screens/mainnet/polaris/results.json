@@ -1,8 +1,13 @@
 {
-  "at": "2026-10-14T15:46:45.519Z",
+  "at": "2026-10-14T16:24:29.476Z",
   "base": "https://polaris-arc-lemon.vercel.app",
   "readOnly": true,
-  "consoleErrors": [],
+  "consoleErrors": [
+    "Failed to load resource: the server responded with a status of 429 ()",
+    "Failed to load resource: the server responded with a status of 429 ()",
+    "Failed to load resource: the server responded with a status of 429 ()",
+    "Failed to load resource: the server responded with a status of 429 ()"
+  ],
   "results": [
     {
       "route": "/",
