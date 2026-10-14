@@ -14,7 +14,7 @@
 # Secrets and local state never enter an image.
 **/.env
 **/.env.*
-!**/.env.example
+
 **/.data
 .demo
 .claude
@@ -34,3 +34,18 @@ packages/indexer/.envio
 # Documentation, screenshots and recordings.
 docs
 *.mp4
+
+**/.env*
+**/.git
+**/.keys
+/keys
+**/*.key
+**/*.pem
+**/.data*
+**/cache
+**/broadcast
+**/.fork
+**/.vercel
+**/.codex
+**/lib/forge-std
+**/lib/chainlink*

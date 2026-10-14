@@ -1,5 +1,8 @@
 # Polaris on Arc
 
+Live: https://app-production-5010.up.railway.app (Arc testnet)
+
+
 **Stripe for every app on Arc.** One payment link to get paid now, in four
 instalments on an on-chain credit line, or every month, in USDC. Buyers sign
 up with Face ID, pay from any chain (Circle Gateway, CCTP V2, Chainlink CCIP),

@@ -1,0 +1,57 @@
+{
+  "businessChecks": [
+    {
+      "route": "/login",
+      "headings": []
+    },
+    {
+      "route": "/dashboard",
+      "headings": [
+        "Sign-in is unavailable right now"
+      ]
+    },
+    {
+      "route": "/dashboard/links",
+      "headings": [
+        "Sign-in is unavailable right now"
+      ]
+    },
+    {
+      "route": "/dashboard/payments",
+      "headings": [
+        "Sign-in is unavailable right now"
+      ]
+    },
+    {
+      "route": "/dashboard/plans",
+      "headings": [
+        "Sign-in is unavailable right now"
+      ]
+    },
+    {
+      "route": "/dashboard/payouts",
+      "headings": [
+        "Sign-in is unavailable right now"
+      ]
+    },
+    {
+      "route": "/dashboard/automation",
+      "headings": [
+        "Sign-in is unavailable right now"
+      ]
+    },
+    {
+      "route": "/dashboard/developers",
+      "headings": [
+        "Sign-in is unavailable right now"
+      ]
+    },
+    {
+      "route": "/dashboard/settings",
+      "headings": [
+        "Sign-in is unavailable right now"
+      ]
+    }
+  ],
+  "errors": []
+}

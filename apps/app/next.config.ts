@@ -27,6 +27,8 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  output: "standalone",
+  outputFileTracingRoot: path.resolve(process.cwd(), "../.."),
   poweredByHeader: false,
   // No floating dev badge over the phone layout.
   devIndicators: false,

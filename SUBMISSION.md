@@ -1,5 +1,8 @@
 # Polaris on Arc: Arc Microgrants submission
 
+Live: https://app-production-5010.up.railway.app (Arc testnet)
+
+
 **Stripe for every app on Arc: one link to get paid now, later, or every month, in USDC.**
 
 ## Description (DoraHacks, under 150 words)

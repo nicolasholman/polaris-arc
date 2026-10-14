@@ -1,0 +1,26 @@
+{
+  "checkedAt": "2026-10-14T09:24:19.990Z",
+  "chainId": 5042002,
+  "amountUSDC": "0.10",
+  "returnedTo": "0x0648aDF1967692A0c991d7715b0b588452321FBd",
+  "send": {
+    "type": "send",
+    "txHash": "0x5f87f9bf1813d2da0c2249b047eaedf4c3939e35d8a1d3c153274af0521b7951",
+    "status": "confirmed",
+    "blockNumber": 67137378,
+    "explorerUrl": "https://explorer.testnet.arc.io/tx/0x5f87f9bf1813d2da0c2249b047eaedf4c3939e35d8a1d3c153274af0521b7951",
+    "submittedAt": 1791969857897,
+    "confirmedAt": 1791969858933,
+    "sessionId": null
+  },
+  "claim": {
+    "type": "claim",
+    "txHash": "0x673ffaa0973bd99d9569316a7b98c090b43d6975d320f1d3cfaf52b890523f6d",
+    "status": "confirmed",
+    "blockNumber": 67137380,
+    "explorerUrl": "https://explorer.testnet.arc.io/tx/0x673ffaa0973bd99d9569316a7b98c090b43d6975d320f1d3cfaf52b890523f6d",
+    "submittedAt": 1791969859162,
+    "confirmedAt": 1791969859913,
+    "sessionId": null
+  }
+}
